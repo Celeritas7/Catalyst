@@ -7,6 +7,9 @@
 #   ex    - examples: t = native text, r = reading (kana for Japanese, pinyin for Chinese), e = English,
 #           h = the part to highlight (text or list of texts, must appear in t), dev = Devanagari override
 #   Japanese readings are written as pronounced: topic は → わ, へ → え, を → お.
+#   Sound changes (🗣 Said box): Chinese tone changes and Burmese voicing are found automatically.
+#     sd: [{w: word in t, from: …, to: …, rule: id from data/sounds.yaml}]  adds one by hand (Japanese, Burmese creaky tone)
+#     say: false   turns the automatic ones off for an example the rule gets wrong
 # levels: closeness of every language pair: close | partial | none.  pair_notes: why, for the tricky pairs.
 # Languages: ja Japanese, my Burmese, zh Chinese, mr Marathi (anchor), en English (anchor).
 # checked: false on an entry = not yet checked by a native speaker.
@@ -23,7 +26,7 @@
     note: "The verb (or adjective, or です) comes last. The rest can move around because particles mark each role."
     ex:
       - {t: "私はりんごを食べます。", r: "わたし わ りんご お たべます", e: "I eat an apple.", h: "食べます"}
-      - {t: "弟が学校へ行った。", r: "おとうと が がっこう え いった", e: "My younger brother went to school.", h: "行った"}
+      - {t: "弟が学校へ行った。", r: "おとうと が がっこう え いった", e: "My younger brother went to school.", h: "行った", sd: [{w: "学校", from: "がく + こう", to: "がっこう", rule: ja_sokuon}, {w: "行った", from: "いく + た", to: "いった", rule: ja_te}]}
   my:
     form: "S – O – V"
     note: "Same as Japanese: verb last, followed by its ending (တယ်, မယ်…). Order before the verb is fairly free."
@@ -61,7 +64,7 @@
     form: "verb (plain form) + noun"
     note: "No linking word. The plain verb form sits directly in front of the noun."
     ex:
-      - {t: "昨日買った本", r: "きのう かった ほん", e: "the book I bought yesterday", h: "買った"}
+      - {t: "昨日買った本", r: "きのう かった ほん", e: "the book I bought yesterday", h: "買った", sd: [{w: "買った", from: "かう + た", to: "かった", rule: ja_te}]}
       - {t: "日本語を話す人", r: "にほんご お はなす ひと", e: "a person who speaks Japanese", h: "話す"}
   my:
     form: "verb + တဲ့ + noun"
@@ -139,7 +142,7 @@
     note: "New or focused subject; always after question words (誰が, not 誰は)."
     ex:
       - {t: "誰が来ましたか。", r: "だれ が きました か", e: "Who came?", h: "が"}
-      - {t: "雨が降っています。", r: "あめ が ふって います", e: "It's raining. (rain is falling)", h: "が"}
+      - {t: "雨が降っています。", r: "あめ が ふって います", e: "It's raining. (rain is falling)", h: "が", sd: [{w: "降って", from: "ふる + て", to: "ふって", rule: ja_te}]}
   my:
     form: "က"
     note: "Marks the subject when it matters who does it. Often left out."
@@ -333,7 +336,7 @@
     note: "After the noun."
     ex:
       - {t: "九時から五時まで働きます。", r: "くじ から ごじ まで はたらきます", e: "I work from nine to five.", h: ["から", "まで"]}
-      - {t: "駅から歩いて来た。", r: "えき から あるいて きた", e: "I walked here from the station.", h: "から"}
+      - {t: "駅から歩いて来た。", r: "えき から あるいて きた", e: "I walked here from the station.", h: "から", sd: [{w: "歩いて", from: "あるく + て", to: "あるいて", rule: ja_te}]}
   my:
     form: "ကနေ / မှ … အထိ / ထိ"
     note: "After the noun, same place as Japanese."
@@ -377,7 +380,7 @@
     note: "ရဲ့ after the owner. For pronouns the tone changes instead: ကျွန်တော် → ကျွန်တော့်."
     ex:
       - {t: "ဆရာရဲ့ စာအုပ်", e: "the teacher's book", h: "ရဲ့"}
-      - {t: "ကျွန်တော့် စာအုပ်", e: "my book (creaky tone ့ instead of ရဲ့)", h: "ကျွန်တော့်"}
+      - {t: "ကျွန်တော့် စာအုပ်", e: "my book (creaky tone ့ instead of ရဲ့)", h: "ကျွန်တော့်", sd: [{w: "ကျွန်တော့်", from: "ကျွန်တော်", to: "ကျွန်တော့်", rule: my_creaky}]}
   zh:
     form: "的"
     note: "Between owner and thing; left out for family and close ties."
@@ -407,7 +410,7 @@
     form: "と"
     note: "'A と B' = A and B. 'person と' = with a person."
     ex:
-      - {t: "パンと卵を買った。", r: "ぱん と たまご お かった", e: "I bought bread and eggs.", h: "と"}
+      - {t: "パンと卵を買った。", r: "ぱん と たまご お かった", e: "I bought bread and eggs.", h: "と", sd: [{w: "買った", from: "かう + た", to: "かった", rule: ja_te}]}
       - {t: "友達と映画を見た。", r: "ともだち と えいが お みた", e: "I watched a film with a friend.", h: "と"}
   my:
     form: "နဲ့"
@@ -598,8 +601,8 @@
     form: "て + いる"
     note: "Action in progress, or the state after a change (窓が開いている = the window is open)."
     ex:
-      - {t: "今雨が降っている。", r: "いま あめ が ふって いる", e: "It's raining now.", h: "ている"}
-      - {t: "窓が開いている。", r: "まど が あいて いる", e: "The window is open.", h: "ている"}
+      - {t: "今雨が降っている。", r: "いま あめ が ふって いる", e: "It's raining now.", h: "ている", sd: [{w: "降って", from: "ふる + て", to: "ふって", rule: ja_te}]}
+      - {t: "窓が開いている。", r: "まど が あいて いる", e: "The window is open.", h: "ている", sd: [{w: "開いて", from: "あく + て", to: "あいて", rule: ja_te}]}
   my:
     form: "နေ (doing) / ထား (state)"
     note: "Two forms. နေ for in progress; ထား for a state someone left."
@@ -674,7 +677,7 @@
     form: "た + ことがある"
     note: "Past form + ことがある / ことがない."
     ex:
-      - {t: "富士山に登ったことがあります。", r: "ふじさん に のぼった こと が あります", e: "I have climbed Mt Fuji.", h: "ことがあります"}
+      - {t: "富士山に登ったことがあります。", r: "ふじさん に のぼった こと が あります", e: "I have climbed Mt Fuji.", h: "ことがあります", sd: [{w: "登った", from: "のぼる + た", to: "のぼった", rule: ja_te}]}
       - {t: "寿司を食べたことがない。", r: "すし お たべた こと が ない", e: "I have never eaten sushi.", h: "ことがない"}
   my:
     form: "ဖူး"
@@ -790,7 +793,7 @@
     form: "reason + から / ので"
     note: "At the end of the reason clause. ので is softer."
     ex:
-      - {t: "雨が降っているから行きません。", r: "あめ が ふって いる から いきません", e: "It's raining, so I'm not going.", h: "から"}
+      - {t: "雨が降っているから行きません。", r: "あめ が ふって いる から いきません", e: "It's raining, so I'm not going.", h: "から", sd: [{w: "降って", from: "ふる + て", to: "ふって", rule: ja_te}]}
       - {t: "疲れたので早く寝ました。", r: "つかれた ので はやく ねました", e: "I was tired, so I went to bed early.", h: "ので"}
   my:
     form: "reason + လို့ / ကြောင့်"

@@ -40,6 +40,8 @@ create table if not exists public.catalyst_examples (
   devanagari text,                              -- saved Devanagari line (the app recomputes it when the converter loads)
   updated_at timestamptz not null default now()
 );
+-- sound changes (tone change, sandhi): { say, sayDev, ch: [{ w, from, to, rule }] } or null. Added later: safe to re-run.
+alter table public.catalyst_examples add column if not exists sounds jsonb;
 create index if not exists catalyst_examples_entry on public.catalyst_examples(entry_id, sort_order);
 
 alter table public.catalyst_concepts enable row level security;

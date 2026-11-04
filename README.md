@@ -9,6 +9,17 @@ You learn one grammar point by seeing how Japanese, Burmese and Chinese handle i
 - **Closeness for every language pair:** ≈ close, ~ partial, ✕ no equivalent, with a note on the tricky pairs (は vs Chinese topic, ကို covering を and に, 了 is not た…). "No equivalent" entries are shown with a dashed border and still have examples showing what is used instead.
 - **Example n is the same sentence in every language**, so *By sentence* view lines them up.
 
+## 🗣 Sound changes (tone change and sandhi)
+Under an example, an amber **Said** box shows what you hear when it differs from what is written. Each chip opens its rule on the **Sound changes** page (home tile, or `#sounds`). That page explains each rule, gives examples, and lists every example in the concepts where the rule applies.
+- **Chinese, automatic:** two 3rd tones (你好 nǐ hǎo → ní hǎo), 不 before a 4th tone (bú qù), 一 before other tones (yí gè, yì tiān). The 3rd-tone rule always applies inside a word; across words it applies only after a one-syllable word.
+- **Burmese, automatic:** voicing inside a word (ကျောင်းသား → kyaung-dha, ကို → go), using `sandhi()` from language-utils (same as KG Chart). Words it gets wrong are listed in `MY_NO_SANDHI` in `js/catalyst-scripts.js`. Changes the Devanagari line already shows (ပါ → बा) aren't repeated.
+- **By hand** (`sd:` on an example in `data/grammar.yaml`): Japanese て/た forms and small っ, and the Burmese creaky-tone possessive (ကျွန်တော့်).
+- Rules and their examples live in `data/sounds.yaml`. Saved in the `sounds` column of `catalyst_examples` (re-run `sql/catalyst-schema.sql` once to add it). If the column is missing, the page works the changes out itself.
+- Switch off in ⚙︎ Settings → Sound changes.
+
+## 😏 Sarcasm zone (Burmese only)
+Deadpan "facts" that Burmese words prove: ostrich (ငှက်ကုလားအုတ် 'bird camel'), camel and giraffe (သစ်ကုလားအုတ် 'tree camel') are siblings; half a pig (ဝက်တစ်ဝက်) is one pig. Each card shows the sentence, Devanagari, audio and the claim; **Why is it "true"?** shows how the words are built. Content: `data/sarcasm.yaml` (built-in only, not in Supabase). Shown when Burmese is on. All `checked: false`.
+
 ## ✨ Sentences from your words (Claude)
 On each concept page, **New sentence from my words** asks Claude for a fresh sentence that uses this grammar point, in Japanese, Burmese, Chinese and Marathi, built only from words you have learned in KG Chart.
 - **Learned words** = every word in a KG Chart topic you completed, plus any word you answered correctly at least twice. Read with your own login, so only your progress.
@@ -40,6 +51,8 @@ js/catalyst-scripts.js      Devanagari (kana → Devanagari; loads language-util
 js/catalyst-audio.js        audio player
 js/catalyst-data.js         generated content (do not edit)
 data/grammar.yaml     THE CONTENT: edit this
+data/sounds.yaml      sound-change rules (🗣 page)
+data/sarcasm.yaml     😏 Sarcasm zone sentences (Burmese)
 tools/build_data.mjs  YAML → js/catalyst-data.js + sql/catalyst-seed.sql, with checks
 tools/gen_catalyst_audio.py Azure clips → Supabase Storage (same keys as gen_kg_audio.py)
 sql/catalyst-schema.sql     tables + RLS (run once)
@@ -56,7 +69,7 @@ tests/sentence.test.ts     tests for core.ts
 
 ## Changing content
 1. Edit `data/grammar.yaml`.
-2. `npm install` (once), then `node tools/build_data.mjs`. It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
+2. `npm install` (once), then `node tools/build_data.mjs` (or `--lu ../language-utils` to use a local clone of the converters). It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
 3. Commit `js/catalyst-data.js`, run `sql/catalyst-seed.sql` in Supabase, rerun the audio script for changed sentences.
 
 Japanese readings are written as pronounced: topic は → わ, へ → え, を → お. Mark an entry `checked: true` once a native speaker has checked it.

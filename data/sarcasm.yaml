@@ -1,0 +1,101 @@
+# Catalyst: 😏 Sarcasm zone (Burmese only). Deadpan "facts" that Burmese words prove.
+# Built with data/grammar.yaml by tools/build_data.mjs.
+#
+#   id    - lower_case_with_underscores
+#   t     - the Burmese sentence
+#   e     - the deadpan claim in English
+#   why   - the joke, explained
+#   parts - the words that make the joke: w (must be in t, gets highlighted), m (what it means / is made of)
+#   checked: true once a native speaker has checked it (all false for now)
+
+- id: camel_family
+  t: "ငှက်ကုလားအုတ်၊ ကုလားအုတ်နဲ့ သစ်ကုလားအုတ်က ညီအစ်ကိုမောင်နှမတွေပါ။"
+  e: "Ostrich, camel and giraffe are brothers and sisters."
+  why: "Burmese calls the ostrich a 'bird camel' and the giraffe a 'tree camel'. Same surname, same family."
+  parts:
+    - {w: "ငှက်ကုလားအုတ်", m: "ostrich = bird + camel"}
+    - {w: "ကုလားအုတ်", m: "camel"}
+    - {w: "သစ်ကုလားအုတ်", m: "giraffe = tree + camel"}
+    - {w: "ညီအစ်ကိုမောင်နှမ", m: "brothers and sisters"}
+
+- id: five_fish
+  t: "ငါ ငါး ငါးကောင် စားခဲ့တယ်။"
+  e: "I ate five fish. (I fish five.)"
+  why: "ငါ 'I', ငါး 'fish' and ငါး 'five': nga, nga, nga. Fish come in fives; the spelling says so."
+  parts:
+    - {w: "ငါ", m: "I (casual)"}
+    - {w: "ငါး", m: "fish, and also five"}
+
+- id: half_pig
+  t: "ဝက်တစ်ဝက်က ဝက်တစ်ကောင်ပဲ။"
+  e: "Half a pig is still one whole pig."
+  why: "'Half' is တစ်ဝက်, which reads exactly like 'one pig' (တစ် one + ဝက် pig). Burmese maths."
+  parts:
+    - {w: "ဝက်", m: "pig"}
+    - {w: "တစ်ဝက်", m: "half (= one + pig)"}
+
+- id: moon_month
+  t: "လ က တစ်လမှာ တစ်ခါပဲ ပြည့်တယ်။"
+  e: "The moon is full only once a month. Obviously: the moon is the month."
+  why: "လ means both moon and month, so 'one month' is literally 'one moon'."
+  parts:
+    - {w: "လ", m: "moon, and also month"}
+    - {w: "တစ်လ", m: "one month (one moon)"}
+
+- id: sun_stays
+  t: "နေက နေ့တိုင်း ကောင်းကင်မှာ နေတယ်။"
+  e: "The sun lives in the sky, every day."
+  why: "နေ 'sun', နေ 'to stay, live' and နေ့ 'day'. The sun stays all day; the words agree."
+  parts:
+    - {w: "နေက", m: "the sun (နေ)"}
+    - {w: "နေ့", m: "day"}
+    - {w: "နေတယ်", m: "lives, stays (နေ)"}
+
+- id: fridge
+  t: "ရေခဲသေတ္တာက ရေခဲ ထည့်တဲ့ သေတ္တာပဲ။"
+  e: "A fridge is a box for ice. Your food is only visiting."
+  why: "Ice is ရေခဲ 'water + harden', and the fridge is ရေခဲသေတ္တာ 'ice box'."
+  parts:
+    - {w: "ရေခဲသေတ္တာ", m: "fridge = ice + box"}
+    - {w: "ရေခဲ", m: "ice = water + harden"}
+
+- id: oil
+  t: "ရေနံက နံတဲ့ ရေပဲ။"
+  e: "Oil is just water that smells."
+  why: "Crude oil is ရေနံ: ရေ 'water' + နံ 'to stink'."
+  parts:
+    - {w: "ရေနံ", m: "crude oil = water + stink"}
+    - {w: "နံ", m: "to stink"}
+
+- id: onion_twins
+  t: "ကြက်သွန်နီနဲ့ ကြက်သွန်ဖြူက အမွှာတွေ။ တစ်ယောက်က ရှက်လို့ နီနေတာ။"
+  e: "Onion and garlic are twins. One of them is red because it's shy."
+  why: "The red onion is ကြက်သွန်နီ 'onion + red' and garlic is ကြက်သွန်ဖြူ 'onion + white'."
+  parts:
+    - {w: "ကြက်သွန်နီ", m: "red onion = onion + red"}
+    - {w: "ကြက်သွန်ဖြူ", m: "garlic = onion + white"}
+    - {w: "ရှက်", m: "shy, embarrassed"}
+
+- id: glasses
+  t: "မျက်မှန် တပ်ရင် မျက်စိ မှန်သွားတယ်။"
+  e: "Put on glasses and your eyes become correct."
+  why: "Glasses are မျက်မှန် 'eye + glass', and မှန် also means 'correct'."
+  parts:
+    - {w: "မျက်မှန်", m: "glasses = eye + glass"}
+    - {w: "မှန်သွားတယ်", m: "becomes correct (မှန်)"}
+
+- id: fire_cart
+  t: "မီးရထားမှာ မီး မရှိဘူး။"
+  e: "There is no fire on the fire-cart. Disappointing."
+  why: "A train is မီးရထား 'fire + cart', from the days of steam."
+  parts:
+    - {w: "မီးရထား", m: "train = fire + cart"}
+    - {w: "မီး", m: "fire"}
+
+- id: late_clock
+  t: "ငါ့နာရီက တစ်နာရီ နောက်ကျနေတယ်။"
+  e: "My clock is one clock late."
+  why: "နာရီ is both 'clock, watch' and 'hour'. (And ငါ့ 'my' is ငါ with the creaky tone: see 🗣 Sound changes.)"
+  parts:
+    - {w: "ငါ့နာရီ", m: "my clock"}
+    - {w: "တစ်နာရီ", m: "one hour (one clock)"}

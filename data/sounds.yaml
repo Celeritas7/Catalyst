@@ -1,0 +1,106 @@
+# Catalyst: sound changes (tone change and sandhi). Shown on the 🗣 Sound changes page.
+# Built with data/grammar.yaml by tools/build_data.mjs.
+#
+# One rule = one way the spoken form differs from the written one.
+#   id    - used by the examples (rule: zh_t3 …); lower_case_with_underscores
+#   lang  - ja, my, zh, mr
+#   short - chip label under an example
+#   how   - the rule in a sentence or two
+#   auto  - true: the app finds it by itself in every example (Chinese tones, Burmese voicing)
+#   ex    - examples for the rule card: t = text, r = reading (Chinese pinyin as written in a dictionary),
+#           e = English. Chinese and Burmese: the change is worked out by the app.
+#           Japanese and Marathi: from → to written here.
+# checked: false = not yet checked by a native speaker.
+
+- id: zh_t3
+  lang: zh
+  title: Two 3rd tones in a row
+  short: 3rd + 3rd
+  auto: true
+  how: "When two 3rd tones meet, the first is said as a 2nd tone. Pinyin keeps the dictionary tone, so you read nǐ hǎo but say ní hǎo. Inside a word it always happens; across words it depends on rhythm, and the app only joins a one-syllable word to the next one."
+  ex:
+    - {t: "你好", r: "nǐ hǎo", e: "hello"}
+    - {t: "我很好", r: "wǒ hěn hǎo", e: "I'm fine"}
+    - {t: "可以", r: "kěyǐ", e: "may, can"}
+
+- id: zh_bu
+  lang: zh
+  title: 不 before a 4th tone
+  short: 不 bù → bú
+  auto: true
+  how: "不 is bù, but before another 4th tone it becomes bú. Most textbooks (and this app's pinyin) already write it as said."
+  ex:
+    - {t: "不去", r: "bù qù", e: "not go"}
+    - {t: "不是", r: "bù shì", e: "is not"}
+    - {t: "不吃", r: "bù chī", e: "not eat (no change: 吃 is 1st tone)"}
+
+- id: zh_yi
+  lang: zh
+  title: 一 changes with the next tone
+  short: 一 yī → yí / yì
+  auto: true
+  how: "一 is yī when counting, at the end, and in ordinals (第一). Before a 4th tone it becomes yí; before a 1st, 2nd or 3rd tone it becomes yì."
+  ex:
+    - {t: "一个", r: "yī gè", e: "one (thing)"}
+    - {t: "一天", r: "yī tiān", e: "one day"}
+    - {t: "第一", r: "dì yī", e: "first (no change)"}
+
+- id: my_voice
+  lang: my
+  title: Voicing inside a word
+  short: voiced
+  auto: true
+  how: "Inside a word, k/kh → g, s/hs → z, t/ht → d, p/ph → b and th → dh when the syllable before ends in a vowel or a nasal. Not after a stop (-က် -စ် -တ် -ပ်), not at the start of a word, not after the negative မ or the prefix အ. Particles feel it most: ကို ko → go, တဲ့ teh → deh. The rule comes from language-utils (same as KG Chart) and has exceptions."
+  ex:
+    - {t: "ကျောင်းသား", e: "student (school + person)"}
+    - {t: "ဆေးခန်း", e: "clinic (medicine + room)"}
+    - {t: "လက်ဖက်ရည်", e: "tea (no change: after a stop)"}
+    - {t: "မကောင်းဘူး", e: "not good (no change: after negative မ)"}
+
+- id: my_creaky
+  lang: my
+  title: Creaky tone for 'my, your, his'
+  short: creaky tone
+  how: "A pronoun or kinship word that owns the next noun switches to the creaky tone (written ့) instead of taking ရဲ့. The vowel is short and tight."
+  ex:
+    - {t: "ကျွန်တော့် စာအုပ်", from: "ကျွန်တော်", to: "ကျွန်တော့်", e: "my book (male speaker)"}
+    - {t: "အမေ့ အိမ်", from: "အမေ", to: "အမေ့", e: "mother's house"}
+
+- id: ja_te
+  lang: ja
+  title: Verb + て / た
+  short: て/た form
+  how: "Before て and た the end of the verb changes: る, う, つ → っ (ふる → ふって), く → い (あるく → あるいて), む, ぶ, ぬ → ん and て becomes で (よむ → よんで). 行く is the exception: いって."
+  ex:
+    - {t: "降って", from: "ふる + て", to: "ふって", e: "falling (rain)"}
+    - {t: "歩いて", from: "あるく + て", to: "あるいて", e: "walking"}
+    - {t: "読んで", from: "よむ + て", to: "よんで", e: "reading"}
+
+- id: ja_sokuon
+  lang: ja
+  title: Small っ when words join
+  short: small っ
+  how: "When two kanji words join, a final く, つ or ち can drop and the next consonant doubles."
+  ex:
+    - {t: "学校", from: "がく + こう", to: "がっこう", e: "school"}
+    - {t: "日記", from: "にち + き", to: "にっき", e: "diary"}
+
+- id: ja_rendaku
+  lang: ja
+  title: Second word starts voiced (rendaku)
+  short: rendaku
+  how: "In many compounds the second word's first sound becomes voiced: k → g, s → z, t → d, h → b."
+  ex:
+    - {t: "人々", from: "ひと + ひと", to: "ひとびと", e: "people"}
+    - {t: "手紙", from: "て + かみ", to: "てがみ", e: "letter (hand + paper)"}
+    - {t: "本棚", from: "ほん + たな", to: "ほんだな", e: "bookshelf"}
+
+- id: mr_sandhi
+  lang: mr
+  title: "Marathi too: संधि"
+  short: संधि
+  how: "Your anchor language has sandhi as well, mostly in Sanskrit words: two vowels meet and merge into one."
+  ex:
+    - {t: "विद्यालय", from: "विद्या + आलय", to: "विद्यालय", e: "school (knowledge + house)"}
+    - {t: "सूर्योदय", from: "सूर्य + उदय", to: "सूर्योदय", e: "sunrise"}
+    - {t: "हिमालय", from: "हिम + आलय", to: "हिमालय", e: "the Himalaya (snow + house)"}
