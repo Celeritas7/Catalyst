@@ -1,0 +1,939 @@
+# Catalyst: content source. Edit this file, then run:  python tools/build_data.py
+# That writes data/grammar.json (the app's offline copy) and sql/catalyst-seed.sql (for Supabase).
+#
+# One concept = one grammar idea. Each language gets an entry:
+#   form  - the grammar form (or "—" when the language has no equivalent; then set none: true)
+#   note  - how this language does it / how it differs
+#   ex    - examples: t = native text, r = reading (kana for Japanese, pinyin for Chinese), e = English,
+#           h = the part to highlight (text or list of texts, must appear in t), dev = Devanagari override
+#   Japanese readings are written as pronounced: topic は → わ, へ → え, を → お.
+# levels: closeness of every language pair: close | partial | none.  pair_notes: why, for the tricky pairs.
+# Languages: ja Japanese, my Burmese, zh Chinese, mr Marathi (anchor), en English (anchor).
+# checked: false on an entry = not yet checked by a native speaker.
+
+- id: verb_final
+  group: Word order
+  title: Verb at the end
+  summary: "Where the verb goes. Japanese, Burmese and Marathi put it last; Chinese and English put it before the object."
+  levels: {ja-my: close, ja-zh: none, ja-mr: close, my-zh: none, my-mr: close, zh-mr: none, ja-en: none, my-en: none, zh-en: close, mr-en: none}
+  pair_notes:
+    ja-zh: "Chinese is S-V-O. With no particles, order alone tells you who does what: 狗咬人 'dog bites man' vs 人咬狗."
+  ja:
+    form: "S – O – V"
+    note: "The verb (or adjective, or です) comes last. The rest can move around because particles mark each role."
+    ex:
+      - {t: "私はりんごを食べます。", r: "わたし わ りんご お たべます", e: "I eat an apple.", h: "食べます"}
+      - {t: "弟が学校へ行った。", r: "おとうと が がっこう え いった", e: "My younger brother went to school.", h: "行った"}
+  my:
+    form: "S – O – V"
+    note: "Same as Japanese: verb last, followed by its ending (တယ်, မယ်…). Order before the verb is fairly free."
+    ex:
+      - {t: "ကျွန်တော် ပန်းသီး စားတယ်။", e: "I eat an apple. (male speaker; a woman says ကျွန်မ)", h: "စားတယ်"}
+      - {t: "ညီလေး ကျောင်း သွားတယ်။", e: "My younger brother goes to school.", h: "သွားတယ်"}
+  zh:
+    form: "S – V – O"
+    note: "Verb before the object, like English. No case particles, so you cannot move words freely."
+    ex:
+      - {t: "我吃苹果。", r: "wǒ chī píngguǒ", e: "I eat an apple.", h: "吃"}
+      - {t: "弟弟去学校了。", r: "dìdi qù xuéxiào le", e: "My younger brother went to school.", h: "去"}
+  mr:
+    form: "S – O – V"
+    note: "Verb last, as in Japanese and Burmese. Unlike them, the verb agrees with the subject's gender and number."
+    ex:
+      - {t: "मी सफरचंद खातो.", e: "I eat an apple. (male; a woman says खाते)", h: "खातो"}
+      - {t: "माझा भाऊ शाळेत गेला.", e: "My brother went to school.", h: "गेला"}
+  en:
+    form: "S – V – O"
+    note: "Verb before the object. Order carries the meaning."
+    ex:
+      - {t: "I eat an apple."}
+
+- id: modifier_before_noun
+  group: Word order
+  title: Describing clause before the noun
+  summary: "'The book I bought yesterday'. Here Chinese joins Japanese and Burmese: the whole clause comes before the noun."
+  levels: {ja-my: close, ja-zh: close, ja-mr: partial, my-zh: close, my-mr: partial, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "Same order. Burmese needs the linker တဲ့ between clause and noun; Japanese just puts the verb form there."
+    my-zh: "Burmese တဲ့ and Chinese 的 do the same job in the same place."
+    ja-mr: "Marathi uses participle forms (-लेला, -णारा) for short clauses. Long ones switch to जो … तो."
+  ja:
+    form: "verb (plain form) + noun"
+    note: "No linking word. The plain verb form sits directly in front of the noun."
+    ex:
+      - {t: "昨日買った本", r: "きのう かった ほん", e: "the book I bought yesterday", h: "買った"}
+      - {t: "日本語を話す人", r: "にほんご お はなす ひと", e: "a person who speaks Japanese", h: "話す"}
+  my:
+    form: "verb + တဲ့ + noun"
+    note: "The clause ends with တဲ့ (written style: သော), then the noun."
+    ex:
+      - {t: "မနေ့က ဝယ်ခဲ့တဲ့ စာအုပ်", e: "the book I bought yesterday", h: "တဲ့"}
+      - {t: "ဂျပန်စကား ပြောတဲ့ လူ", e: "a person who speaks Japanese", h: "တဲ့"}
+  zh:
+    form: "clause + 的 + noun"
+    note: "The clause ends with 的, then the noun: the same order as Japanese and Burmese, unlike the rest of Chinese."
+    ex:
+      - {t: "昨天买的书", r: "zuótiān mǎi de shū", e: "the book I bought yesterday", h: "的"}
+      - {t: "说日语的人", r: "shuō Rìyǔ de rén", e: "a person who speaks Japanese", h: "的"}
+  mr:
+    form: "participle (-लेला / -णारा) + noun"
+    note: "The verb becomes an adjective-like participle that agrees with the noun."
+    ex:
+      - {t: "काल घेतलेलं पुस्तक", e: "the book bought yesterday", h: "घेतलेलं"}
+      - {t: "जपानी बोलणारा माणूस", e: "a man who speaks Japanese", h: "बोलणारा"}
+  en:
+    form: "noun + who / that + clause"
+    note: "The clause comes after the noun, with a relative word."
+    ex:
+      - {t: "the book that I bought yesterday"}
+
+- id: topic_wa
+  group: Particles
+  title: Topic marker は
+  summary: "は says 'as for X…'. Nothing else matches it exactly, and this is where false matches start."
+  levels: {ja-my: partial, ja-zh: none, ja-mr: partial, my-zh: none, my-mr: partial, zh-mr: none, ja-en: partial, my-en: partial, zh-en: none, mr-en: partial}
+  pair_notes:
+    ja-zh: "Chinese puts the topic first but has no particle for it. Don't map は onto 是 or 呢."
+    ja-my: "Burmese ကတော့ is contrastive 'as for', like は used for contrast. Plain は usually becomes က or nothing."
+  ja:
+    form: "は (read わ)"
+    note: "Marks what the sentence is about, which is often not the subject. Also shows contrast."
+    ex:
+      - {t: "私は学生です。", r: "わたし わ がくせい です", e: "I am a student.", h: "は"}
+      - {t: "象は鼻が長い。", r: "ぞう わ はな が ながい", e: "Elephants have long trunks. (as for elephants, the trunk is long)", h: "は"}
+  my:
+    form: "ကတော့ / ဟာ / (nothing)"
+    note: "No exact equivalent. ကတော့ = 'as for' with contrast; ဟာ marks a topic in careful speech; often nothing at all."
+    ex:
+      - {t: "ကျွန်တော်ကတော့ လက်ဖက်ရည် သောက်မယ်။", e: "As for me, I'll drink tea.", h: "ကတော့"}
+      - {t: "ဆင်က နှာမောင်း ရှည်တယ်။", e: "Elephants have long trunks.", h: "က"}
+  zh:
+    form: "— (topic goes first)"
+    none: true
+    note: "No topic particle. You put the topic at the start of the sentence and say the rest about it."
+    ex:
+      - {t: "这本书我看过。", r: "zhè běn shū wǒ kàn guo", e: "This book, I've read it.", h: "这本书"}
+      - {t: "大象鼻子很长。", r: "dàxiàng bízi hěn cháng", e: "Elephants have long trunks.", h: "大象"}
+  mr:
+    form: "तर (contrast) / (nothing)"
+    note: "तर after a word gives 'as for…', with contrast. Plain topics have no marker."
+    ex:
+      - {t: "मी तर चहा घेईन.", e: "As for me, I'll have tea.", h: "तर"}
+      - {t: "हत्तीची सोंड लांब असते.", e: "An elephant's trunk is long. (Marathi says 'of')", h: "ची"}
+  en:
+    form: "as for … / word order, stress"
+    note: "Only a phrase ('as for') or stress."
+    ex:
+      - {t: "As for me, I'll have tea."}
+
+- id: subject_ga
+  group: Particles
+  title: Subject marker が
+  summary: "が marks the subject, especially new information and after question words."
+  levels: {ja-my: partial, ja-zh: none, ja-mr: partial, my-zh: none, my-mr: partial, zh-mr: none, ja-en: none, my-en: none, zh-en: close, mr-en: none}
+  pair_notes:
+    ja-my: "Burmese က marks the subject, often with a 'this one, not others' feel. It is also the word for 'from'."
+    ja-mr: "Marathi ने is not a subject marker: it marks the doer only with past transitive verbs."
+  ja:
+    form: "が"
+    note: "New or focused subject; always after question words (誰が, not 誰は)."
+    ex:
+      - {t: "誰が来ましたか。", r: "だれ が きました か", e: "Who came?", h: "が"}
+      - {t: "雨が降っています。", r: "あめ が ふって います", e: "It's raining. (rain is falling)", h: "が"}
+  my:
+    form: "က"
+    note: "Marks the subject when it matters who does it. Often left out."
+    ex:
+      - {t: "ကျွန်တော်က လုပ်မယ်။", e: "I'll do it. (me, not someone else)", h: "က"}
+      - {t: "ဘယ်သူက ပြောတာလဲ။", e: "Who said it?", h: "က"}
+  zh:
+    form: "— (position before the verb)"
+    none: true
+    note: "No subject particle. Position does it, and for weather the 'subject' even comes after the verb."
+    ex:
+      - {t: "谁来了？", r: "shéi lái le", e: "Who came?", h: "谁"}
+      - {t: "下雨了。", r: "xià yǔ le", e: "It's raining. (rain comes after the verb)", h: "下雨"}
+  mr:
+    form: "ने (past transitive only)"
+    note: "ने marks the doer only when the verb is past and takes an object. Otherwise there is no marker."
+    ex:
+      - {t: "रामने पुस्तक वाचलं.", e: "Ram read the book.", h: "ने"}
+      - {t: "कोण आलं?", e: "Who came? (no marker)", h: "कोण"}
+  en:
+    form: "— (position before the verb)"
+    none: true
+    note: "No marker; the subject comes before the verb."
+    ex:
+      - {t: "Who came?"}
+
+- id: object_o
+  group: Particles
+  title: Object marker を
+  summary: "を marks the direct object. Burmese and Marathi mark objects only some of the time, in the same way."
+  levels: {ja-my: partial, ja-zh: none, ja-mr: partial, my-zh: none, my-mr: close, zh-mr: none, ja-en: none, my-en: none, zh-en: close, mr-en: none}
+  pair_notes:
+    ja-my: "を is on every object. Burmese ကို is mostly used for people and specific things; 'drink water' has none."
+    my-mr: "Close match: ကို and ला both mark people and definite objects, and both are left off for plain things."
+  ja:
+    form: "を (read お)"
+    note: "On every direct object."
+    ex:
+      - {t: "水を飲みます。", r: "みず お のみます", e: "I drink water.", h: "を"}
+      - {t: "毎朝新聞を読む。", r: "まいあさ しんぶん お よむ", e: "I read the newspaper every morning.", h: "を"}
+  my:
+    form: "ကို (people, specific things)"
+    note: "Used for people and 'this / that' things. Plain objects take nothing."
+    ex:
+      - {t: "ရေ သောက်တယ်။", e: "I drink water. (no marker)", h: "ရေ"}
+      - {t: "သူ့ကို ချစ်တယ်။", e: "I love him / her.", h: "ကို"}
+      - {t: "ဒီ စာအုပ်ကို ဖတ်ပြီးပြီ။", e: "I've finished reading this book.", h: "ကို"}
+  zh:
+    form: "— (after the verb); 把 for a moved object"
+    none: true
+    note: "No object particle. 把 moves a specific object before the verb, but it is a different construction."
+    ex:
+      - {t: "我喝水。", r: "wǒ hē shuǐ", e: "I drink water.", h: "水"}
+      - {t: "我把书看完了。", r: "wǒ bǎ shū kàn wán le", e: "I've finished reading the book.", h: "把"}
+  mr:
+    form: "ला (people, specific things)"
+    note: "ला on people and some definite objects; things usually take nothing."
+    ex:
+      - {t: "मी पाणी पितो.", e: "I drink water. (no marker)", h: "पाणी"}
+      - {t: "मी त्याला ओळखतो.", e: "I know him.", h: "ला"}
+  en:
+    form: "— (after the verb)"
+    none: true
+    note: "Position only."
+    ex:
+      - {t: "I drink water."}
+
+- id: place_de_ni
+  group: Particles
+  title: "Place: で (action) vs に (existence)"
+  summary: "Japanese splits 'at a place' in two. Burmese, Chinese and Marathi use one word for both."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "One Burmese particle, two Japanese ones: မှာ = で and に. Going the other way, you must choose."
+    my-mr: "Both use one ending for 'at / in': မှာ and -त / मध्ये."
+  ja:
+    form: "で / に"
+    note: "で = where an action happens. に = where something is (with いる / ある)."
+    ex:
+      - {t: "図書館で勉強します。", r: "としょかん で べんきょう します", e: "I study at the library.", h: "で"}
+      - {t: "図書館に猫がいます。", r: "としょかん に ねこ が います", e: "There is a cat in the library.", h: "に"}
+  my:
+    form: "မှာ"
+    note: "One particle for both: where something happens and where something is."
+    ex:
+      - {t: "စာကြည့်တိုက်မှာ စာ ကျက်တယ်။", e: "I study at the library.", h: "မှာ"}
+      - {t: "စာကြည့်တိုက်မှာ ကြောင် ရှိတယ်။", e: "There is a cat in the library.", h: "မှာ"}
+  zh:
+    form: "在 … / place + 里 + 有"
+    note: "在 + place before the verb for actions. 'There is' uses place + 里 + 有, without 在."
+    ex:
+      - {t: "我在图书馆学习。", r: "wǒ zài túshūguǎn xuéxí", e: "I study at the library.", h: "在"}
+      - {t: "图书馆里有一只猫。", r: "túshūguǎn lǐ yǒu yì zhī māo", e: "There is a cat in the library.", h: "里有"}
+  mr:
+    form: "-त / मध्ये"
+    note: "One locative ending for both."
+    ex:
+      - {t: "मी ग्रंथालयात अभ्यास करतो.", e: "I study at the library.", h: "ग्रंथालयात"}
+      - {t: "ग्रंथालयात एक मांजर आहे.", e: "There is a cat in the library.", h: "ग्रंथालयात"}
+  en:
+    form: "at / in"
+    note: "Prepositions, chosen by the place, not by action vs existence."
+    ex:
+      - {t: "I study at the library."}
+
+- id: direction_ni_e
+  group: Particles
+  title: "Going to / giving to: に・へ"
+  summary: "Goal of movement and the person you give to. Burmese and Marathi reuse their object marker for this."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "Burmese ကို covers を (object), に and へ (goal, receiver). Don't expect a separate 'to' word."
+    my-mr: "Exact pair: ကို and ला both mean 'to (a place / a person)' and also mark people as objects."
+  ja:
+    form: "に / へ (read え)"
+    note: "へ = direction; に = goal or receiver. Different from を."
+    ex:
+      - {t: "東京へ行きます。", r: "とうきょう え いきます", e: "I'm going to Tokyo.", h: "へ"}
+      - {t: "友達に手紙を書く。", r: "ともだち に てがみ お かく", e: "I write a letter to a friend.", h: "に"}
+  my:
+    form: "ကို"
+    note: "The same ကို as for objects, used for where you go and who receives."
+    ex:
+      - {t: "ရန်ကုန်ကို သွားမယ်။", e: "I'll go to Yangon.", h: "ကို"}
+      - {t: "သူငယ်ချင်းကို စာ ရေးတယ်။", e: "I write a letter to a friend.", h: "ကို"}
+  zh:
+    form: "— (去 + place) / 给 (to a person)"
+    note: "Place goes straight after 去 with no marker. The receiver uses 给 before the verb."
+    ex:
+      - {t: "我去东京。", r: "wǒ qù Dōngjīng", e: "I'm going to Tokyo.", h: "去"}
+      - {t: "我给朋友写信。", r: "wǒ gěi péngyou xiě xìn", e: "I write a letter to a friend.", h: "给"}
+  mr:
+    form: "ला"
+    note: "One ending for the goal, the receiver, and people as objects, like Burmese ကို."
+    ex:
+      - {t: "मी पुण्याला जातो.", e: "I'm going to Pune.", h: "ला"}
+      - {t: "मी मित्राला पत्र लिहितो.", e: "I write a letter to a friend.", h: "ला"}
+  en:
+    form: "to"
+    note: "One preposition for place and person."
+    ex:
+      - {t: "I'm going to Tokyo."}
+
+- id: also_mo
+  group: Particles
+  title: "Also: も"
+  summary: "'Me too'. Japanese, Burmese and Marathi attach it to the noun; Chinese puts it before the verb."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-zh: "も follows the noun; 也 is an adverb before the verb. 'Both A and B' in Chinese uses 都."
+  ja:
+    form: "も"
+    note: "Replaces は / が / を after the noun."
+    ex:
+      - {t: "私も行きます。", r: "わたし も いきます", e: "I'm going too.", h: "も"}
+      - {t: "肉も魚も食べます。", r: "にく も さかな も たべます", e: "I eat both meat and fish.", h: "も"}
+  my:
+    form: "လည်း"
+    note: "After the noun, in the same place as も."
+    ex:
+      - {t: "ကျွန်တော်လည်း သွားမယ်။", e: "I'm going too.", h: "လည်း"}
+      - {t: "အသားလည်း စားတယ်၊ ငါးလည်း စားတယ်။", e: "I eat meat and I eat fish too.", h: "လည်း"}
+  zh:
+    form: "也 (before the verb) / 都"
+    note: "也 goes before the verb, not after the noun. 'Both … and …' moves the nouns first and uses 都."
+    ex:
+      - {t: "我也去。", r: "wǒ yě qù", e: "I'm going too.", h: "也"}
+      - {t: "肉和鱼我都吃。", r: "ròu hé yú wǒ dōu chī", e: "I eat both meat and fish.", h: "都"}
+  mr:
+    form: "-ही / पण"
+    note: "-ही sticks to the noun, exactly where も goes."
+    ex:
+      - {t: "मीही येईन.", e: "I'll come too.", h: "ही"}
+      - {t: "मी मांसही खातो आणि मासेही खातो.", e: "I eat meat and fish too.", h: "ही"}
+  en:
+    form: "too / also"
+    note: "At the end or before the verb."
+    ex:
+      - {t: "I'm going too."}
+
+- id: from_until
+  group: Particles
+  title: "From … until: から・まで"
+  summary: "Start and end points, in time or space."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-zh: "Chinese 从 … 到 go before the nouns, like English prepositions."
+    ja-my: "Burmese က alone can mean 'from', but it is also the subject marker; ကနေ makes 'from' clear."
+  ja:
+    form: "から … まで"
+    note: "After the noun."
+    ex:
+      - {t: "九時から五時まで働きます。", r: "くじ から ごじ まで はたらきます", e: "I work from nine to five.", h: ["から", "まで"]}
+      - {t: "駅から歩いて来た。", r: "えき から あるいて きた", e: "I walked here from the station.", h: "から"}
+  my:
+    form: "ကနေ / မှ … အထိ / ထိ"
+    note: "After the noun, same place as Japanese."
+    ex:
+      - {t: "ကိုးနာရီကနေ ငါးနာရီအထိ အလုပ်လုပ်တယ်။", e: "I work from nine to five.", h: ["ကနေ", "အထိ"]}
+      - {t: "ဘူတာကနေ လမ်းလျှောက် လာတယ်။", e: "I walked here from the station.", h: "ကနေ"}
+  zh:
+    form: "从 … 到 …"
+    note: "Before the noun, and the whole phrase goes before the verb."
+    ex:
+      - {t: "我从九点到五点工作。", r: "wǒ cóng jiǔ diǎn dào wǔ diǎn gōngzuò", e: "I work from nine to five.", h: ["从", "到"]}
+      - {t: "我从车站走过来。", r: "wǒ cóng chēzhàn zǒu guòlai", e: "I walked here from the station.", h: "从"}
+  mr:
+    form: "-पासून … -पर्यंत"
+    note: "After the noun, like Japanese and Burmese."
+    ex:
+      - {t: "मी नऊपासून पाचपर्यंत काम करतो.", e: "I work from nine to five.", h: ["पासून", "पर्यंत"]}
+      - {t: "मी स्टेशनपासून चालत आलो.", e: "I walked here from the station.", h: "पासून"}
+  en:
+    form: "from … to / until"
+    note: "Prepositions before the noun."
+    ex:
+      - {t: "I work from nine to five."}
+
+- id: possessive_no
+  group: Particles
+  title: "Possession: の"
+  summary: "'My book', 'the teacher's car'."
+  levels: {ja-my: close, ja-zh: close, ja-mr: partial, my-zh: close, my-mr: partial, zh-mr: partial, ja-en: close, my-en: close, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-mr: "Marathi चा / ची / चे changes with the gender of the thing owned; の never changes."
+    ja-zh: "Close, but Chinese drops 的 for family and close ties: 我妈妈, not usually 我的妈妈."
+  ja:
+    form: "の"
+    note: "Between owner and thing. Also for kinds: 日本の車."
+    ex:
+      - {t: "先生の本", r: "せんせい の ほん", e: "the teacher's book", h: "の"}
+      - {t: "日本の車", r: "にほん の くるま", e: "a Japanese car", h: "の"}
+  my:
+    form: "ရဲ့ (tone change for 'my, your')"
+    note: "ရဲ့ after the owner. For pronouns the tone changes instead: ကျွန်တော် → ကျွန်တော့်."
+    ex:
+      - {t: "ဆရာရဲ့ စာအုပ်", e: "the teacher's book", h: "ရဲ့"}
+      - {t: "ကျွန်တော့် စာအုပ်", e: "my book (creaky tone ့ instead of ရဲ့)", h: "ကျွန်တော့်"}
+  zh:
+    form: "的"
+    note: "Between owner and thing; left out for family and close ties."
+    ex:
+      - {t: "老师的书", r: "lǎoshī de shū", e: "the teacher's book", h: "的"}
+      - {t: "我妈妈", r: "wǒ māma", e: "my mother (no 的)", h: "我"}
+  mr:
+    form: "-चा / -ची / -चे"
+    note: "The ending agrees with the gender and number of the thing owned."
+    ex:
+      - {t: "शिक्षकांचं पुस्तक", e: "the teacher's book", h: "चं"}
+      - {t: "माझी गाडी", e: "my car (गाडी is feminine, so माझी)", h: "माझी"}
+  en:
+    form: "'s / of"
+    note: "Fixed form."
+    ex:
+      - {t: "the teacher's book"}
+
+- id: with_to
+  group: Particles
+  title: "And / with: と"
+  summary: "Japanese と means both 'and' (between nouns) and 'with'. Burmese and Chinese do the same; Marathi and English split it."
+  levels: {ja-my: close, ja-zh: close, ja-mr: partial, my-zh: close, my-mr: partial, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: close}
+  pair_notes:
+    ja-zh: "和 / 跟 cover both meanings, but 'with someone' goes before the verb, often with 一起."
+  ja:
+    form: "と"
+    note: "'A と B' = A and B. 'person と' = with a person."
+    ex:
+      - {t: "パンと卵を買った。", r: "ぱん と たまご お かった", e: "I bought bread and eggs.", h: "と"}
+      - {t: "友達と映画を見た。", r: "ともだち と えいが お みた", e: "I watched a film with a friend.", h: "と"}
+  my:
+    form: "နဲ့"
+    note: "Same double job as と."
+    ex:
+      - {t: "ပေါင်မုန့်နဲ့ ကြက်ဥ ဝယ်ခဲ့တယ်။", e: "I bought bread and eggs.", h: "နဲ့"}
+      - {t: "သူငယ်ချင်းနဲ့ ရုပ်ရှင် ကြည့်ခဲ့တယ်။", e: "I watched a film with a friend.", h: "နဲ့"}
+  zh:
+    form: "和 / 跟 (… 一起)"
+    note: "Both mean 'and' and 'with'. 'With' sits before the verb."
+    ex:
+      - {t: "我买了面包和鸡蛋。", r: "wǒ mǎi le miànbāo hé jīdàn", e: "I bought bread and eggs.", h: "和"}
+      - {t: "我跟朋友一起看了电影。", r: "wǒ gēn péngyou yìqǐ kàn le diànyǐng", e: "I watched a film with a friend.", h: "跟"}
+  mr:
+    form: "आणि / -बरोबर"
+    note: "Two different words: आणि for 'and', -बरोबर (or सोबत) for 'with'."
+    ex:
+      - {t: "मी पाव आणि अंडी घेतली.", e: "I bought bread and eggs.", h: "आणि"}
+      - {t: "मी मित्राबरोबर सिनेमा पाहिला.", e: "I watched a film with a friend.", h: "बरोबर"}
+  en:
+    form: "and / with"
+    note: "Two different words."
+    ex:
+      - {t: "I bought bread and eggs."}
+
+- id: yes_no_ka
+  group: Questions and endings
+  title: "Yes/no question: か"
+  summary: "Add a particle at the end. All four Asian languages do this; English changes the word order instead."
+  levels: {ja-my: close, ja-zh: close, ja-mr: close, my-zh: close, my-mr: close, zh-mr: close, ja-en: none, my-en: none, zh-en: none, mr-en: none}
+  pair_notes:
+    ja-my: "Close, but Burmese လား is only for yes/no. Questions with 'what, where' need လဲ (see next concept)."
+  ja:
+    form: "か"
+    note: "At the very end. In casual speech, rising tone alone."
+    ex:
+      - {t: "学生ですか。", r: "がくせい です か", e: "Are you a student?", h: "か"}
+      - {t: "コーヒーを飲みますか。", r: "こーひー お のみます か", e: "Do you drink coffee?", h: "か"}
+  my:
+    form: "လား"
+    note: "Replaces or follows the ending: မယ် → မလား, တယ် → သလား."
+    ex:
+      - {t: "ကျောင်းသားလား။", e: "Are you a student?", h: "လား"}
+      - {t: "ကော်ဖီ သောက်မလား။", e: "Will you have coffee?", h: "လား"}
+  zh:
+    form: "吗"
+    note: "At the end of a normal statement."
+    ex:
+      - {t: "你是学生吗？", r: "nǐ shì xuésheng ma", e: "Are you a student?", h: "吗"}
+      - {t: "你喝咖啡吗？", r: "nǐ hē kāfēi ma", e: "Do you drink coffee?", h: "吗"}
+  mr:
+    form: "का"
+    note: "At the end (or the start) of a normal statement."
+    ex:
+      - {t: "तू विद्यार्थी आहेस का?", e: "Are you a student?", h: "का"}
+      - {t: "तू कॉफी घेणार का?", e: "Will you have coffee?", h: "का"}
+  en:
+    form: "— (swap verb and subject)"
+    none: true
+    note: "No particle; 'You are' becomes 'Are you'."
+    ex:
+      - {t: "Are you a student?"}
+
+- id: wh_question
+  group: Questions and endings
+  title: "Question words: 何・どこ"
+  summary: "The question word stays where the answer would go. What happens at the end differs."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: partial, my-mr: partial, zh-mr: close, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "Japanese uses か for both kinds of question. Burmese has two endings: လား (yes/no) and လဲ (with a question word)."
+    ja-zh: "Never add 吗 to a 什么 question; with 吗 it means 'something'."
+  ja:
+    form: "question word + か"
+    note: "Same か as yes/no questions."
+    ex:
+      - {t: "何を食べますか。", r: "なに お たべます か", e: "What will you eat?", h: ["何", "か"]}
+      - {t: "どこへ行きますか。", r: "どこ え いきます か", e: "Where are you going?", h: ["どこ", "か"]}
+  my:
+    form: "question word + လဲ"
+    note: "လဲ, not လား, when there is a question word."
+    ex:
+      - {t: "ဘာ စားမလဲ။", e: "What will you eat?", h: ["ဘာ", "လဲ"]}
+      - {t: "ဘယ်ကို သွားမလဲ။", e: "Where are you going?", h: ["ဘယ်", "လဲ"]}
+  zh:
+    form: "question word, no 吗"
+    note: "The question word alone makes it a question."
+    ex:
+      - {t: "你吃什么？", r: "nǐ chī shénme", e: "What will you eat?", h: "什么"}
+      - {t: "你去哪儿？", r: "nǐ qù nǎr", e: "Where are you going?", h: "哪儿"}
+  mr:
+    form: "question word, no का"
+    note: "Like Chinese: no particle when there is a question word."
+    ex:
+      - {t: "तू काय खाणार?", e: "What will you eat?", h: "काय"}
+      - {t: "तू कुठे जातोस?", e: "Where are you going?", h: "कुठे"}
+  en:
+    form: "question word moves to the front"
+    note: "Plus do / are before the subject."
+    ex:
+      - {t: "What will you eat?"}
+
+- id: tag_ne
+  group: Questions and endings
+  title: "'…, right?': ね"
+  summary: "A small word at the end that asks the listener to agree."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "ね ≈ နော်. Japanese よ ('I'm telling you') has no single Burmese word."
+    ja-mr: "ね ≈ ना, at the end of the sentence."
+  ja:
+    form: "ね (agree?) / よ (I tell you)"
+    note: "ね checks agreement; よ gives new information."
+    ex:
+      - {t: "今日は暑いですね。", r: "きょう わ あつい です ね", e: "It's hot today, isn't it?", h: "ね"}
+      - {t: "もう時間ですよ。", r: "もう じかん です よ", e: "It's time already, you know.", h: "よ"}
+  my:
+    form: "နော်"
+    note: "At the end: 'right?', 'OK?'."
+    ex:
+      - {t: "ဒီနေ့ ပူတယ် နော်။", e: "It's hot today, isn't it?", h: "နော်"}
+      - {t: "မနက်ဖြန် လာခဲ့ နော်။", e: "Come tomorrow, OK?", h: "နော်"}
+  zh:
+    form: "吧 / 啊"
+    note: "吧 = 'I suppose, right?'; 啊 softens. Neither is an exact ね."
+    ex:
+      - {t: "你是日本人吧？", r: "nǐ shì Rìběnrén ba", e: "You're Japanese, right?", h: "吧"}
+      - {t: "今天很热啊。", r: "jīntiān hěn rè a", e: "It's really hot today.", h: "啊"}
+  mr:
+    form: "ना"
+    note: "At the end: 'right?', or 'do…' in a request."
+    ex:
+      - {t: "आज खूप गरम आहे ना?", e: "It's very hot today, isn't it?", h: "ना"}
+      - {t: "उद्या ये ना.", e: "Do come tomorrow.", h: "ना"}
+  en:
+    form: "…, isn't it? / right?"
+    note: "A tag question that copies the verb."
+    ex:
+      - {t: "It's hot today, isn't it?"}
+
+- id: past
+  group: Tense and aspect
+  title: "Past: た・ました"
+  summary: "Japanese and Marathi have a real past tense. Burmese marks it lightly, and Chinese 了 is not a past tense."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: partial, zh-mr: partial, ja-en: close, my-en: partial, zh-en: partial, mr-en: close}
+  pair_notes:
+    ja-zh: "False match: 了 means 'completed', not 'past'. 他昨天很忙 is past with no 了, and 了 can appear in future plans."
+    ja-my: "Burmese တယ် covers past and present; ခဲ့ adds 'past' only when needed."
+    ja-mr: "Both are true past tenses; Marathi also agrees with gender (and, for transitive verbs, with the object)."
+  ja:
+    form: "た / ました"
+    note: "Always marked. Also used for 'already done'."
+    ex:
+      - {t: "昨日映画を見ました。", r: "きのう えいが お みました", e: "I watched a film yesterday.", h: "ました"}
+      - {t: "もう食べた。", r: "もう たべた", e: "I've already eaten.", h: "食べた"}
+  my:
+    form: "(ခဲ့) တယ် / ပြီ"
+    note: "တယ် = real, not future (past or present). ခဲ့ makes it clearly past. ပြီ = already / now."
+    ex:
+      - {t: "မနေ့က ရုပ်ရှင် ကြည့်ခဲ့တယ်။", e: "I watched a film yesterday.", h: "ခဲ့"}
+      - {t: "စားပြီးပြီ။", e: "I've already eaten.", h: "ပြီးပြီ"}
+  zh:
+    form: "了 (completed) / time word"
+    note: "No tense. A time word sets the time; 了 marks a finished action."
+    ex:
+      - {t: "我昨天看了电影。", r: "wǒ zuótiān kàn le diànyǐng", e: "I watched a film yesterday.", h: "了"}
+      - {t: "我已经吃了。", r: "wǒ yǐjīng chī le", e: "I've already eaten.", h: "已经"}
+  mr:
+    form: "past tense (-ला / -ली / -लं)"
+    note: "Real past tense; the ending agrees in gender and number."
+    ex:
+      - {t: "मी काल सिनेमा पाहिला.", e: "I watched a film yesterday. (agrees with सिनेमा)", h: "पाहिला"}
+      - {t: "मी जेवलो.", e: "I ate. (male)", h: "जेवलो"}
+  en:
+    form: "-ed / irregular past"
+    note: "Real past tense."
+    ex:
+      - {t: "I watched a film yesterday."}
+
+- id: progressive
+  group: Tense and aspect
+  title: "Ongoing action / state: ている"
+  summary: "ている means both 'is doing' and 'is in a state'. The others split these two."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: close, my-mr: partial, zh-mr: partial, ja-en: partial, my-en: close, zh-en: close, mr-en: close}
+  pair_notes:
+    ja-my: "ている splits in two: နေ (in progress) and ထား (state left after an action)."
+    my-zh: "Neat pair: နေ ≈ 在 / 正在 (in progress), ထား ≈ 着 (state)."
+  ja:
+    form: "て + いる"
+    note: "Action in progress, or the state after a change (窓が開いている = the window is open)."
+    ex:
+      - {t: "今雨が降っている。", r: "いま あめ が ふって いる", e: "It's raining now.", h: "ている"}
+      - {t: "窓が開いている。", r: "まど が あいて いる", e: "The window is open.", h: "ている"}
+  my:
+    form: "နေ (doing) / ထား (state)"
+    note: "Two forms. နေ for in progress; ထား for a state someone left."
+    ex:
+      - {t: "အခု မိုး ရွာနေတယ်။", e: "It's raining now.", h: "နေ"}
+      - {t: "ပြတင်းပေါက် ဖွင့်ထားတယ်။", e: "The window is (left) open.", h: "ထား"}
+  zh:
+    form: "正在 / 在 (doing) / 着 (state)"
+    note: "正在 before the verb for in progress; 着 after the verb for a lasting state."
+    ex:
+      - {t: "外面正在下雨。", r: "wàimiàn zhèngzài xià yǔ", e: "It's raining outside.", h: "正在"}
+      - {t: "窗户开着。", r: "chuānghu kāi zhe", e: "The window is open.", h: "着"}
+  mr:
+    form: "-त आहे (doing) / adjective (state)"
+    note: "Present continuous for in progress; a state is said with an adjective."
+    ex:
+      - {t: "बाहेर पाऊस पडतो आहे.", e: "It's raining outside.", h: "पडतो आहे"}
+      - {t: "खिडकी उघडी आहे.", e: "The window is open.", h: "उघडी"}
+  en:
+    form: "be + -ing"
+    note: "Only in progress; a state uses an adjective (open)."
+    ex:
+      - {t: "It's raining now."}
+
+- id: future
+  group: Tense and aspect
+  title: "Future / plans"
+  summary: "Japanese and Chinese have no future tense; Burmese and Marathi do."
+  levels: {ja-my: partial, ja-zh: close, ja-mr: partial, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: close, zh-en: partial, mr-en: close}
+  pair_notes:
+    ja-my: "Japanese uses the ordinary non-past form for the future. Burmese changes the ending: တယ် → မယ်."
+    ja-zh: "Both just add a time word (明日 / 明天). Plans: つもり ≈ 打算."
+  ja:
+    form: "non-past (る / ます) / つもり"
+    note: "No future tense. The time word does the work; つもり = intend to."
+    ex:
+      - {t: "明日行きます。", r: "あした いきます", e: "I'll go tomorrow.", h: "明日"}
+      - {t: "来年日本語を勉強するつもりです。", r: "らいねん にほんご お べんきょう する つもり です", e: "I plan to study Japanese next year.", h: "つもり"}
+  my:
+    form: "မယ်"
+    note: "Future ending, replacing တယ်."
+    ex:
+      - {t: "မနက်ဖြန် သွားမယ်။", e: "I'll go tomorrow.", h: "မယ်"}
+      - {t: "နောက်နှစ် ဂျပန်စာ သင်မယ်။", e: "I'll study Japanese next year.", h: "မယ်"}
+  zh:
+    form: "time word / 要 / 打算"
+    note: "No tense; 要 = going to, 打算 = plan to."
+    ex:
+      - {t: "我明天去。", r: "wǒ míngtiān qù", e: "I'll go tomorrow.", h: "明天"}
+      - {t: "明年我打算学日语。", r: "míngnián wǒ dǎsuàn xué Rìyǔ", e: "I plan to study Japanese next year.", h: "打算"}
+  mr:
+    form: "future tense (-ईन) / -णार आहे"
+    note: "Real future endings; -णार आहे = going to."
+    ex:
+      - {t: "मी उद्या जाईन.", e: "I'll go tomorrow.", h: "जाईन"}
+      - {t: "पुढच्या वर्षी मी जपानी शिकणार आहे.", e: "I'm going to study Japanese next year.", h: "शिकणार"}
+  en:
+    form: "will / going to"
+    note: "Helper verbs."
+    ex:
+      - {t: "I'll go tomorrow."}
+
+- id: experience
+  group: Tense and aspect
+  title: "Have done before: たことがある"
+  summary: "'I have climbed Fuji.' Japanese, Burmese and Chinese each have one fixed form; Marathi has none."
+  levels: {ja-my: close, ja-zh: close, ja-mr: none, my-zh: close, my-mr: none, zh-mr: none, ja-en: partial, my-en: partial, zh-en: partial, mr-en: close}
+  pair_notes:
+    my-zh: "ဖူး and 过 sit in the same place, right after the verb."
+    ja-mr: "No dedicated form in Marathi; use the perfect tense, often with कधी ('ever')."
+  ja:
+    form: "た + ことがある"
+    note: "Past form + ことがある / ことがない."
+    ex:
+      - {t: "富士山に登ったことがあります。", r: "ふじさん に のぼった こと が あります", e: "I have climbed Mt Fuji.", h: "ことがあります"}
+      - {t: "寿司を食べたことがない。", r: "すし お たべた こと が ない", e: "I have never eaten sushi.", h: "ことがない"}
+  my:
+    form: "ဖူး"
+    note: "Right after the verb."
+    ex:
+      - {t: "ဖူဂျီတောင် တက်ဖူးတယ်။", e: "I have climbed Mt Fuji.", h: "ဖူး"}
+      - {t: "ဆူရှီ မစားဖူးဘူး။", e: "I have never eaten sushi.", h: "ဖူး"}
+  zh:
+    form: "过"
+    note: "Right after the verb; negative uses 没."
+    ex:
+      - {t: "我爬过富士山。", r: "wǒ pá guo Fùshì Shān", e: "I have climbed Mt Fuji.", h: "过"}
+      - {t: "我没吃过寿司。", r: "wǒ méi chī guo shòusī", e: "I have never eaten sushi.", h: "过"}
+  mr:
+    form: "— (perfect tense + कधी)"
+    none: true
+    note: "No special form. The perfect tense, with कधी / कधीच for 'ever / never'."
+    ex:
+      - {t: "मी फुजी पर्वत चढलो आहे.", e: "I have climbed Mt Fuji.", h: "चढलो आहे"}
+      - {t: "मी कधीच सुशी खाल्ली नाही.", e: "I have never eaten sushi.", h: "कधीच"}
+  en:
+    form: "have + past participle"
+    note: "Present perfect, often with 'ever / never'."
+    ex:
+      - {t: "I have climbed Mt Fuji."}
+
+- id: want_tai
+  group: Mood
+  title: "Want to: たい"
+  summary: "Japanese and Burmese add an ending to the verb; Chinese puts a word before it."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: partial, my-zh: partial, my-mr: partial, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-my: "Same slot: verb + たい, verb + ချင်."
+    ja-mr: "Marathi says 'to me it is to-go': मला जायचं आहे. The person wanting takes ला."
+  ja:
+    form: "verb stem + たい"
+    note: "Then behaves like an adjective (たかった, たくない)."
+    ex:
+      - {t: "水が飲みたい。", r: "みず が のみたい", e: "I want to drink water.", h: "たい"}
+      - {t: "日本へ行きたいです。", r: "にほん え いきたい です", e: "I want to go to Japan.", h: "たい"}
+  my:
+    form: "verb + ချင်"
+    note: "Then the normal ending: ချင်တယ်."
+    ex:
+      - {t: "ရေ သောက်ချင်တယ်။", e: "I want to drink water.", h: "ချင်"}
+      - {t: "ဂျပန်ကို သွားချင်တယ်။", e: "I want to go to Japan.", h: "ချင်"}
+  zh:
+    form: "想 + verb"
+    note: "Before the verb, like English 'want to'."
+    ex:
+      - {t: "我想喝水。", r: "wǒ xiǎng hē shuǐ", e: "I want to drink water.", h: "想"}
+      - {t: "我想去日本。", r: "wǒ xiǎng qù Rìběn", e: "I want to go to Japan.", h: "想"}
+  mr:
+    form: "मला + verb-ायचं + आहे"
+    note: "The person wanting takes ला; the verb becomes -ायचं."
+    ex:
+      - {t: "मला पाणी प्यायचं आहे.", e: "I want to drink water.", h: "प्यायचं"}
+      - {t: "मला जपानला जायचं आहे.", e: "I want to go to Japan.", h: "जायचं"}
+  en:
+    form: "want to + verb"
+    note: "Before the verb."
+    ex:
+      - {t: "I want to drink water."}
+
+- id: ability
+  group: Mood
+  title: "Can: できる・potential form"
+  summary: "Japanese has one 'can'. Burmese, Chinese and Marathi split 'know how to' from 'be able to'."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: close, my-mr: close, zh-mr: close, ja-en: close, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "Japanese uses one potential form. Burmese makes you choose: တတ် (learned skill) or နိုင် (possible)."
+    my-zh: "တတ် ≈ 会 (learned skill), နိုင် ≈ 能 (able). Chinese adds 可以 for 'allowed'."
+    my-mr: "တတ် ≈ येणे (मला पोहता येतं), နိုင် ≈ शकणे."
+  ja:
+    form: "potential form / できる"
+    note: "One form for skill, possibility and permission."
+    ex:
+      - {t: "泳げます。", r: "およげます", e: "I can swim.", h: "泳げます"}
+      - {t: "明日は来られません。", r: "あした わ こられません", e: "I can't come tomorrow.", h: "来られません"}
+  my:
+    form: "တတ် (skill) / နိုင် (able)"
+    note: "Pick by meaning."
+    ex:
+      - {t: "ရေ ကူးတတ်တယ်။", e: "I can swim. (I know how)", h: "တတ်"}
+      - {t: "မနက်ဖြန် မလာနိုင်ဘူး။", e: "I can't come tomorrow.", h: "နိုင်"}
+  zh:
+    form: "会 (skill) / 能 (able) / 可以 (allowed)"
+    note: "Three words, before the verb."
+    ex:
+      - {t: "我会游泳。", r: "wǒ huì yóuyǒng", e: "I can swim. (I know how)", h: "会"}
+      - {t: "我明天不能来。", r: "wǒ míngtiān bù néng lái", e: "I can't come tomorrow.", h: "能"}
+  mr:
+    form: "येणे (skill) / शकणे (able)"
+    note: "Skill: मला … येतं. Able: … शकतो."
+    ex:
+      - {t: "मला पोहता येतं.", e: "I can swim. (I know how)", h: "येतं"}
+      - {t: "मी उद्या येऊ शकणार नाही.", e: "I won't be able to come tomorrow.", h: "शकणार"}
+  en:
+    form: "can"
+    note: "One word for all meanings, like Japanese."
+    ex:
+      - {t: "I can swim."}
+
+- id: because
+  group: Mood
+  title: "Because: から・ので"
+  summary: "Reason first, then the result, with the 'because' word at the end of the reason."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: close, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-zh: "Chinese puts 因为 at the start of the reason and 所以 at the start of the result."
+    ja-my: "Same place: reason + から, reason + လို့."
+  ja:
+    form: "reason + から / ので"
+    note: "At the end of the reason clause. ので is softer."
+    ex:
+      - {t: "雨が降っているから行きません。", r: "あめ が ふって いる から いきません", e: "It's raining, so I'm not going.", h: "から"}
+      - {t: "疲れたので早く寝ました。", r: "つかれた ので はやく ねました", e: "I was tired, so I went to bed early.", h: "ので"}
+  my:
+    form: "reason + လို့ / ကြောင့်"
+    note: "At the end of the reason."
+    ex:
+      - {t: "မိုး ရွာနေလို့ မသွားဘူး။", e: "It's raining, so I'm not going.", h: "လို့"}
+      - {t: "ပင်ပန်းလို့ စောစော အိပ်ခဲ့တယ်။", e: "I was tired, so I went to bed early.", h: "လို့"}
+  zh:
+    form: "因为 … 所以 …"
+    note: "At the start of each clause; either can be dropped."
+    ex:
+      - {t: "因为下雨，所以我不去。", r: "yīnwèi xià yǔ, suǒyǐ wǒ bú qù", e: "Because it's raining, I'm not going.", h: ["因为", "所以"]}
+      - {t: "我很累，所以早早睡了。", r: "wǒ hěn lèi, suǒyǐ zǎozǎo shuì le", e: "I was tired, so I went to bed early.", h: "所以"}
+  mr:
+    form: "reason + म्हणून"
+    note: "At the end of the reason, like から. (कारण goes before the reason, like 'because'.)"
+    ex:
+      - {t: "पाऊस पडतोय म्हणून मी जाणार नाही.", e: "It's raining, so I'm not going.", h: "म्हणून"}
+      - {t: "मी थकलो होतो म्हणून लवकर झोपलो.", e: "I was tired, so I went to bed early.", h: "म्हणून"}
+  en:
+    form: "because + reason / reason, so …"
+    note: "'Because' goes before the reason."
+    ex:
+      - {t: "I'm not going because it's raining."}
+
+- id: politeness
+  group: Politeness and negation
+  title: "Polite endings: です・ます"
+  summary: "Japanese changes the verb ending for the listener. The others show respect in other ways."
+  levels: {ja-my: partial, ja-zh: none, ja-mr: partial, my-zh: partial, my-mr: partial, zh-mr: partial, ja-en: none, my-en: partial, zh-en: close, mr-en: partial}
+  pair_notes:
+    ja-zh: "Chinese verbs have no polite form. Politeness is in words: 您 (polite 'you'), 请 ('please')."
+    ja-my: "Burmese ပါ makes a sentence polite but is one small word, not a full set of endings. သည် is written style, not politeness."
+    ja-mr: "Marathi shows respect with the plural 'you' (तुम्ही / आपण) and its verb form."
+  ja:
+    form: "ます / です (polite) vs plain"
+    note: "The verb ending itself changes with who you talk to."
+    ex:
+      - {t: "行きます。", r: "いきます", e: "I'll go. (polite)", h: "ます"}
+      - {t: "行く。", r: "いく", e: "I'll go. (plain, to friends)", h: "行く"}
+  my:
+    form: "ပါ"
+    note: "ပါ before the ending, or after a command, makes it polite."
+    ex:
+      - {t: "သွားပါမယ်။", e: "I'll go. (polite)", h: "ပါ"}
+      - {t: "သွားမယ်။", e: "I'll go. (plain)", h: "မယ်"}
+      - {t: "ထိုင်ပါ။", e: "Please sit.", h: "ပါ"}
+  zh:
+    form: "— (polite words: 您, 请)"
+    none: true
+    note: "No polite verb form. Use 您 instead of 你, and 请 for requests."
+    ex:
+      - {t: "您好。", r: "nín hǎo", e: "Hello. (polite)", h: "您"}
+      - {t: "请坐。", r: "qǐng zuò", e: "Please sit.", h: "请"}
+  mr:
+    form: "तुम्ही / आपण + plural verb"
+    note: "Respect comes from the plural 'you', which changes the verb ending."
+    ex:
+      - {t: "तुम्ही कुठे जाता?", e: "Where are you going? (polite)", h: "जाता"}
+      - {t: "तू कुठे जातोस?", e: "Where are you going? (to a friend)", h: "जातोस"}
+  en:
+    form: "— (please / could you)"
+    none: true
+    note: "No polite grammar; only words and tone."
+    ex:
+      - {t: "Could you sit down, please?"}
+
+- id: negation
+  group: Politeness and negation
+  title: "Not: ない・ません"
+  summary: "Where 'not' goes: after the verb, before it, or around it."
+  levels: {ja-my: partial, ja-zh: partial, ja-mr: close, my-zh: partial, my-mr: partial, zh-mr: partial, ja-en: partial, my-en: partial, zh-en: partial, mr-en: partial}
+  pair_notes:
+    ja-my: "Japanese adds an ending; Burmese wraps the verb: မ + verb + ဘူး."
+    ja-zh: "Chinese puts 不 or 没 before the verb, and picks one by meaning: 没 = didn't / haven't."
+    ja-mr: "Both put 'not' after the verb: 食べない, खात नाही."
+  ja:
+    form: "ない / ません (after the verb)"
+    note: "An ending on the verb."
+    ex:
+      - {t: "肉を食べません。", r: "にく お たべません", e: "I don't eat meat.", h: "ません"}
+      - {t: "行かない。", r: "いかない", e: "I won't go.", h: "ない"}
+  my:
+    form: "မ + verb + ဘူး"
+    note: "Around the verb. The ending တယ် / မယ် disappears."
+    ex:
+      - {t: "အသား မစားဘူး။", e: "I don't eat meat.", h: ["မ", "ဘူး"]}
+      - {t: "မသွားဘူး။", e: "I won't go.", h: ["မ", "ဘူး"]}
+  zh:
+    form: "不 / 没 + verb"
+    note: "Before the verb. 不 = don't / won't; 没 = didn't / haven't."
+    ex:
+      - {t: "我不吃肉。", r: "wǒ bù chī ròu", e: "I don't eat meat.", h: "不"}
+      - {t: "我昨天没去。", r: "wǒ zuótiān méi qù", e: "I didn't go yesterday.", h: "没"}
+  mr:
+    form: "verb + नाही"
+    note: "After the verb, like Japanese."
+    ex:
+      - {t: "मी मांस खात नाही.", e: "I don't eat meat.", h: "नाही"}
+      - {t: "मी काल गेलो नाही.", e: "I didn't go yesterday.", h: "नाही"}
+  en:
+    form: "do not / not"
+    note: "Before the verb, with 'do'."
+    ex:
+      - {t: "I don't eat meat."}
+
+- id: counters
+  group: Counting
+  title: "Counters: 本・枚・匹"
+  summary: "A counting word chosen by the thing's shape or kind. Burmese is the closest match, even in word order."
+  levels: {ja-my: close, ja-zh: partial, ja-mr: none, my-zh: partial, my-mr: none, zh-mr: none, ja-en: none, my-en: none, zh-en: none, mr-en: close}
+  pair_notes:
+    ja-my: "Same idea and same order: noun + number + counter (ペン三本 / ခဲတံ သုံးချောင်း). Long, flat, animal counters line up too."
+    ja-zh: "Chinese puts number + counter before the noun: 三支笔."
+    ja-mr: "Marathi just says the number; only people get a counter (जण)."
+  ja:
+    form: "noun + number + counter"
+    note: "本 = long things, 枚 = flat things, 匹 = small animals."
+    ex:
+      - {t: "ペンを三本ください。", r: "ぺん お さんぼん ください", e: "Three pens, please.", h: "三本"}
+      - {t: "猫が二匹いる。", r: "ねこ が にひき いる", e: "There are two cats.", h: "二匹"}
+  my:
+    form: "noun + number + counter"
+    note: "ချောင်း = long things, ချပ် = flat things, ကောင် = animals."
+    ex:
+      - {t: "ခဲတံ သုံးချောင်း ပေးပါ။", e: "Three pencils, please.", h: "သုံးချောင်း"}
+      - {t: "ကြောင် နှစ်ကောင် ရှိတယ်။", e: "There are two cats.", h: "နှစ်ကောင်"}
+  zh:
+    form: "number + counter + noun"
+    note: "支 = pens, 张 = flat things, 只 = animals. Counter is required."
+    ex:
+      - {t: "请给我三支笔。", r: "qǐng gěi wǒ sān zhī bǐ", e: "Three pens, please.", h: "三支"}
+      - {t: "有两只猫。", r: "yǒu liǎng zhī māo", e: "There are two cats.", h: "两只"}
+  mr:
+    form: "— (number + noun; जण for people)"
+    none: true
+    note: "No counters for things. People can take जण."
+    ex:
+      - {t: "तीन पेन द्या.", e: "Give me three pens.", h: "तीन"}
+      - {t: "आम्ही चार जण आहोत.", e: "There are four of us.", h: "जण"}
+  en:
+    form: "— (number + noun)"
+    none: true
+    note: "No counters, except phrases like 'two sheets of paper'."
+    ex:
+      - {t: "Three pens, please."}

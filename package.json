@@ -1,0 +1,10 @@
+{
+  "name": "catalyst",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build_data.mjs"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

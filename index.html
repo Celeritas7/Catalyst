@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Catalyst · grammar across languages</title>
+  <meta name="theme-color" content="#1e3a5f">
+  <!-- Sister app of KG Chart: same stack (React + Tailwind + Babel in the page, Supabase, language-utils converters) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./js/catalyst-scripts.js"></script>
+  <script src="./js/catalyst-audio.js"></script>
+  <script src="./js/catalyst-data.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['DM Sans', 'sans-serif'],
+            burmese: ['Noto Sans Myanmar', 'Padauk', 'Myanmar Text', 'sans-serif'],
+            devanagari: ['Noto Sans Devanagari', 'sans-serif'],
+            japanese: ['Noto Sans JP', 'sans-serif'],
+            chinese: ['Noto Sans SC', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'DM Sans', 'Noto Sans JP', 'Noto Sans Myanmar', 'Noto Sans Devanagari', 'Noto Sans SC', sans-serif; background: #f6f4ef; -webkit-tap-highlight-color: transparent; }
+    .font-burmese { line-height: 1.9; }
+    mark.gc { background: #fde68a; color: inherit; border-radius: 4px; padding: 0 2px; }
+    .dev-line { color: #1d4ed8; font-family: 'Noto Sans Devanagari', sans-serif; }
+    .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useSyncExternalStore } = React;
+
+    // ---- Supabase (same project as KG Chart). Content tables catalyst_*; the built-in copy is used if they're not there. ----
+    const SUPABASE_URL = 'https://ulgrfumbwjovbjzjiems.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZ3JmdW1id2pvdmJqemppZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzIyNjcsImV4cCI6MjA4Mjk0ODI2N30.ix5Vh4Y3GXNbQbzVtTD_WSko0L3cr5q_eCnTuDEMh7M';
+    const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    // ---- login: same Supabase account as KG Chart. On celeritas7.github.io both apps share the saved session. ----
+    function useSession() {
+      const [session, setSession] = useState(null);
+      useEffect(() => {
+        if (!sb) return;
+        sb.auth.getSession().then(({ data }) => setSession(data.session || null));
+        const { data: { subscription } } = sb.auth.onAuthStateChange((_e, sess) => setSession(sess || null));
+        return () => subscription.unsubscribe();
+      }, []);
+      return session;
+    }
+    const FN_URL = `${SUPABASE_URL}/functions/v1/catalyst-sentence`;
+
+    const LANG = {
+      ja: { name: 'Japanese', native: '日本語', font: 'font-japanese', dot: 'bg-red-500' },
+      my: { name: 'Burmese', native: 'မြန်မာ', font: 'font-burmese', dot: 'bg-amber-500' },
+      zh: { name: 'Chinese', native: '中文', font: 'font-chinese', dot: 'bg-rose-700' },
+      mr: { name: 'Marathi', native: 'मराठी', font: 'font-devanagari', dot: 'bg-orange-500' },
+      en: { name: 'English', native: 'English', font: 'font-body', dot: 'bg-slate-500' },
+    };
+    const ORDER = ['ja', 'my', 'zh', 'mr', 'en'];
+    const STUDY = ['ja', 'my', 'zh'];
+    const ANCHORS = ['mr', 'en'];
+    const LEVEL = {
+      close:   { label: 'Close', sym: '≈', chip: 'bg-emerald-50 text-emerald-800 border-emerald-200', cell: 'bg-emerald-500 text-white' },
+      partial: { label: 'Partial', sym: '~', chip: 'bg-amber-50 text-amber-800 border-amber-200', cell: 'bg-amber-400 text-amber-950' },
+      none:    { label: 'No equivalent', sym: '✕', chip: 'bg-rose-50 text-rose-800 border-rose-200', cell: 'bg-rose-500 text-white' },
+    };
+    const pairKey = (a, b) => (ORDER.indexOf(a) < ORDER.indexOf(b) ? `${a}-${b}` : `${b}-${a}`);
+    const levelOf = (c, a, b) => c.levels[pairKey(a, b)];
+
+    // ---- settings + learned, on this device ----
+    const SETTINGS_KEY = 'catalyst_settings';
+    const DEFAULTS = { anchor: 'mr', show: { ja: true, my: true, zh: true }, dev: true, reading: true, view: 'lang', learned: [] };
+    function useSettings() {
+      const [s, setS] = useState(() => {
+        try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); return { ...DEFAULTS, ...v, show: { ...DEFAULTS.show, ...(v.show || {}) } }; }
+        catch (e) { return DEFAULTS; }
+      });
+      const update = (p) => setS(prev => {
+        const next = { ...prev, ...(typeof p === 'function' ? p(prev) : p) };
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+      return [s, update];
+    }
+
+    // ---- content: built-in copy first, then Supabase if its tables exist ----
+    function fromDb(concepts, entries, examples) {
+      const exBy = {};
+      for (const x of examples) (exBy[x.entry_id] = exBy[x.entry_id] || []).push(x);
+      const enBy = {};
+      for (const e of entries) (enBy[e.concept_id] = enBy[e.concept_id] || {})[e.language_code] = {
+        form: e.form, note: e.note, none: !e.has_equivalent, checked: e.checked,
+        ex: (exBy[e.id] || []).sort((a, b) => a.sort_order - b.sort_order).map(x => ({ t: x.native_text, r: x.reading || undefined, e: x.english_text, h: x.highlight || [], dev: x.devanagari || '' })),
+      };
+      return concepts.sort((a, b) => a.sort_order - b.sort_order).map(c => ({
+        id: c.id, sort: c.sort_order, group: c.group_name, title: c.title, summary: c.summary,
+        levels: c.levels || {}, pairNotes: c.pair_notes || {}, entries: enBy[c.id] || {},
+      }));
+    }
+    function useContent() {
+      const [state, setState] = useState({ concepts: window.CATALYST_DATA?.concepts || [], source: 'built-in' });
+      useEffect(() => {
+        if (!sb) return;
+        let cancelled = false;
+        Promise.all(['catalyst_concepts', 'catalyst_entries', 'catalyst_examples'].map(t => sb.from(t).select('*').limit(10000)))
+          .then(([c, e, x]) => {
+            if (cancelled || c.error || e.error || x.error || !c.data?.length) return;
+            setState({ concepts: fromDb(c.data, e.data, x.data), source: 'Supabase' });
+          })
+          .catch(() => {});
+        return () => { cancelled = true; };
+      }, []);
+      return state;
+    }
+
+    // ---- converters (language-utils) load in the background; the saved Devanagari shows until then ----
+    function useConverters() {
+      const [v, setV] = useState(0);
+      useEffect(() => { window.CatalystScripts.loadAll().then(() => setV(1)); }, []);
+      return v;
+    }
+    function useAudio() {
+      useEffect(() => { ['ja', 'my', 'zh', 'mr'].forEach(l => window.CatalystAudio.loadManifest(l)); }, []);
+      return useSyncExternalStore(window.CatalystAudio.subscribe, window.CatalystAudio.getVersion);
+    }
+
+    // ---- routing: no hash (list) and #<concept-id> with hyphens (one concept), so the phone's back button works ----
+    function useRoute() {
+      const read = () => { const m = location.hash.match(/^#([a-z0-9-]+)$/); return m ? m[1].replace(/-/g, '_') : null; };
+      const [id, setId] = useState(read);
+      useEffect(() => { const f = () => { setId(read()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
+      return id;
+    }
+    const go = (id) => { location.hash = id ? `#${id.replace(/_/g, '-')}` : ''; };
+
+    // ---- small pieces ----
+    function Highlight({ text, parts }) {
+      const ranges = [];
+      for (const p of parts || []) {
+        if (!p) continue;
+        let from = 0, i;
+        // first occurrence that doesn't overlap an earlier highlight
+        while ((i = text.indexOf(p, from)) !== -1) {
+          if (!ranges.some(r => i < r[1] && i + p.length > r[0])) { ranges.push([i, i + p.length]); break; }
+          from = i + 1;
+        }
+      }
+      ranges.sort((a, b) => a[0] - b[0]);
+      const out = []; let at = 0;
+      ranges.forEach(([s, e], k) => { if (s > at) out.push(text.slice(at, s)); out.push(<mark key={k} className="gc">{text.slice(s, e)}</mark>); at = e; });
+      if (at < text.length) out.push(text.slice(at));
+      return <>{out}</>;
+    }
+
+    function LangTag({ lang, small }) {
+      const L = LANG[lang];
+      return (
+        <span className={`inline-flex items-center gap-1.5 font-semibold ${small ? 'text-xs' : 'text-sm'} text-slate-700`}>
+          <span className={`w-2 h-2 rounded-full ${L.dot}`}></span>{L.name}
+          <span className={`${L.font} font-normal text-slate-400`}>{L.native}</span>
+        </span>
+      );
+    }
+
+    function LevelChip({ level, children, onClick, active }) {
+      const L = LEVEL[level] || LEVEL.partial;
+      return (
+        <button onClick={onClick} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium ${L.chip} ${active ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}>
+          <span>{L.sym}</span>{children}
+        </button>
+      );
+    }
+
+    function Speak({ text, lang }) {
+      useAudio();
+      const src = window.CatalystAudio.source(text, lang);
+      const state = window.CatalystAudio.stateOf(text, lang, false);
+      if (src === null) return null;
+      return (
+        <button aria-label="Play" title={src === 'tts' ? 'Device voice (recorded clip not made yet)' : 'Play'}
+          onClick={(e) => { e.stopPropagation(); window.CatalystAudio.play(text, lang); }}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base transition ${state ? 'bg-sky-600 text-white' : 'bg-white border border-slate-200 text-slate-600 active:bg-slate-100'}`}>
+          {state === 'loading' ? '…' : '🔊'}
+          {src === 'tts' && !state && <span className="sr-only">(device voice)</span>}
+        </button>
+      );
+    }
+
+    function Example({ ex, lang, settings, conv }) {
+      const dev = useMemo(() => (STUDY.includes(lang) ? window.CatalystScripts.devanagari(ex, lang) : ''), [ex, lang, conv]);
+      const L = LANG[lang];
+      return (
+        <div className="py-2.5 border-t border-slate-100 first:border-t-0">
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className={`${L.font} text-lg text-slate-900 leading-snug break-words`}><Highlight text={ex.t} parts={ex.h} /></div>
+              {settings.dev && dev && <div className="dev-line text-[15px] leading-snug mt-0.5">{dev}</div>}
+              {settings.reading && ex.r && <div className="text-xs text-slate-400 mt-0.5">{ex.r}</div>}
+              {ex.e && lang !== 'en' && <div className="text-sm text-slate-600 mt-1">{ex.e}</div>}
+            </div>
+            {lang !== 'en' && <Speak text={ex.t} lang={lang} />}
+          </div>
+        </div>
+      );
+    }
+
+    // ---- closeness grid: every pair among the languages on screen ----
+    function Closeness({ concept, langs, pick, setPick }) {
+      const note = pick ? concept.pairNotes[pick] : null;
+      const [a, b] = pick ? pick.split('-') : [];
+      return (
+        <div className="bg-white rounded-2xl border border-slate-200 p-3">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">How close? <span className="normal-case font-normal">tap a square</span></div>
+          <div className="grid gap-1 max-w-lg" style={{ gridTemplateColumns: `4.2rem repeat(${langs.length}, minmax(0, 1fr))` }}>
+            <div></div>
+            {langs.map(l => <div key={l} className="text-[11px] text-center font-semibold text-slate-600 truncate">{LANG[l].name}</div>)}
+            {langs.map(r => (
+              <React.Fragment key={r}>
+                <div className="text-[11px] font-semibold text-slate-600 self-center truncate">{LANG[r].name}</div>
+                {langs.map(c => {
+                  if (r === c) return <div key={c} className="h-9 rounded-lg bg-slate-100"></div>;
+                  const k = pairKey(r, c), lv = concept.levels[k], has = !!concept.pairNotes[k];
+                  return (
+                    <button key={c} onClick={() => setPick(pick === k ? null : k)}
+                      className={`h-9 rounded-lg text-sm font-bold relative ${LEVEL[lv]?.cell || 'bg-slate-200'} ${pick === k ? 'ring-2 ring-offset-1 ring-slate-800' : ''}`}>
+                      {LEVEL[lv]?.sym}{has && <span className="absolute top-0.5 right-1 text-[9px] opacity-80">●</span>}
+                    </button>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
+          <div className="flex gap-3 mt-2 text-[11px] text-slate-500 flex-wrap">
+            {Object.entries(LEVEL).map(([k, L]) => <span key={k}><b>{L.sym}</b> {L.label}</span>)}
+            <span>● has a note</span>
+          </div>
+          {pick && (
+            <div className="mt-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-700">
+              <b>{LANG[a].name} ↔ {LANG[b].name}: {LEVEL[concept.levels[pick]]?.label}.</b>{' '}
+              {note || 'No extra note: compare the two cards below.'}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function EntryCard({ concept, lang, langs, settings, conv, pick, setPick, anchor }) {
+      const e = concept.entries[lang];
+      if (!e) return null;
+      const others = langs.filter(l => l !== lang);
+      return (
+        <div className={`rounded-2xl p-3.5 ${e.none ? 'bg-white/60 border-2 border-dashed border-rose-200' : 'bg-white border border-slate-200'} ${anchor ? 'ring-1 ring-orange-200' : ''}`}>
+          <div className="flex items-center justify-between gap-2">
+            <LangTag lang={lang} />
+            {anchor && <span className="text-[10px] uppercase tracking-wide font-semibold text-orange-600">anchor</span>}
+          </div>
+          <div className={`mt-1.5 text-xl font-semibold text-slate-900 ${LANG[lang].font}`}>{e.form}</div>
+          {e.none && <div className="mt-1 inline-block text-[11px] font-semibold uppercase tracking-wide text-rose-700 bg-rose-50 px-2 py-0.5 rounded">No equivalent</div>}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {others.map(o => { const k = pairKey(lang, o); return (
+              <LevelChip key={o} level={concept.levels[k]} active={pick === k} onClick={() => setPick(pick === k ? null : k)}>{LANG[o].name}</LevelChip>
+            ); })}
+          </div>
+          <p className="text-sm text-slate-700 mt-2 leading-relaxed">{e.note}</p>
+          <div className="mt-1">{e.ex.map((x, i) => <Example key={i} ex={x} lang={lang} settings={settings} conv={conv} />)}</div>
+        </div>
+      );
+    }
+
+    // Example n says the same thing in every language: show them together
+    function SentenceView({ concept, langs, settings, conv }) {
+      const n = Math.max(...langs.map(l => concept.entries[l]?.ex.length || 0));
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: n }, (_, i) => {
+            const meaning = concept.entries.ja?.ex[i]?.e || concept.entries.my?.ex[i]?.e || '';
+            return (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-3.5">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sentence {i + 1}</div>
+                {meaning && <div className="text-sm text-slate-700 mt-0.5 mb-1">{meaning}</div>}
+                {langs.map(l => {
+                  const x = concept.entries[l]?.ex[i];
+                  if (!x) return null;
+                  return (
+                    <div key={l} className="pt-2">
+                      <LangTag lang={l} small />
+                      <Example ex={{ ...x, e: l === 'en' ? '' : x.e === meaning ? '' : x.e }} lang={l} settings={settings} conv={conv} />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // ✨ Sentences Claude made for this concept from the learner's KG Chart words (Edge Function catalyst-sentence)
+    function YourSentences({ concept, langs, settings, conv, session, openSettings }) {
+      const [rows, setRows] = useState(null);       // null = loading
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState(null);         // { kind: 'error' | 'info', text }
+      const [known, setKnown] = useState(null);
+      useEffect(() => {
+        setRows(null); setMsg(null);
+        if (!sb || !session) return;
+        let cancelled = false;
+        sb.from('catalyst_generated').select('*').eq('concept_id', concept.id).eq('flagged', false)
+          .order('created_at', { ascending: false }).limit(30)
+          .then(({ data, error }) => { if (!cancelled) setRows(error ? [] : data || []); });
+        return () => { cancelled = true; };
+      }, [concept.id, session?.user?.id]);
+
+      if (!sb) return null;
+      const box = 'bg-gradient-to-br from-violet-50 to-sky-50 border border-violet-200 rounded-2xl p-3.5';
+      if (!session) return (
+        <div className={box}>
+          <div className="font-semibold text-violet-900">✨ Sentences from your words</div>
+          <p className="text-sm text-slate-600 mt-1">Sign in with your KG Chart account. Claude then writes new sentences for this grammar point using only words you've learned there.</p>
+          <button onClick={openSettings} className="mt-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold">Sign in</button>
+        </div>
+      );
+
+      const make = async () => {
+        setBusy(true); setMsg(null);
+        try {
+          const r = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ concept_id: concept.id }) });
+          const j = await r.json().catch(() => ({ ok: false, message: `Error ${r.status}` }));
+          if (j.known) setKnown(j.known);
+          if (!j.ok) setMsg({ kind: 'error', text: j.message || 'Something went wrong. Try again.' });
+          else { setRows(prev => [j.row, ...(prev || [])]); setMsg({ kind: 'info', text: `${j.used}/${j.limit} today` }); }
+        } catch (e) { setMsg({ kind: 'error', text: "Couldn't reach the sentence maker. Check your connection." }); }
+        setBusy(false);
+      };
+      const flag = async (row) => {
+        setRows(prev => prev.filter(r => r.id !== row.id));
+        const { error } = await sb.from('catalyst_generated').update({ flagged: true }).eq('id', row.id);
+        if (error) window.CatalystAudio.toast("Couldn't save the flag");
+        else window.CatalystAudio.toast('Hidden. Thanks for flagging it.');
+      };
+      const shown = langs.filter(l => l !== 'en');
+      return (
+        <div className={box}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-semibold text-violet-900">✨ Sentences from your words</div>
+            {known && <div className="text-[11px] text-slate-500">words: {['ja', 'my', 'zh'].map(l => `${LANG[l].name.slice(0, 2)} ${known[l]}`).join(' · ')}</div>}
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">Made by Claude from words you know in KG Chart. Not checked: flag anything that looks wrong.</p>
+          <button disabled={busy} onClick={make} className="mt-2.5 w-full py-2.5 rounded-xl bg-violet-600 text-white font-semibold disabled:opacity-60">
+            {busy ? 'Claude is writing…' : '✨ New sentence from my words'}
+          </button>
+          {msg && <p className={`text-sm mt-2 ${msg.kind === 'error' ? 'text-rose-700' : 'text-slate-500'}`}>{msg.text}</p>}
+          {rows === null && <p className="text-sm text-slate-400 mt-2">Loading…</p>}
+          <div className="space-y-2.5 mt-2.5">
+            {(rows || []).map(row => (
+              <div key={row.id} className="bg-white rounded-xl border border-slate-200 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-sm font-medium text-slate-800">{row.sentences.en}</div>
+                  <button onClick={() => flag(row)} className="shrink-0 text-xs text-slate-400 px-2 py-1 rounded-lg border border-slate-200 active:bg-rose-50">🚩 Wrong</button>
+                </div>
+                {shown.map(l => {
+                  const x = row.sentences[l];
+                  if (!x) return null;
+                  return (
+                    <div key={l} className="pt-1.5">
+                      <LangTag lang={l} small />
+                      <Example ex={{ t: x.t, r: x.r, h: x.h, e: '' }} lang={l} settings={settings} conv={conv} />
+                      {x.words?.length > 0 && <div className="text-[11px] text-slate-400 -mt-1.5 pb-1">your words: <span className={LANG[l].font}>{x.words.join(' · ')}</span></div>}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ConceptPage({ concept, concepts, settings, update, conv, session, openSettings }) {
+      const [pick, setPick] = useState(null);
+      useEffect(() => setPick(null), [concept.id]);
+      const langs = [...STUDY.filter(l => settings.show[l]), settings.anchor];
+      const i = concepts.findIndex(c => c.id === concept.id);
+      const prev = concepts[i - 1], next = concepts[i + 1];
+      const learned = settings.learned.includes(concept.id);
+      const unchecked = langs.some(l => concept.entries[l] && !concept.entries[l].checked && l !== 'en');
+      const toggleLearned = () => update(s => ({ learned: learned ? s.learned.filter(x => x !== concept.id) : [...s.learned, concept.id] }));
+      return (
+        <div className="space-y-3">
+          <div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{concept.group}</div>
+            <h2 className="font-display text-2xl text-slate-900 leading-tight mt-0.5">{concept.title}</h2>
+            <p className="text-slate-600 mt-1">{concept.summary}</p>
+          </div>
+          <Closeness concept={concept} langs={langs} pick={pick} setPick={setPick} />
+          <div className="flex bg-white border border-slate-200 rounded-full p-1 text-sm font-medium w-fit">
+            {[['lang', 'By language'], ['sentence', 'By sentence']].map(([v, label]) => (
+              <button key={v} onClick={() => update({ view: v })} className={`px-3 py-1 rounded-full ${settings.view === v ? 'bg-slate-800 text-white' : 'text-slate-600'}`}>{label}</button>
+            ))}
+          </div>
+          {settings.view === 'sentence'
+            ? <SentenceView concept={concept} langs={langs} settings={settings} conv={conv} />
+            : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {langs.map(l => <EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l === settings.anchor} />)}
+              </div>}
+          {unchecked && <p className="text-xs text-slate-400">Examples not yet checked by a native speaker.</p>}
+          <YourSentences concept={concept} langs={langs} settings={settings} conv={conv} session={session} openSettings={openSettings} />
+          <button onClick={toggleLearned} className={`w-full py-3 rounded-2xl font-semibold ${learned ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}>
+            {learned ? '✓ Learned' : 'Mark as learned'}
+          </button>
+          <div className="flex gap-2">
+            <button disabled={!prev} onClick={() => go(prev.id)} className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-medium text-slate-700 disabled:opacity-40 truncate px-2">← {prev?.title || ''}</button>
+            <button disabled={!next} onClick={() => go(next.id)} className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-medium text-slate-700 disabled:opacity-40 truncate px-2">{next?.title || ''} →</button>
+          </div>
+        </div>
+      );
+    }
+
+    function Home({ concepts, settings }) {
+      const [q, setQ] = useState('');
+      const [onlyFalse, setOnlyFalse] = useState(false);
+      const anchor = settings.anchor;
+      const shown = STUDY.filter(l => settings.show[l]);
+      // a "false-match risk" concept: some shown pair is only partial / none and has a note explaining why
+      const risky = (c) => Object.entries(c.pairNotes).some(([k]) => { const [a, b] = k.split('-'); return [...shown, anchor].includes(a) && [...shown, anchor].includes(b) && c.levels[k] !== 'close'; });
+      const list = concepts.filter(c => {
+        if (onlyFalse && !risky(c)) return false;
+        if (!q.trim()) return true;
+        const hay = [c.title, c.summary, c.group, ...Object.values(c.entries).map(e => e.form)].join(' ').toLowerCase();
+        return hay.includes(q.trim().toLowerCase());
+      });
+      const groups = [...new Set(list.map(c => c.group))];
+      return (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search: は, ကို, 了, past…"
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-[15px] outline-none focus:ring-2 focus:ring-sky-300" />
+            <button onClick={() => setOnlyFalse(v => !v)} className={`px-3 rounded-2xl text-sm font-medium border ${onlyFalse ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-200'}`}>False matches</button>
+          </div>
+          {groups.map(g => (
+            <section key={g}>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 px-1">{g}</h3>
+              <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+                {list.filter(c => c.group === g).map(c => (
+                  <button key={c.id} onClick={() => go(c.id)} className="w-full text-left px-3.5 py-3 active:bg-slate-50 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                        {settings.learned.includes(c.id) && <span className="text-emerald-600">✓</span>}{c.title}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {[...shown.slice(1), anchor].map(o => shown[0] && (
+                          <span key={o} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[11px] font-medium ${LEVEL[levelOf(c, shown[0], o)]?.chip}`}>
+                            {LEVEL[levelOf(c, shown[0], o)]?.sym} {LANG[shown[0]].name.slice(0, 2)}–{LANG[o].name.slice(0, 2)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-slate-300 text-xl">›</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+          {!list.length && <p className="text-center text-slate-500 py-8">Nothing matches.</p>}
+        </div>
+      );
+    }
+
+    function Account({ session }) {
+      const [email, setEmail] = useState('');
+      const [pw, setPw] = useState('');
+      const [err, setErr] = useState('');
+      const [busy, setBusy] = useState(false);
+      if (!sb) return null;
+      if (session) return (
+        <div className="flex items-center justify-between gap-2 py-2">
+          <span className="text-sm text-slate-700 truncate">Signed in as <b>{session.user.email}</b></span>
+          <button onClick={() => sb.auth.signOut()} className="text-sm text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">Sign out</button>
+        </div>
+      );
+      const signIn = async (e) => {
+        e.preventDefault(); setBusy(true); setErr('');
+        const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: pw });
+        if (error) setErr(error.message);
+        setBusy(false);
+      };
+      const google = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } });
+      return (
+        <form onSubmit={signIn} className="space-y-2 py-2">
+          <p className="text-xs text-slate-500">Same account as KG Chart. Needed for ✨ sentences from your words.</p>
+          <button type="button" onClick={google} className="w-full py-2 rounded-xl border border-slate-300 text-sm font-medium">Sign in with Google</button>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Password" className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+          {err && <p className="text-xs text-rose-700">{err}</p>}
+          <button disabled={busy} className="w-full py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold disabled:opacity-60">{busy ? 'Signing in…' : 'Sign in'}</button>
+        </form>
+      );
+    }
+
+    function SettingsSheet({ settings, update, onClose, source, session }) {
+      const Row = ({ label, children }) => <div className="flex items-center justify-between gap-3 py-2.5"><span className="text-slate-700">{label}</span>{children}</div>;
+      const Toggle = ({ on, set }) => (
+        <button onClick={() => set(!on)} className={`w-11 h-6 rounded-full relative transition ${on ? 'bg-sky-600' : 'bg-slate-300'}`}>
+          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition ${on ? 'left-[22px]' : 'left-0.5'}`}></span>
+        </button>
+      );
+      const shownCount = STUDY.filter(l => settings.show[l]).length;
+      return (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30" onClick={onClose}>
+          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 safe-bottom max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-display text-xl">Settings</h3>
+              <button onClick={onClose} className="text-slate-400 text-2xl leading-none px-2">×</button>
+            </div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-2">Anchor column</div>
+            <div className="flex gap-2 mt-1.5">
+              {ANCHORS.map(a => (
+                <button key={a} onClick={() => update({ anchor: a })} className={`flex-1 py-2 rounded-xl border font-medium ${settings.anchor === a ? 'bg-orange-50 border-orange-300 text-orange-800' : 'border-slate-200 text-slate-600'}`}>
+                  <span className={LANG[a].font}>{LANG[a].native}</span>
+                </button>
+              ))}
+            </div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4">Languages</div>
+            <div className="divide-y divide-slate-100">
+              {STUDY.map(l => (
+                <Row key={l} label={<LangTag lang={l} />}>
+                  <Toggle on={settings.show[l]} set={(v) => { if (!v && shownCount === 1) return; update(s => ({ show: { ...s.show, [l]: v } })); }} />
+                </Row>
+              ))}
+            </div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4">Show</div>
+            <div className="divide-y divide-slate-100">
+              <Row label={<span>Devanagari line <span className="dev-line">देवनागरी</span></span>}><Toggle on={settings.dev} set={(v) => update({ dev: v })} /></Row>
+              <Row label="Reading (kana, pinyin)"><Toggle on={settings.reading} set={(v) => update({ reading: v })} /></Row>
+            </div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4">Account</div>
+            <Account session={session} />
+            <p className="text-[11px] text-slate-400 mt-3">Content: {source}. {settings.learned.length} learned.</p>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [settings, update] = useSettings();
+      const { concepts, source } = useContent();
+      const conv = useConverters();
+      const id = useRoute();
+      const [sheet, setSheet] = useState(false);
+      const session = useSession();
+      const concept = concepts.find(c => c.id === id);
+      return (
+        <div className="min-h-screen">
+          <header className="sticky top-0 z-40 bg-[#1e3a5f] text-white">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+              {concept
+                ? <button onClick={() => go(null)} className="text-2xl leading-none -ml-1 pr-1" aria-label="Back">‹</button>
+                : null}
+              <button onClick={() => go(null)} className="flex-1 min-w-0 text-left">
+                <div className="font-display text-xl leading-tight">Catalyst</div>
+                <div className="text-[11px] text-sky-200 truncate">
+                  {STUDY.filter(l => settings.show[l]).map(l => LANG[l].name).join(' · ')} · anchor {LANG[settings.anchor].name}
+                </div>
+              </button>
+              <span className="text-xs text-sky-200 tabular-nums">{settings.learned.filter(x => concepts.some(c => c.id === x)).length}/{concepts.length}</span>
+              <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
+            </div>
+          </header>
+          <main className="max-w-6xl mx-auto px-4 py-4 safe-bottom">
+            {concept
+              ? <ConceptPage concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
+              : <Home concepts={concepts} settings={settings} />}
+          </main>
+          {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} />}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
