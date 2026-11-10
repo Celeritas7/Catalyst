@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Catalyst · grammar across languages</title>
-  <meta name="theme-color" content="#1e3a5f">
+  <meta name="theme-color" content="#251c48">
   <!-- Sister app of KG Chart: same stack (React + Tailwind + Babel in the page, Supabase, language-utils converters) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -41,6 +41,7 @@
     .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
+  <link rel="stylesheet" href="./js/study.css">
 </head>
 <body>
   <div id="root"></div>
@@ -392,94 +393,107 @@
       );
     }
 
-    function ConceptPage({ concept, concepts, settings, update, conv, session, openSettings }) {
-      const [pick, setPick] = useState(null);
-      useEffect(() => setPick(null), [concept.id]);
-      const langs = [...STUDY.filter(l => settings.show[l]), settings.anchor];
-      const i = concepts.findIndex(c => c.id === concept.id);
-      const prev = concepts[i - 1], next = concepts[i + 1];
-      const learned = settings.learned.includes(concept.id);
-      const unchecked = langs.some(l => concept.entries[l] && !concept.entries[l].checked && l !== 'en');
-      const toggleLearned = () => update(s => ({ learned: learned ? s.learned.filter(x => x !== concept.id) : [...s.learned, concept.id] }));
-      return (
-        <div className="space-y-3">
-          <div>
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{concept.group}</div>
-            <h2 className="font-display text-2xl text-slate-900 leading-tight mt-0.5">{concept.title}</h2>
-            <p className="text-slate-600 mt-1">{concept.summary}</p>
-          </div>
-          <Closeness concept={concept} langs={langs} pick={pick} setPick={setPick} />
-          <div className="flex bg-white border border-slate-200 rounded-full p-1 text-sm font-medium w-fit">
-            {[['lang', 'By language'], ['sentence', 'By sentence']].map(([v, label]) => (
-              <button key={v} onClick={() => update({ view: v })} className={`px-3 py-1 rounded-full ${settings.view === v ? 'bg-slate-800 text-white' : 'text-slate-600'}`}>{label}</button>
-            ))}
-          </div>
-          {settings.view === 'sentence'
-            ? <SentenceView concept={concept} langs={langs} settings={settings} conv={conv} />
-            : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {langs.map(l => <EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l === settings.anchor} />)}
-              </div>}
-          {unchecked && <p className="text-xs text-slate-400">Examples not yet checked by a native speaker.</p>}
-          <YourSentences concept={concept} langs={langs} settings={settings} conv={conv} session={session} openSettings={openSettings} />
-          <button onClick={toggleLearned} className={`w-full py-3 rounded-2xl font-semibold ${learned ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}>
-            {learned ? '✓ Learned' : 'Mark as learned'}
-          </button>
-          <div className="flex gap-2">
-            <button disabled={!prev} onClick={() => go(prev.id)} className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-medium text-slate-700 disabled:opacity-40 truncate px-2">← {prev?.title || ''}</button>
-            <button disabled={!next} onClick={() => go(next.id)} className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-medium text-slate-700 disabled:opacity-40 truncate px-2">{next?.title || ''} →</button>
-          </div>
-        </div>
-      );
+    const GROUP_ICON = {'Word order':'🧩','Particles':'🔗','Questions and endings':'💬','Tense and aspect':'⏳','Mood':'✨','Politeness and negation':'🤝','Counting':'🔢'};
+    const shuffle = (xs) => { const a = [...xs]; for (let i=a.length-1;i>0;i--) {const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
+    function makeQuestions(concepts, langs, kind='meaning') {
+      const pool=[];
+      for (const c of concepts) {
+        for (const l of langs.filter(l=>STUDY.includes(l))) {
+          const e=c.entries[l]; if (!e) continue;
+          if (kind==='meaning') for (const x of e.ex || []) {
+            if (!x.e) continue;
+            // Only use unique translations; never invent distractor translations.
+            const wrong=[...new Set(concepts.flatMap(o=>(o.entries[l]?.ex||[]).map(z=>z.e)).filter(t=>t && t!==x.e))];
+            if (wrong.length<2) continue;
+            pool.push({id:`${c.id}-${l}-${x.t}`,concept:c,lang:l,prompt:'What does this example mean?',text:x.t,answer:x.e,options:shuffle([x.e,...shuffle(wrong).slice(0,2)]),note:e.note,example:x});
+          }
+        }
+        if (kind==='connections') for(let i=0;i<langs.length;i++) for(let j=i+1;j<langs.length;j++) {
+          const level=levelOf(c,langs[i],langs[j]); if (!LEVEL[level]) continue;
+          pool.push({id:`${c.id}-${langs[i]}-${langs[j]}`,concept:c,prompt:`For “${c.title}”, how closely do these languages match?`,text:`${LANG[langs[i]].name} ↔ ${LANG[langs[j]].name}`,answer:LEVEL[level].label,options:shuffle(Object.values(LEVEL).map(x=>x.label)),note:c.pairNotes[pairKey(langs[i],langs[j])] || c.summary});
+        }
+        if (kind==='forms') for(const l of langs.filter(l=>STUDY.includes(l))) {
+          const e=c.entries[l]; if(!e || e.none) continue;
+          const wrong=concepts.filter(o=>o.id!==c.id && o.entries[l]?.form!==e.form).map(o=>o.title);
+          if(wrong.length<2) continue;
+          pool.push({id:`${c.id}-${l}-form`,concept:c,lang:l,prompt:'Which grammar lesson uses this form?',text:e.form,answer:c.title,options:shuffle([c.title,...shuffle(wrong).slice(0,2)]),note:e.note});
+        }
+      }
+      return shuffle(pool);
     }
-
-    function Home({ concepts, settings }) {
-      const [q, setQ] = useState('');
-      const [onlyFalse, setOnlyFalse] = useState(false);
-      const anchor = settings.anchor;
-      const shown = STUDY.filter(l => settings.show[l]);
-      // a "false-match risk" concept: some shown pair is only partial / none and has a note explaining why
-      const risky = (c) => Object.entries(c.pairNotes).some(([k]) => { const [a, b] = k.split('-'); return [...shown, anchor].includes(a) && [...shown, anchor].includes(b) && c.levels[k] !== 'close'; });
-      const list = concepts.filter(c => {
-        if (onlyFalse && !risky(c)) return false;
-        if (!q.trim()) return true;
-        const hay = [c.title, c.summary, c.group, ...Object.values(c.entries).map(e => e.form)].join(' ').toLowerCase();
-        return hay.includes(q.trim().toLowerCase());
-      });
-      const groups = [...new Set(list.map(c => c.group))];
-      return (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search: は, ကို, 了, past…"
-              className="flex-1 min-w-0 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-[15px] outline-none focus:ring-2 focus:ring-sky-300" />
-            <button onClick={() => setOnlyFalse(v => !v)} className={`px-3 rounded-2xl text-sm font-medium border ${onlyFalse ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-200'}`}>False matches</button>
-          </div>
-          {groups.map(g => (
-            <section key={g}>
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 px-1">{g}</h3>
-              <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
-                {list.filter(c => c.group === g).map(c => (
-                  <button key={c.id} onClick={() => go(c.id)} className="w-full text-left px-3.5 py-3 active:bg-slate-50 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                        {settings.learned.includes(c.id) && <span className="text-emerald-600">✓</span>}{c.title}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {[...shown.slice(1), anchor].map(o => shown[0] && (
-                          <span key={o} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[11px] font-medium ${LEVEL[levelOf(c, shown[0], o)]?.chip}`}>
-                            {LEVEL[levelOf(c, shown[0], o)]?.sym} {LANG[shown[0]].name.slice(0, 2)}–{LANG[o].name.slice(0, 2)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-slate-300 text-xl">›</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
-          {!list.length && <p className="text-center text-slate-500 py-8">Nothing matches.</p>}
-        </div>
-      );
+    function Practice({ concepts, settings, update, focus, onClose }) {
+      const [kind,setKind]=useState('meaning');
+      const [deck,setDeck]=useState(null); const [index,setIndex]=useState(0);
+      const [answer,setAnswer]=useState(null); const [missed,setMissed]=useState([]); const [score,setScore]=useState(0);
+      const [retry,setRetry]=useState(false);
+      const langs=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const start=(questions,isRetry=false)=>{setDeck(questions);setIndex(0);setAnswer(null);setMissed([]);setScore(0);setRetry(isRetry);};
+      const available=makeQuestions(concepts,langs,kind).filter(q=>!focus || q.concept.id===focus);
+      const choose=(value)=>{
+        if(answer!==null) return;
+        setAnswer(value); const q=deck[index],correct=value===q.answer;
+        if(correct) setScore(s=>s+1); else setMissed(m=>[...m,q]);
+        const day=new Date().toLocaleDateString('en-CA');
+        update(s=>{ const p=s.practice||{}, old=p.byConcept?.[q.concept.id]||{attempts:0,correct:0}; return {practice:{...p,answers:(p.answers||0)+1,correct:(p.correct||0)+(correct?1:0),day,today:(p.day===day?p.today||0:0)+1,byConcept:{...p.byConcept,[q.concept.id]:{attempts:old.attempts+1,correct:old.correct+(correct?1:0)}}}}; });
+      };
+      return <section className="study-panel">
+        <div className="flex items-center justify-between mb-5"><span className="eyebrow">🎯 Practice lab</span><button className="quiet-btn" onClick={onClose}>Close practice</button></div>
+        {!deck ? <><h2 className="study-title">Make it stick.</h2><p className="text-slate-500 mt-2">Five questions. No timer. Learn from every answer.</p>
+          <div className="grid sm:grid-cols-3 gap-3 my-6">{[['meaning','💭','Meaning','Understand a sentence'],['forms','🧩','Grammar forms','Recognise the pattern'],['connections','🌏','Connections','Compare languages']].map(([id,icon,title,sub])=><button key={id} onClick={()=>setKind(id)} aria-pressed={kind===id} className={`mode-card ${kind===id?'selected':''}`}><span className="text-3xl">{icon}</span><strong className="block mt-3">{title}</strong><span className="text-sm text-slate-500">{sub}</span></button>)}</div>
+          <button className="primary-btn" disabled={!available.length} onClick={()=>start(available.slice(0,5))}>Start {Math.min(5,available.length)} questions →</button>
+          {!available.length && <p className="mt-3 text-slate-500">No questions available for this selection. Try another mode or language.</p>}</>
+        : index>=deck.length ? <div className="text-center py-7"><div className="text-6xl">{score===deck.length?'🌟':'🌱'}</div><h2 className="study-title mt-4">{score===deck.length?'Beautiful connections!':'A little stronger already.'}</h2><p className="text-lg mt-3">{score} of {deck.length} correct{retry?' in your retry':''}</p><p className="text-slate-500 mt-2">{missed.length?'Revisit the tricky ones while they’re fresh.':'Keep building with another lesson.'}</p><div className="flex flex-wrap gap-3 justify-center mt-6">{missed.length>0 && <button className="primary-btn" onClick={()=>start(shuffle(missed),true)}>Retry {missed.length} mistakes</button>}<button className="quiet-btn" onClick={()=>setDeck(null)}>Choose practice</button><button className="quiet-btn" onClick={onClose}>Done</button></div></div>
+        : <><div className="flex justify-between text-sm text-slate-500"><span>Question {index+1} / {deck.length}</span><span>{score} correct</span></div><div className="progress-track my-3"><div style={{width:`${index/deck.length*100}%`}} /></div>
+          <h2 className="text-lg font-semibold mt-6">{deck[index].prompt}</h2>{deck[index].lang && <div className="mt-4"><LangTag lang={deck[index].lang}/></div>}<div className={`question-text ${deck[index].lang?LANG[deck[index].lang].font:''}`}>{deck[index].text}</div>
+          <div className="grid gap-3">{deck[index].options.map((option,i)=><button key={option} disabled={answer!==null} onClick={()=>choose(option)} className={`answer-btn ${answer!==null && option===deck[index].answer?'correct':''} ${answer===option && option!==deck[index].answer?'incorrect':''}`}><span className="answer-number">{i+1}</span><span>{option}</span>{answer!==null && option===deck[index].answer && <span>✓</span>}</button>)}</div>
+          {answer!==null && <div className="feedback" role="status"><strong>{answer===deck[index].answer?'✓ That’s right!':'Keep this connection in mind.'}</strong><p className="mt-2">{answer!==deck[index].answer && <span>Answer: {deck[index].answer}. </span>}{deck[index].note}</p><button className="primary-btn mt-4" onClick={()=>{setIndex(i=>i+1);setAnswer(null);}}>{index===deck.length-1?'See results':'Next question →'}</button></div>}
+        </>}
+      </section>;
+    }
+    function Lesson({concept,langs,settings,conv,onPractice}) {
+      const [lang,setLang]=useState(langs[0]); const [n,setN]=useState(0); const [reveal,setReveal]=useState(false);
+      const active=langs.includes(lang)?lang:langs[0],entry=concept.entries[active];
+      const examples=entry?.ex||[],ex=examples[n]||examples[0];
+      return <div className="study-panel"><div className="flex items-center justify-between gap-2"><span className="eyebrow">01 / Explore the pattern</span><span className="text-2xl">{GROUP_ICON[concept.group]}</span></div>
+        <div className="flex gap-2 flex-wrap mt-5">{langs.map(l=><button className={`language-pill ${active===l?'selected':''}`} key={l} onClick={()=>{setLang(l);setN(0);setReveal(false);}}>{LANG[l].name}{l===settings.anchor?' · anchor':''}</button>)}</div>
+        <div className="pattern-box"><div className={`text-2xl font-bold ${LANG[active].font}`}>{entry?.form||'No entry yet'}</div><p className="mt-3 text-slate-600">{entry?.note}</p></div>
+        {ex && <><div className="flex justify-between items-center text-sm text-slate-500"><span>Example {Math.min(n+1,examples.length)} of {examples.length}</span><span>Read · listen · recall</span></div><Example ex={{...ex,e:reveal?ex.e:''}} lang={active} settings={settings} conv={conv}/>
+          <button className="quiet-btn w-full mt-2" aria-expanded={reveal} onClick={()=>setReveal(v=>!v)}>{reveal?'Hide meaning':'Think of the meaning, then tap to reveal'}</button>
+          <div className="flex gap-3 mt-5"><button className="quiet-btn flex-1" disabled={n===0} onClick={()=>{setN(i=>i-1);setReveal(false);}}>← Previous</button><button className="quiet-btn flex-1" disabled={n>=examples.length-1} onClick={()=>{setN(i=>i+1);setReveal(false);}}>Next example →</button></div></>}
+        <button className="primary-btn w-full mt-5" onClick={onPractice}>02 / Try it yourself →</button>
+      </div>;
+    }
+    function ConceptPage({ concept, concepts, settings, update, conv, session, openSettings }) {
+      const [pick,setPick]=useState(null); const [mode,setMode]=useState('learn');
+      const langs=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const i=concepts.findIndex(c=>c.id===concept.id),next=concepts[i+1];
+      const learned=settings.learned.includes(concept.id);
+      return <div className="space-y-5"><div className="lesson-heading"><div className="eyebrow">{concept.group} · Lesson {i+1} of {concepts.length}</div><h1 className="study-title mt-2">{concept.title}</h1><p className="text-slate-500 mt-3 max-w-2xl">{concept.summary}</p></div>
+        <nav className="study-tabs" aria-label="Lesson mode">{[['learn','📖 Learn'],['practice','🎯 Practice'],['compare','🌏 Compare'],['create','✨ Your words']].map(([m,label])=><button key={m} className={mode===m?'selected':''} onClick={()=>setMode(m)} aria-current={mode===m?'page':undefined}>{label}</button>)}</nav>
+        {mode==='learn' && <Lesson concept={concept} langs={langs} settings={settings} conv={conv} onPractice={()=>setMode('practice')}/>}
+        {mode==='practice' && <Practice concepts={concepts} focus={concept.id} settings={settings} update={update} onClose={()=>setMode('learn')}/>}
+        {mode==='compare' && <><Closeness concept={concept} langs={langs} pick={pick} setPick={setPick}/><div className="flex gap-2">{[['lang','By language'],['sentence','By sentence']].map(([v,label])=><button key={v} className={`language-pill ${settings.view===v?'selected':''}`} onClick={()=>update({view:v})}>{label}</button>)}</div>{settings.view==='sentence'?<SentenceView concept={concept} langs={langs} settings={settings} conv={conv}/>:<div className="grid gap-3 md:grid-cols-2">{langs.map(l=><EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l===settings.anchor}/>)}</div>}</>}
+        {mode==='create' && <YourSentences concept={concept} langs={langs} settings={settings} conv={conv} session={session} openSettings={openSettings}/>}
+        <div className="flex flex-wrap gap-3"><button className={`quiet-btn flex-1 ${learned?'text-emerald-700':''}`} onClick={()=>update(s=>({learned:learned?s.learned.filter(x=>x!==concept.id):[...s.learned,concept.id]}))}>{learned?'✓ Learned · tap to undo':'✓ Mark as learned'}</button>{next && <button className="quiet-btn flex-1" onClick={()=>go(next.id)}>Next lesson →</button>}</div>
+        <p className="text-xs text-slate-500">Learning progress is saved on this device. Examples await native-speaker review.</p>
+      </div>;
+    }
+    function Home({concepts,settings,update}) {
+      const [q,setQ]=useState(''),[tab,setTab]=useState('learn');
+      const [onlyFalse,setOnlyFalse]=useState(false);
+      const learned=concepts.filter(c=>settings.learned.includes(c.id)).length;
+      const next=concepts.find(c=>!settings.learned.includes(c.id))||concepts[0];
+      const p=settings.practice||{},today=p.day===new Date().toLocaleDateString('en-CA')?p.today||0:0;
+      const selected=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const risky=c=>Object.keys(c.pairNotes||{}).some(k=>k.split('-').every(l=>selected.includes(l))&&c.levels[k]!=='close');
+      const list=concepts.filter(c=>(!onlyFalse||risky(c))&&[c.title,c.group,c.summary,...Object.values(c.entries).map(e=>e.form)].join(' ').toLowerCase().includes(q.toLowerCase()));
+      return <div className="space-y-7"><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
+        <div className="stats-grid"><div><span>🌱 Lessons learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
+        <nav className="study-tabs" aria-label="Study area">{[['learn','📚 Learning path'],['practice','🎯 Practice lab']].map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={tab===id?'selected':''}>{label}</button>)}</nav>
+        {tab==='practice'?<Practice concepts={concepts} settings={settings} update={update} onClose={()=>setTab('learn')}/>:<><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
+          <div className="course-grid">{[...new Set(list.map(c=>c.group))].map(g=>{const items=list.filter(c=>c.group===g);return <section className="course-card" key={g}><div className="flex items-center gap-3 mb-4"><div className="course-icon">{GROUP_ICON[g]||'📚'}</div><div><h3 className="font-bold text-lg">{g}</h3><p className="text-xs text-slate-500">{items.filter(c=>settings.learned.includes(c.id)).length} of {items.length} learned</p></div></div>{items.map(c=><button key={c.id} onClick={()=>go(c.id)} className="lesson-link"><span className={`lesson-number ${settings.learned.includes(c.id)?'done':''}`}>{settings.learned.includes(c.id)?'✓':concepts.indexOf(c)+1}</span><span className="flex-1"><strong>{c.title}</strong><small>{p.byConcept?.[c.id]?.attempts?`${p.byConcept[c.id].correct}/${p.byConcept[c.id].attempts} practice answers correct`:'Explore · recall · practise'}</small></span><span className="text-violet-400">↗</span></button>)}</section>})}</div>{!list.length&&<p className="study-panel text-center">No matching lessons. Try another word.</p>}</>}
+        <p className="text-xs text-slate-500 text-center">A little every day goes a long way. Progress stays on this device.</p>
+      </div>;
     }
 
     function Account({ session }) {
@@ -567,13 +581,13 @@
       const concept = concepts.find(c => c.id === id);
       return (
         <div className="min-h-screen">
-          <header className="sticky top-0 z-40 bg-[#1e3a5f] text-white">
+          <header className="sticky top-0 z-40 bg-[#251c48] text-white">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
               {concept
                 ? <button onClick={() => go(null)} className="text-2xl leading-none -ml-1 pr-1" aria-label="Back">‹</button>
                 : null}
               <button onClick={() => go(null)} className="flex-1 min-w-0 text-left">
-                <div className="font-display text-xl leading-tight">Catalyst</div>
+                <div className="font-body font-bold text-xl leading-tight">Catalyst</div>
                 <div className="text-[11px] text-sky-200 truncate">
                   {STUDY.filter(l => settings.show[l]).map(l => LANG[l].name).join(' · ')} · anchor {LANG[settings.anchor].name}
                 </div>
@@ -582,10 +596,10 @@
               <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
             </div>
           </header>
-          <main className="max-w-6xl mx-auto px-4 py-4 safe-bottom">
+          <main className="max-w-6xl mx-auto px-4 py-6 safe-bottom">
             {concept
-              ? <ConceptPage concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
-              : <Home concepts={concepts} settings={settings} />}
+              ? <ConceptPage key={concept.id} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
+              : <Home concepts={concepts} settings={settings} update={update} />}
           </main>
           {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} />}
         </div>
@@ -596,3 +610,4 @@
   </script>
 </body>
 </html>
+
