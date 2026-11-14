@@ -38,6 +38,8 @@ Acceptance: the complete pilot works with available explanation languages; hints
 
 ## 4. Adaptive practice and review
 
+Status: implemented for browser-local use. Due reviews, persistent mistakes, four self-assigned learning states, skill-specific checks and independent-retry protection are available. New records are scoped by target language and session user/guest; historical combined records remain intact. See [scheduling, storage and verification details](PHASE4_REVIEW.md). Cross-device synchronization and automatic free-writing assessment are not included.
+
 Implement needs-revision, known-but-misused, cannot-write, and never-used learning states. Separate understanding, contextual selection, production and retention. Add persistent mistake review and due dates; self-marked learned is not mastery. Scope records by target language and user where appropriate, preserving legacy records.
 
 Acceptance: mistakes affect the relevant skill; delayed reviews become due predictably; retries do not inflate independent mastery; migration retains old history.

@@ -17,6 +17,7 @@
   <script src="./js/catalyst-meanings.js"></script>
   <script src="./js/catalyst-preferences.js"></script>
   <script src="./js/catalyst-activities.js"></script>
+  <script src="./js/catalyst-review.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
@@ -58,10 +59,10 @@
 
     // ---- login: same Supabase account as KG Chart. On celeritas7.github.io both apps share the saved session. ----
     function useSession() {
-      const [session, setSession] = useState(null);
+      const [session, setSession] = useState(sb ? undefined : null);
       useEffect(() => {
         if (!sb) return;
-        sb.auth.getSession().then(({ data }) => setSession(data.session || null));
+        sb.auth.getSession().then(({ data }) => setSession(data.session || null)).catch(() => setSession(null));
         const { data: { subscription } } = sb.auth.onAuthStateChange((_e, sess) => setSession(sess || null));
         return () => subscription.unsubscribe();
       }, []);
@@ -403,6 +404,22 @@
       );
     }
 
+    const ReviewContext=React.createContext(null);
+    function ReviewProvider({scope,language,children}) {
+      const engine=window.CatalystReview,key=engine.storageKey(scope,language);
+      const read=()=>{try{return {data:engine.parse(localStorage.getItem(key)),error:''};}catch(e){return {data:engine.empty(),error:'Review records could not be loaded. They have not been overwritten.'};}};
+      const [state,setState]=useState(read);
+      const [now,setNow]=useState(Date.now());
+      useEffect(()=>{const tick=()=>setNow(Date.now()),sync=e=>{if(e.key===key)setState(read());};const timer=setInterval(tick,60000);window.addEventListener('focus',tick);window.addEventListener('storage',sync);return()=>{clearInterval(timer);window.removeEventListener('focus',tick);window.removeEventListener('storage',sync);};},[key]);
+      const commit=change=>{
+        if(scope==='loading')return false;
+        try{const latest=engine.parse(localStorage.getItem(key)),data=change(latest);localStorage.setItem(key,JSON.stringify(data));setState({data,error:''});setNow(Date.now());return true;}
+        catch(e){setState(s=>({...s,error:'Review progress could not be saved. Existing records are preserved; keep this page open and try again.'}));return false;}
+      };
+      const value={data:state.data,now,scope,record:(task,event)=>commit(data=>engine.record(data,task,event)),setState:(id,value)=>commit(data=>engine.setState(data,id,value))};
+      return <ReviewContext.Provider value={value}>{scope==='loading'&&<p className="review-notice" role="status">Checking the account for review progress…</p>}{state.error&&<p className="review-notice" role="alert">{state.error}</p>}{children}</ReviewContext.Provider>;
+    }
+
     const GROUP_ICON = {'Word order':'🧩','Particles':'🔗','Questions and endings':'💬','Tense and aspect':'⏳','Mood':'✨','Politeness and negation':'🤝','Counting':'🔢'};
     const shuffle = (xs) => { const a = [...xs]; for (let i=a.length-1;i>0;i--) {const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
     // Concept labels describe meaning, independently of Japanese source titles.
@@ -437,26 +454,40 @@
       }
       return shuffle(pool);
     }
+    function quizTask(q,kind){return {...q,id:`quiz:${kind}:${q.id}`,conceptId:q.concept.id,skill:kind==='connections'?'context':'understanding',kind,type:'choice'};}
+    function activityTask(pilot,kind,index,language){
+      const conceptId=pilot.concept||pilot.id,base={conceptId,lang:pilot.language,kind:'activity',pilotId:pilot.id};
+      if(kind==='build')return {...base,id:`activity:${pilot.id}:build`,type:'build',skill:'production',prompt:pilot.build.prompt[language],text:'',build:pilot.build,note:pilot.build.explanation[language],answer:pilot.build.orders[0].map(i=>pilot.build.chunks[i]).join(' ')};
+      const q=pilot.choices[index];return {...base,id:`activity:${pilot.id}:choice:${index}`,type:'choice',skill:'context',prompt:q.prompt[language],text:'',options:q.options,answer:q.options[q.accepted[0]],accepted:q.accepted.map(i=>q.options[i]),note:q.explanation[language]};
+    }
+    function reviewTasks(concepts,settings){
+      const language=window.CatalystMeanings.language(settings),langs=window.CatalystPreferences.languages(settings);
+      return ['meaning','forms','connections'].flatMap(kind=>makeQuestions(concepts,langs,kind,language,[settings.targetLanguage]).map(q=>quizTask(q,kind))).concat(window.CatalystActivities.pilots.filter(p=>p.language===settings.targetLanguage).flatMap(p=>[activityTask(p,'build',0,language),...p.choices.map((_,i)=>activityTask(p,'choice',i,language))]));
+    }
+
     function Practice({ concepts, settings, update, focus, onClose }) {
+      const review=React.useContext(ReviewContext);
       const [kind,setKind]=useState('meaning');
       const [deck,setDeck]=useState(null); const [index,setIndex]=useState(0);
       const [answer,setAnswer]=useState(null); const [missed,setMissed]=useState([]); const [score,setScore]=useState(0);
       const [retry,setRetry]=useState(false);
       const langs=window.CatalystPreferences.languages(settings);
       const start=(questions,isRetry=false)=>{setDeck(questions);setIndex(0);setAnswer(null);setMissed([]);setScore(0);setRetry(isRetry);};
-      const available=makeQuestions(concepts,langs,kind,window.CatalystMeanings.language(settings),[settings.targetLanguage]).filter(q=>!focus || q.concept.id===focus);
+      const available=window.CatalystReview.rank(makeQuestions(concepts,langs,kind,window.CatalystMeanings.language(settings),[settings.targetLanguage]).filter(q=>!focus || q.concept.id===focus).map(q=>quizTask(q,kind)),review.data,review.now);
       const choose=(value)=>{
         if(answer!==null) return;
-        setAnswer(value); const q=deck[index],correct=value===q.answer;
+        const q=deck[index],correct=value===q.answer;
+        if(!review.record(q,{correct,retry,response:value}))return;
+        setAnswer(value);
         if(correct) setScore(s=>s+1); else setMissed(m=>[...m,q]);
         const day=new Date().toLocaleDateString('en-CA');
         update(s=>{ const p=s.practice||{}, old=p.byConcept?.[q.concept.id]||{attempts:0,correct:0}; return {practice:{...p,answers:(p.answers||0)+1,correct:(p.correct||0)+(correct?1:0),day,today:(p.day===day?p.today||0:0)+1,byConcept:{...p.byConcept,[q.concept.id]:{attempts:old.attempts+1,correct:old.correct+(correct?1:0)}}}}; });
       };
       return <section className="study-panel">
         <p className="text-sm text-slate-600 mb-2">Practising {LANG[settings.targetLanguage].name}{settings.anchor!=='none'?` · reference: ${LANG[settings.anchor].name}`:''}</p><EnglishOption settings={settings} update={update}/><div className="flex items-center justify-between mb-5"><span className="eyebrow">🎯 Practice lab</span><button className="quiet-btn" onClick={onClose}>Close practice</button></div>
-        {!deck ? <><h2 className="study-title">Make it stick.</h2><p className="text-slate-500 mt-2">Five questions. No timer. Learn from every answer.</p>
+        {!deck ? <><h2 className="study-title">Make it stick.</h2><p className="text-slate-500 mt-2">Five questions. Due checks and mistakes come first, followed by new material. Immediate retries do not advance your review interval.</p>
           <div className="grid sm:grid-cols-3 gap-3 my-6">{[['meaning','💭','Meaning','Understand a sentence'],['forms','🧩','Grammar forms','Recognise the pattern'],['connections','🌏','Connections','Compare languages']].map(([id,icon,title,sub])=><button key={id} onClick={()=>setKind(id)} aria-pressed={kind===id} className={`mode-card ${kind===id?'selected':''}`}><span className="text-3xl">{icon}</span><strong className="block mt-3">{title}</strong><span className="text-sm text-slate-500">{sub}</span></button>)}</div>
-          <button className="primary-btn" disabled={!available.length} onClick={()=>start(available.slice(0,5))}>Start {Math.min(5,available.length)} questions →</button>
+          <button className="primary-btn" disabled={!available.length||review.scope==='loading'} onClick={()=>start(available.slice(0,5))}>Start {Math.min(5,available.length)} questions →</button>
           {!available.length && <p className="mt-3 text-slate-500">No questions available for this combination. Connections needs a reference or comparison language. Meaning practice requires a matching translation; no English fallback is added automatically.</p>}</>
         : index>=deck.length ? <div className="text-center py-7"><div className="text-6xl">{score===deck.length?'🌟':'🌱'}</div><h2 className="study-title mt-4">{score===deck.length?'Beautiful connections!':'A little stronger already.'}</h2><p className="text-lg mt-3">{score} of {deck.length} correct{retry?' in your retry':''}</p><p className="text-slate-500 mt-2">{missed.length?'Revisit the tricky ones while they’re fresh.':'Keep building with another lesson.'}</p><div className="flex flex-wrap gap-3 justify-center mt-6">{missed.length>0 && <button className="primary-btn" onClick={()=>start(shuffle(missed),true)}>Retry {missed.length} mistakes</button>}<button className="quiet-btn" onClick={()=>setDeck(null)}>Choose practice</button><button className="quiet-btn" onClick={onClose}>Done</button></div></div>
         : <><div className="flex justify-between text-sm text-slate-500"><span>Question {index+1} / {deck.length}</span><span>{score} correct</span></div><div className="progress-track my-3"><div style={{width:`${index/deck.length*100}%`}} /></div>
@@ -485,7 +516,7 @@
       const i=concepts.findIndex(c=>c.id===concept.id),next=concepts[i+1];
       const learned=settings.learned.includes(concept.id);
       return <div className="space-y-5"><div className="lesson-heading"><div className="eyebrow">{concept.group} · Lesson {i+1} of {concepts.length}</div><h1 className="study-title mt-2">{concept.title}</h1><p className="text-slate-500 mt-3 max-w-2xl">{concept.summary}</p></div>
-        <EnglishOption settings={settings} update={update}/><nav className="study-tabs" aria-label="Lesson mode">{[['learn','📖 Learn'],['practice','🎯 Practice'],['compare','🌏 Compare'],['create','✨ Your words']].map(([m,label])=><button key={m} className={mode===m?'selected':''} onClick={()=>setMode(m)} aria-current={mode===m?'page':undefined}>{label}</button>)}</nav>
+        <LearningState id={concept.id}/><EnglishOption settings={settings} update={update}/><nav className="study-tabs" aria-label="Lesson mode">{[['learn','📖 Learn'],['practice','🎯 Practice'],['compare','🌏 Compare'],['create','✨ Your words']].map(([m,label])=><button key={m} className={mode===m?'selected':''} onClick={()=>setMode(m)} aria-current={mode===m?'page':undefined}>{label}</button>)}</nav>
         {mode==='learn' && <><ActivityLibrary settings={settings} update={update} conceptId={concept.id}/><Lesson concept={concept} langs={langs} settings={settings} conv={conv} onPractice={()=>setMode('practice')}/></>}
         {mode==='practice' && <Practice concepts={concepts} focus={concept.id} settings={settings} update={update} onClose={()=>setMode('learn')}/>}
         {mode==='compare' && <><Closeness concept={concept} langs={langs} pick={pick} setPick={setPick}/><div className="flex gap-2">{[['lang','By language'],['sentence','By sentence']].map(([v,label])=><button key={v} className={`language-pill ${settings.view===v?'selected':''}`} onClick={()=>update({view:v})}>{label}</button>)}</div>{settings.view==='sentence'?<SentenceView concept={concept} langs={langs} settings={settings} conv={conv}/>:<div className="grid gap-3 md:grid-cols-2">{langs.map(l=><EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l===settings.anchor}/>)}</div>}</>}
@@ -494,6 +525,53 @@
         <p className="text-xs text-slate-500">Learning progress is saved on this device. Examples await native-speaker review.</p>
       </div>;
     }
+    function SkillSummary({data,conceptId}){
+      const scores=window.CatalystReview.summary(data,conceptId);
+      return <div className="skill-grid">{Object.entries({...window.CatalystReview.skills,retention:'Delayed recall'}).map(([id,label])=><div key={id}><strong>{label}</strong><span>{scores[id].attempts?`${scores[id].correct} / ${scores[id].attempts} independent checks`:'Not assessed yet'}</span></div>)}</div>;
+    }
+    function LearningState({id}){
+      const review=React.useContext(ReviewContext);
+      return <label className="review-state">My learning state<select aria-label="My learning state" value={review.data.states[id]||''} disabled={review.scope==='loading'} onChange={e=>review.setState(id,e.target.value)}><option value="">Not assigned</option>{Object.entries(window.CatalystReview.states).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>;
+    }
+    function ReviewQueue({concepts,settings,compact=false}){
+      const review=React.useContext(ReviewContext),engine=window.CatalystReview;
+      const [mode,setMode]=useState('due'),[deck,setDeck]=useState(null),[index,setIndex]=useState(0);
+      const tasks=useMemo(()=>reviewTasks(concepts,settings),[concepts,settings.targetLanguage,settings.anchor,settings.meaningLanguage,settings.comparisonLanguages.join('-')]);
+      const byId=new Map(tasks.map(t=>[t.id,t]));
+      const rows=Object.values(review.data.items),due=rows.filter(r=>r.dueAt<=review.now),mistakes=rows.filter(r=>r.mistake);
+      const filtered=mode==='due'?due:mistakes;
+      const available=engine.rank(filtered.map(r=>byId.get(r.id)).filter(Boolean),review.data,review.now);
+      const missing=filtered.length-available.length;
+      const titleFor=id=>quizLabel(concepts.find(c=>c.id===id)||{id},settings.meaningLanguage)||window.CatalystActivities.pilots.find(p=>p.id===id)?.title[settings.meaningLanguage]||id;
+      if(deck&&index<deck.length)return <ReviewQuestion key={`${index}-${deck[index].id}`} task={deck[index]} settings={settings} onNext={()=>setIndex(index+1)} onClose={()=>setDeck(null)} position={`${index+1} / ${deck.length}`}/>;
+      if(deck)return <section className="study-panel"><h2 className="study-title">Review session complete</h2><p className="mt-3">The next review dates are saved. Immediate retries and assisted answers do not advance the interval. After seeing an answer, wait at least 24 hours for an independent check.</p><button className="primary-btn mt-4" onClick={()=>setDeck(null)}>Back to reviews</button></section>;
+      return <section className="study-panel w-full"><div className="eyebrow">{LANG[settings.targetLanguage].name} · ADAPTIVE REVIEW</div><h2 className="text-2xl font-bold mt-2">{due.length?`${due.length} checks due`:'Your next small step'}</h2><p className="text-sm text-slate-500 mt-2">{mistakes.length} open mistakes · {review.scope==='guest'?'Guest progress':'Account progress'}, saved on this device only.</p>
+        <div className="flex gap-2 flex-wrap mt-4"><button className={`language-pill ${mode==='due'?'selected':''}`} aria-pressed={mode==='due'} onClick={()=>setMode('due')}>Due now ({due.length})</button><button className={`language-pill ${mode==='mistakes'?'selected':''}`} aria-pressed={mode==='mistakes'} onClick={()=>setMode('mistakes')}>Mistakes ({mistakes.length})</button></div>
+        <p className="text-sm mt-4">{mode==='mistakes'?'Practise mistakes now. A correct independent answer when due resolves them.':'Reviews use 1, 3, 7, 14 and 30-day intervals. These are practice dates, not mastery scores.'}</p>
+        <button className="primary-btn mt-4" disabled={!available.length||review.scope==='loading'} onClick={()=>{setDeck(available.slice(0,5));setIndex(0);}}>Review {Math.min(5,available.length)} {mode==='mistakes'?'mistakes':'due checks'} →</button>
+        {!rows.length&&<p className="text-sm mt-3">Answer practice questions or try a guided activity to start your review schedule.</p>}
+        {!!rows.length&&!filtered.length&&<p className="text-sm mt-3">{mode==='due'?`Nothing due now. Next: ${new Date(Math.min(...rows.map(r=>r.dueAt))).toLocaleString()}`:'No open mistakes in this learning language.'}</p>}
+        {missing>0&&<p className="review-notice">{missing} saved checks are unavailable with the current content or comparison settings. Their records are retained.</p>}
+        {!compact&&<><SkillSummary data={review.data}/><p className="text-xs text-slate-500 mt-3">Production checks use guided sentence building. Free writing is self-reviewed, not automatically graded.</p>{filtered.slice().sort((a,b)=>a.dueAt-b.dueAt).slice(0,20).map(r=><div className="review-row" key={r.id}><strong>{titleFor(r.conceptId)}</strong><span>{engine.skills[r.skill]} · {r.dueAt<=review.now?'Due now':new Date(r.dueAt).toLocaleString()}</span>{r.mistake&&<span className="text-rose-700">Needs another independent check</span>}{r.mistake&&r.lastMistake&&<small>Last mistake: {r.lastMistake.response||'No answer'} · Expected: {r.lastMistake.expected}</small>}</div>)}{filtered.length>20&&<p className="text-sm mt-3">Showing the first 20 records. Review sessions include all available checks.</p>}</>}
+      </section>;
+    }
+    function ReviewQuestion({task,settings,onNext,onClose,position}){
+      const review=React.useContext(ReviewContext),[answer,setAnswer]=useState(null),[order,setOrder]=useState([]),[feedback,setFeedback]=useState(null),[assisted,setAssisted]=useState(false),[showHint,setShowHint]=useState(false);
+      const bank=useMemo(()=>task.build?shuffle(task.build.chunks.map((_,i)=>i)):[],[task.id]);
+      const grade=(value,reveal=false)=>{
+        if(feedback)return;
+        const correct=reveal?null:task.type==='build'?window.CatalystActivities.validOrder(task.build,order):(task.accepted||[task.answer]).includes(value);
+        if(!review.record(task,{correct,assisted:assisted||reveal,response:value}))return;
+        setAnswer(value);setFeedback(reveal?'revealed':correct?'correct':'incorrect');
+      };
+      const record=review.data.items[task.id];
+      return <section className="study-panel"><div className="flex justify-between gap-3"><span className="eyebrow">REVIEW · {position}</span><button className="quiet-btn" onClick={onClose}>Close review</button></div><p className="text-sm mt-3">{LANG[settings.targetLanguage].name} · {window.CatalystReview.skills[task.skill]}</p><p className="text-xs text-slate-500 mt-2">{review.data.items[task.id]?.dueAt>review.now?'Early practice: this will not resolve the mistake or advance the interval.':'Independent recall requires 24 hours since the previous attempt or reveal.'}</p><h2 className="text-lg font-bold mt-4">{task.prompt}</h2>{task.text&&<div className={`question-text ${LANG[task.lang]?.font||''}`} lang={task.lang}>{task.text}</div>}
+      {task.type==='build'?<><div className="chunk-answer" aria-label="Your review sentence">{order.map((n,i)=><button className="chunk" disabled={!!feedback} key={n} onClick={()=>setOrder(order.filter((_,j)=>j!==i))}>{task.build.chunks[n]}</button>)}</div><div className="chunk-bank">{bank.map(i=><button className="chunk" key={i} disabled={!!feedback||order.includes(i)} onClick={()=>setOrder([...order,i])}>{task.build.chunks[i]}</button>)}</div><div className="flex gap-3 mt-4"><button className="primary-btn" disabled={!!feedback||order.length!==task.build.chunks.length} onClick={()=>grade(order.map(i=>task.build.chunks[i]).join(' '))}>Check sentence</button><button className="quiet-btn" disabled={!!feedback} onClick={()=>{setAssisted(true);setShowHint(true);}}>Hint</button></div>{showHint&&<div className="feedback">{task.build.hint[settings.meaningLanguage]}</div>}</>:<div className="grid gap-3 mt-4">{task.options.map(option=><button className={`answer-btn ${answer===option?(feedback==='correct'?'correct':'incorrect'):''}`} key={option} disabled={!!feedback} onClick={()=>grade(option)}>{option}</button>)}</div>}
+      {!feedback&&<button className="quiet-btn mt-4" onClick={()=>grade(task.answer,true)}>Reveal answer</button>}
+      {feedback&&<div className="feedback" role="status"><strong>{feedback==='correct'?'✓ Correct':feedback==='revealed'?'Answer revealed · assisted practice':'Keep practising this skill'}</strong><p className="mt-2">Answer: {task.answer}</p>{(task.kind==='activity'||settings.meaningLanguage==='en'||settings.showEnglish)&&<p className="mt-2">{task.note}</p>}<p className="mt-2">Next check: {new Date(record.dueAt).toLocaleString()}. {record.mistake?'The mistake stays open until an independent correct answer when due.':''}</p><button className="primary-btn mt-4" onClick={onNext}>Continue review →</button></div>}
+      </section>;
+    }
+
     function ActivityText({value,settings}) {
       const language=window.CatalystMeanings.language(settings);
       return <><p lang={language}>{window.CatalystActivities.text(value,language)||'Translation not available.'}</p>{language!=='en'&&settings.showEnglish&&value?.en&&<p lang="en" className="text-sm text-slate-500 mt-2">{value.en}</p>}</>;
@@ -509,6 +587,8 @@
     }
     function ActivityLesson({pilot,settings,update,onClose}) {
       const api=window.CatalystActivities, recordKey=api.key(pilot), saved=settings.activities?.[recordKey]||{};
+      const review=React.useContext(ReviewContext),attempted=React.useRef(new Set()),activityAssisted=React.useRef(new Set());
+      const track=(kind,index,correct,response,assisted=false)=>{const task=activityTask(pilot,kind,index,settings.meaningLanguage),ok=review.record(task,{correct,response,assisted:assisted||activityAssisted.current.has(task.id),retry:attempted.current.has(task.id)});if(ok)attempted.current.add(task.id);return ok;};
       const [step,setStep]=useState(Number.isInteger(saved.step)?Math.max(0,Math.min(4,saved.step)):0);
       const [order,setOrder]=useState([]),[buildFeedback,setBuildFeedback]=useState(null),[hint,setHint]=useState(false);
       const [answers,setAnswers]=useState({}),[revealed,setRevealed]=useState({});
@@ -539,8 +619,8 @@
         <div className="activity-body">
         {step===0&&<><h3 className="text-xl font-bold mb-3">01 / Situation</h3>{say(pilot.situation)}<div className="pattern-box"><p className={`text-2xl ${language.font}`} lang={pilot.language}>{pilot.example}</p><div className="mt-4">{say(pilot.meaning)}</div></div></>}
         {step===1&&<><h3 className="text-xl font-bold mb-3">02 / Notice</h3>{say(pilot.notice)}<details className="activity-detail"><summary>Compare with Marathi · optional</summary>{say(pilot.comparison)}</details>{pilot.deeper&&<details className="activity-detail"><summary>Different pattern: verb-past + ところで</summary>{say(pilot.deeper)}</details>}</>}
-        {step===2&&<><h3 className="text-xl font-bold mb-3">03 / Build</h3>{say(pilot.build.prompt)}<p className="text-sm text-slate-500 mt-3">Tap chunks in order. Tap a selected chunk to remove it.</p><div className="chunk-answer" aria-label="Your sentence">{!order.length&&<span className="text-slate-400">Your sentence appears here</span>}{order.map((id,i)=><button className={`chunk ${language.font}`} lang={pilot.language} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>{setOrder(order.filter((_,n)=>n!==i));setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="chunk-bank" aria-label="Available chunks">{bank.map(id=><button key={id} className={`chunk ${language.font}`} lang={pilot.language} disabled={order.includes(id)} onClick={()=>{setOrder([...order,id]);setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="flex flex-wrap gap-2 mt-4"><button className="primary-btn" disabled={order.length!==pilot.build.chunks.length} onClick={()=>setBuildFeedback(api.validOrder(pilot.build,order)?'correct':'retry')}>Check order</button><button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);}}>Clear</button><button className="quiet-btn" aria-expanded={hint} onClick={()=>setHint(!hint)}>Hint</button><button className="quiet-btn" onClick={()=>{setOrder([...pilot.build.orders[0]]);setBuildFeedback('revealed');}}>Reveal one answer</button></div>{hint&&<div className="feedback">{say(pilot.build.hint)}</div>}{buildFeedback&&<div className="feedback" role="status"><strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>{say(pilot.build.explanation)}</div>}</>}
-        {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>setRevealed({...revealed,[i]:!revealed[i]})} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
+        {step===2&&<><h3 className="text-xl font-bold mb-3">03 / Build</h3>{say(pilot.build.prompt)}<p className="text-sm text-slate-500 mt-3">Tap chunks in order. Tap a selected chunk to remove it.</p><div className="chunk-answer" aria-label="Your sentence">{!order.length&&<span className="text-slate-400">Your sentence appears here</span>}{order.map((id,i)=><button className={`chunk ${language.font}`} lang={pilot.language} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>{setOrder(order.filter((_,n)=>n!==i));setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="chunk-bank" aria-label="Available chunks">{bank.map(id=><button key={id} className={`chunk ${language.font}`} lang={pilot.language} disabled={order.includes(id)} onClick={()=>{setOrder([...order,id]);setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="flex flex-wrap gap-2 mt-4"><button className="primary-btn" disabled={order.length!==pilot.build.chunks.length} onClick={()=>{const correct=api.validOrder(pilot.build,order);if(track('build',0,correct,order.map(i=>pilot.build.chunks[i]).join(' ')))setBuildFeedback(correct?'correct':'retry');}}>Check order</button><button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);}}>Clear</button><button className="quiet-btn" aria-expanded={hint} onClick={()=>{activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setHint(!hint);}}>Hint</button><button className="quiet-btn" onClick={()=>{if(track('build',0,null,null,true)){activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setOrder([...pilot.build.orders[0]]);setBuildFeedback('revealed');}}}>Reveal one answer</button></div>{hint&&<div className="feedback">{say(pilot.build.hint)}</div>}{buildFeedback&&<div className="feedback" role="status"><strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>{say(pilot.build.explanation)}</div>}</>}
+        {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{if(track('choice',i,api.choiceCorrect(q,j),option)){setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>{if(!revealed[i]){activityAssisted.current.add(activityTask(pilot,'choice',i,settings.meaningLanguage).id);if(!track('choice',i,null,null,true))return;}setRevealed({...revealed,[i]:!revealed[i]});}} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
         {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} onChange={e=>{setDraft(e.target.value);setChecked(false);setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div><div className="feedback">{say(pilot.checklist)}</div><label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label><div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" onClick={saveDraft}>Save draft</button><button className="primary-btn" disabled={!checked||!draft.trim()} onClick={finish}>Complete activity</button></div><p role="status" className="text-sm mt-3">{saveStatus}</p></>}
         </div><div className="flex justify-between gap-3 mt-6"><button className="quiet-btn" disabled={step===0} onClick={()=>move(step-1)}>← Previous step</button>{step<4&&<button className="primary-btn" onClick={()=>move(step+1)}>Next: {steps[step+1]} →</button>}</div>
         <details className="activity-detail"><summary>Content sources and review status</summary><p>Japanese guidance is informed by the linked reference. Burmese sentences come from the existing lesson pack. Activities, translations and added examples are drafts, not native-speaker-approved material.</p>{pilot.sources.map(source=><a className="block underline mt-2" key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>)}</details>
@@ -559,9 +639,10 @@
       return <div className="space-y-7">{screen==='today' && <><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
         <div className="stats-grid"><div><span>🌱 Marked learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
         <section className="study-panel w-full"><h2 className="text-xl font-bold">A little practice today</h2><p className="text-slate-500 mt-2">Recall a meaning, recognise a form, or compare languages. Five questions, at your pace.</p><button className="primary-btn mt-4" onClick={()=>go('practice')}>Start practice →</button><button className="quiet-btn mt-4 ml-3" onClick={()=>go('explore')}>Explore lessons</button></section></>}
+        {screen==='today'&&<ReviewQueue concepts={concepts} settings={settings} compact/>}
         {['today','explore'].includes(screen)&&<ActivityLibrary settings={settings} update={update}/>}
         {screen==='practice' && <Practice concepts={concepts} settings={settings} update={update} onClose={()=>go(null)}/>}
-        {screen==='learning' && <MyLearning concepts={concepts} settings={settings}/>}
+        {screen==='learning' && <><ReviewQueue concepts={concepts} settings={settings}/><MyLearning concepts={concepts} settings={settings}/></>}
         {screen==='explore' && <><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
           <div className="course-grid">{[...new Set(list.map(c=>c.group))].map(g=>{const items=list.filter(c=>c.group===g);return <section className="course-card" key={g}><div className="flex items-center gap-3 mb-4"><div className="course-icon">{GROUP_ICON[g]||'📚'}</div><div><h3 className="font-bold text-lg">{g}</h3><p className="text-xs text-slate-500">{items.filter(c=>settings.learned.includes(c.id)).length} of {items.length} learned</p></div></div>{items.map(c=><button key={c.id} onClick={()=>go(c.id)} className="lesson-link"><span className={`lesson-number ${settings.learned.includes(c.id)?'done':''}`}>{settings.learned.includes(c.id)?'✓':concepts.indexOf(c)+1}</span><span className="flex-1"><strong>{c.title}</strong><small>{p.byConcept?.[c.id]?.attempts?`${p.byConcept[c.id].correct}/${p.byConcept[c.id].attempts} practice answers correct`:'Explore · recall · practise'}</small></span><span className="text-violet-400">↗</span></button>)}</section>})}</div>{!list.length&&<p className="study-panel text-center">No matching lessons. Try another word.</p>}</>}
         <p className="text-xs text-slate-500 text-center">A little every day goes a long way. Progress stays on this device.</p>
@@ -569,8 +650,10 @@
     }
 
     function MyLearning({concepts,settings}) {
+      const review=React.useContext(ReviewContext);
+      const learningItems=[...concepts.map(c=>({id:c.id,title:quizLabel(c,settings.meaningLanguage)||c.id})),...window.CatalystActivities.pilots.filter(p=>p.language===settings.targetLanguage&&!p.concept).map(p=>({id:p.id,title:p.title[settings.meaningLanguage]}))];
       const history=concepts.filter(c=>settings.learned.includes(c.id)||settings.practice?.byConcept?.[c.id]?.attempts);
-      return <section className="study-panel w-full"><span className="eyebrow">Your progress</span><h1 className="study-title mt-2">My Learning</h1><p className="text-slate-500 mt-3">Your practice and lessons marked learned across languages, saved on this device. Marking a lesson learned is your own assessment, not a mastery score.</p>
+      return <section className="study-panel w-full"><span className="eyebrow">Your progress</span><h1 className="study-title mt-2">My Learning</h1><p className="mt-3">Learning states for {LANG[settings.targetLanguage].name}. These are your assessments; correctness and delayed recall are tracked separately.</p><div className="mt-4 space-y-3">{learningItems.map(item=><details className="activity-detail" key={item.id}><summary>{item.title} · {window.CatalystReview.states[review.data.states[item.id]]||'Not assigned'}</summary><LearningState id={item.id}/><SkillSummary data={review.data} conceptId={item.id}/><p className="text-sm mt-3">{({revision:'Recall the meaning, then review it after a delay.',misused:'Practise contextual choices in guided activities and connections.',writing:'Use sentence building, then write without the chunks.',unused:'Write your own sentence in a guided activity or the lesson’s Your words tab.'})[review.data.states[item.id]]||'Choose the state that best describes what you need to practise.'}</p></details>)}</div><h2 className="text-xl font-bold mt-8">Legacy history</h2><p className="text-slate-500 mt-3">Your practice and lessons marked learned across languages, saved on this device. Marking a lesson learned is your own assessment, not a mastery score.</p>
         {!history.length && <div className="pattern-box"><h2 className="text-lg font-bold">Your journey starts with one lesson.</h2><p className="mt-2">Study a pattern or answer a question, and it will appear here.</p><button className="primary-btn mt-4" onClick={()=>go('explore')}>Find a lesson →</button></div>}
         {history.map(c=>{const p=settings.practice?.byConcept?.[c.id];return <button className="lesson-link" key={c.id} onClick={()=>go(c.id)}><span className="lesson-number">{settings.learned.includes(c.id)?'✓':'↻'}</span><span><strong>{c.title}</strong><small>{settings.learned.includes(c.id)?'Marked learned · ':''}{p?.attempts?`${p.correct} of ${p.attempts} practice answers correct`:'No practice answers yet'}</small></span></button>})}
         <p className="text-sm text-slate-500 mt-5">Saved AI sentences remain in each lesson’s “Your words” tab. Sign in there to access them.</p>
@@ -658,7 +741,7 @@
       const screen = ['explore','practice','learning'].includes(id) ? id : 'today';
       useEffect(() => { if (concept && settings.lastConcept !== concept.id) update({lastConcept:concept.id}); }, [concept?.id]);
       return (
-        <div className="min-h-screen">
+        <ReviewProvider key={`${session===undefined?'loading':session?.user?.id||'guest'}-${settings.targetLanguage}`} scope={session===undefined?'loading':session?.user?.id||'guest'} language={settings.targetLanguage}><div className="min-h-screen">
           <header className="sticky top-0 z-40 bg-[#251c48] text-white">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
               {concept
@@ -681,7 +764,7 @@
           </main>
           <nav className="app-navigation" aria-label="Main navigation">{[['today','Today','☀'],['explore','Explore','⌕'],['practice','Practice','✦'],['learning','My Learning','◷']].map(([key,label,icon])=><button key={key} aria-current={!concept && screen===key?'page':undefined} onClick={()=>go(key==='today'?null:key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
           {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} concepts={concepts} />}
-        </div>
+        </div></ReviewProvider>
       );
     }
 
