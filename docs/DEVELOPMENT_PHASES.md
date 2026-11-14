@@ -30,6 +30,8 @@ Acceptance: changing explanation language preserves target-language progress; a 
 
 ## 3. Complete lesson activities
 
+Status: two guided pilots implemented: Burmese sentence order and Japanese topic transitions. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
+
 Situation → Notice → Build → Choose → Use, with optional deeper explanations and comparisons. Pilot standalone ちなみに versus ところで plus one sentence-building lesson. Distinguish standalone ところで from verb-past + ところで. Support multiple valid answers and language-specific sentence chunking.
 
 Acceptance: the complete pilot works with available explanation languages; hints and answer reveal are accessible; the source material and any additions have explicit review status.

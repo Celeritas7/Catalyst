@@ -16,6 +16,7 @@
   <script src="./js/catalyst-data.js"></script>
   <script src="./js/catalyst-meanings.js"></script>
   <script src="./js/catalyst-preferences.js"></script>
+  <script src="./js/catalyst-activities.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
@@ -485,7 +486,7 @@
       const learned=settings.learned.includes(concept.id);
       return <div className="space-y-5"><div className="lesson-heading"><div className="eyebrow">{concept.group} · Lesson {i+1} of {concepts.length}</div><h1 className="study-title mt-2">{concept.title}</h1><p className="text-slate-500 mt-3 max-w-2xl">{concept.summary}</p></div>
         <EnglishOption settings={settings} update={update}/><nav className="study-tabs" aria-label="Lesson mode">{[['learn','📖 Learn'],['practice','🎯 Practice'],['compare','🌏 Compare'],['create','✨ Your words']].map(([m,label])=><button key={m} className={mode===m?'selected':''} onClick={()=>setMode(m)} aria-current={mode===m?'page':undefined}>{label}</button>)}</nav>
-        {mode==='learn' && <Lesson concept={concept} langs={langs} settings={settings} conv={conv} onPractice={()=>setMode('practice')}/>}
+        {mode==='learn' && <><ActivityLibrary settings={settings} update={update} conceptId={concept.id}/><Lesson concept={concept} langs={langs} settings={settings} conv={conv} onPractice={()=>setMode('practice')}/></>}
         {mode==='practice' && <Practice concepts={concepts} focus={concept.id} settings={settings} update={update} onClose={()=>setMode('learn')}/>}
         {mode==='compare' && <><Closeness concept={concept} langs={langs} pick={pick} setPick={setPick}/><div className="flex gap-2">{[['lang','By language'],['sentence','By sentence']].map(([v,label])=><button key={v} className={`language-pill ${settings.view===v?'selected':''}`} onClick={()=>update({view:v})}>{label}</button>)}</div>{settings.view==='sentence'?<SentenceView concept={concept} langs={langs} settings={settings} conv={conv}/>:<div className="grid gap-3 md:grid-cols-2">{langs.map(l=><EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l===settings.anchor}/>)}</div>}</>}
         {mode==='create' && <YourSentences concept={concept} langs={langs} settings={settings} conv={conv} session={session} openSettings={openSettings}/>}
@@ -493,6 +494,59 @@
         <p className="text-xs text-slate-500">Learning progress is saved on this device. Examples await native-speaker review.</p>
       </div>;
     }
+    function ActivityText({value,settings}) {
+      const language=window.CatalystMeanings.language(settings);
+      return <><p lang={language}>{window.CatalystActivities.text(value,language)||'Translation not available.'}</p>{language!=='en'&&settings.showEnglish&&value?.en&&<p lang="en" className="text-sm text-slate-500 mt-2">{value.en}</p>}</>;
+    }
+    function ActivityLibrary({settings,update,conceptId}) {
+      const api=window.CatalystActivities;
+      const pilots=api.pilots.filter(p=>p.language===settings.targetLanguage&&(!conceptId||p.concept===conceptId));
+      const [active,setActive]=useState(null);
+      const pilot=pilots.find(p=>p.id===active);
+      if(!pilots.length) return conceptId?null:<section className="study-panel"><h2 className="text-xl font-bold">Guided activities</h2><p className="mt-2 text-slate-500">Pilots are available for Burmese sentence order and Japanese topic transitions. Activities for your selected learning language are not available yet.</p></section>;
+      if(pilot) return <ActivityLesson key={`${pilot.id}-${settings.meaningLanguage}`} pilot={pilot} settings={settings} update={update} onClose={()=>setActive(null)}/>;
+      return <section className="study-panel w-full"><div className="eyebrow">NEW · GUIDED ACTIVITIES</div><h2 className="text-2xl font-bold mt-2">From noticing to using</h2><p className="text-sm text-slate-500 mt-2">Situation → Notice → Build → Choose → Use</p>{pilots.map(p=><button className="lesson-link mt-4" key={p.id} onClick={()=>setActive(p.id)}><span className="lesson-number">✦</span><span className="flex-1"><strong>{api.text(p.title,settings.meaningLanguage)}</strong><small>{api.text(p.summary,settings.meaningLanguage)} · {settings.activities?.[api.key(p)]?.completed?'Completed activity · revisit':settings.activities?.[api.key(p)]?'Resume activity':'Start activity'}</small></span><span>→</span></button>)}</section>;
+    }
+    function ActivityLesson({pilot,settings,update,onClose}) {
+      const api=window.CatalystActivities, recordKey=api.key(pilot), saved=settings.activities?.[recordKey]||{};
+      const [step,setStep]=useState(Number.isInteger(saved.step)?Math.max(0,Math.min(4,saved.step)):0);
+      const [order,setOrder]=useState([]),[buildFeedback,setBuildFeedback]=useState(null),[hint,setHint]=useState(false);
+      const [answers,setAnswers]=useState({}),[revealed,setRevealed]=useState({});
+      const [draft,setDraft]=useState(typeof saved.draft==='string'?saved.draft:'');
+      const [checked,setChecked]=useState(false);
+      const [saveStatus,setSaveStatus]=useState('');
+      const steps=['Situation','Notice','Build','Choose','Use'];
+      const persist=patch=>update(s=>({activities:{...s.activities,[recordKey]:{...s.activities?.[recordKey],...patch,updatedAt:new Date().toISOString()}}}));
+      const move=n=>{setStep(n);persist({step:n});};
+      const say=value=><ActivityText value={value} settings={settings}/>;
+      const bank=useMemo(()=>shuffle(pilot.build.chunks.map((_,i)=>i)),[pilot.id]);
+      const language=LANG[pilot.language];
+      const saveDraft=()=>{
+        // Verify the synchronous local write before reporting success, including full storage.
+        const next={...settings,activities:{...settings.activities,[recordKey]:{...saved,draft,step,updatedAt:new Date().toISOString()}}};
+        try { localStorage.setItem(SETTINGS_KEY,JSON.stringify(next)); update({activities:next.activities}); setSaveStatus('Draft saved on this device.'); }
+        catch(e){setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');}
+      };
+      const finish=()=>{
+        const next={...settings,activities:{...settings.activities,[recordKey]:{...saved,draft,step:4,completed:true,updatedAt:new Date().toISOString()}}};
+        try {localStorage.setItem(SETTINGS_KEY,JSON.stringify(next));update({activities:next.activities});setSaveStatus('Activity completed and draft saved. This is self-reviewed practice, not a mastery score.');}
+        catch(e){setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');}
+      };
+      return <section className="study-panel activity-panel"><div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(draft!==(saved.draft||'')&&!window.confirm('Leave without saving your draft?'))return;onClose();}}>Close activity</button></div>
+        <p className="text-xs text-amber-800 mt-3">Draft content · examples and Marathi guidance await native-speaker review.</p>
+        <nav className="activity-steps" aria-label="Activity steps">{steps.map((name,i)=><button key={name} aria-current={step===i?'step':undefined} onClick={()=>move(i)}><span>{i+1}</span>{name}</button>)}</nav>
+        <EnglishOption settings={settings} update={update}/>
+        <div className="activity-body">
+        {step===0&&<><h3 className="text-xl font-bold mb-3">01 / Situation</h3>{say(pilot.situation)}<div className="pattern-box"><p className={`text-2xl ${language.font}`} lang={pilot.language}>{pilot.example}</p><div className="mt-4">{say(pilot.meaning)}</div></div></>}
+        {step===1&&<><h3 className="text-xl font-bold mb-3">02 / Notice</h3>{say(pilot.notice)}<details className="activity-detail"><summary>Compare with Marathi · optional</summary>{say(pilot.comparison)}</details>{pilot.deeper&&<details className="activity-detail"><summary>Different pattern: verb-past + ところで</summary>{say(pilot.deeper)}</details>}</>}
+        {step===2&&<><h3 className="text-xl font-bold mb-3">03 / Build</h3>{say(pilot.build.prompt)}<p className="text-sm text-slate-500 mt-3">Tap chunks in order. Tap a selected chunk to remove it.</p><div className="chunk-answer" aria-label="Your sentence">{!order.length&&<span className="text-slate-400">Your sentence appears here</span>}{order.map((id,i)=><button className={`chunk ${language.font}`} lang={pilot.language} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>{setOrder(order.filter((_,n)=>n!==i));setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="chunk-bank" aria-label="Available chunks">{bank.map(id=><button key={id} className={`chunk ${language.font}`} lang={pilot.language} disabled={order.includes(id)} onClick={()=>{setOrder([...order,id]);setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="flex flex-wrap gap-2 mt-4"><button className="primary-btn" disabled={order.length!==pilot.build.chunks.length} onClick={()=>setBuildFeedback(api.validOrder(pilot.build,order)?'correct':'retry')}>Check order</button><button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);}}>Clear</button><button className="quiet-btn" aria-expanded={hint} onClick={()=>setHint(!hint)}>Hint</button><button className="quiet-btn" onClick={()=>{setOrder([...pilot.build.orders[0]]);setBuildFeedback('revealed');}}>Reveal one answer</button></div>{hint&&<div className="feedback">{say(pilot.build.hint)}</div>}{buildFeedback&&<div className="feedback" role="status"><strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>{say(pilot.build.explanation)}</div>}</>}
+        {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>setRevealed({...revealed,[i]:!revealed[i]})} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
+        {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} onChange={e=>{setDraft(e.target.value);setChecked(false);setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div><div className="feedback">{say(pilot.checklist)}</div><label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label><div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" onClick={saveDraft}>Save draft</button><button className="primary-btn" disabled={!checked||!draft.trim()} onClick={finish}>Complete activity</button></div><p role="status" className="text-sm mt-3">{saveStatus}</p></>}
+        </div><div className="flex justify-between gap-3 mt-6"><button className="quiet-btn" disabled={step===0} onClick={()=>move(step-1)}>← Previous step</button>{step<4&&<button className="primary-btn" onClick={()=>move(step+1)}>Next: {steps[step+1]} →</button>}</div>
+        <details className="activity-detail"><summary>Content sources and review status</summary><p>Japanese guidance is informed by the linked reference. Burmese sentences come from the existing lesson pack. Activities, translations and added examples are drafts, not native-speaker-approved material.</p>{pilot.sources.map(source=><a className="block underline mt-2" key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>)}</details>
+      </section>;
+    }
+
     function Home({concepts,settings,update,screen}) {
       const [q,setQ]=useState('');
       const [onlyFalse,setOnlyFalse]=useState(false);
@@ -505,6 +559,7 @@
       return <div className="space-y-7">{screen==='today' && <><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
         <div className="stats-grid"><div><span>🌱 Marked learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
         <section className="study-panel w-full"><h2 className="text-xl font-bold">A little practice today</h2><p className="text-slate-500 mt-2">Recall a meaning, recognise a form, or compare languages. Five questions, at your pace.</p><button className="primary-btn mt-4" onClick={()=>go('practice')}>Start practice →</button><button className="quiet-btn mt-4 ml-3" onClick={()=>go('explore')}>Explore lessons</button></section></>}
+        {['today','explore'].includes(screen)&&<ActivityLibrary settings={settings} update={update}/>}
         {screen==='practice' && <Practice concepts={concepts} settings={settings} update={update} onClose={()=>go(null)}/>}
         {screen==='learning' && <MyLearning concepts={concepts} settings={settings}/>}
         {screen==='explore' && <><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
