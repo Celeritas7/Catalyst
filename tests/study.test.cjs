@@ -86,3 +86,18 @@ for(const target of preferences.availableTargets(concepts)) {
  assert(context.questions(concepts,[target],'meaning','en',[target]).length>0);
 }
 console.log('Validated legacy preference migration, independent language choices, single-target quizzes, comparison scope and all available targets.');
+
+// Regression: Burmese form quizzes must not inherit Japanese lesson titles.
+for (const meaningLanguage of ['mr','en']) {
+ const forms=context.questions(concepts,['my','mr'],'forms',meaningLanguage,['my']);
+ assert(forms.length>0);
+ for(const q of forms) {
+  assert.equal(q.lang,'my');
+  assert(q.options.every(x=>!/[\u3040-\u30ff\u3400-\u9fff]/.test(x)));
+  if(meaningLanguage==='mr') assert(q.options.every(x=>/[\u0900-\u097f]/.test(x)));
+ }
+ const negation=forms.find(q=>q.concept.id==='negation');
+ assert.equal(negation.answer,meaningLanguage==='mr'?'नकार / नाही':'Negation / not');
+}
+assert.equal(context.questions(concepts,['my'],'forms','unsupported',['my']).length,0);
+console.log('Validated Marathi/English form labels without Japanese title leakage.');
