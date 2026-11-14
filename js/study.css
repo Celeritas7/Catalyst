@@ -7,3 +7,8 @@
 .app-navigation button span{font-size:21px;line-height:1.2}
 .app-navigation button[aria-current="page"]{color:#6040b4;background:#eee8fc}
 .app-navigation button:hover{background:#f5f1fc}
+
+.preference-field{display:block;font-size:14px;font-weight:600;margin-top:18px;color:#493c60}
+.preference-field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #d7cde7;border-radius:12px;background:white;color:#29213f;min-height:46px}
+select:focus-visible{outline:3px solid #a995f5;outline-offset:3px}
+[dir="rtl"] .lesson-link,[dir="rtl"] .answer-btn{text-align:start}
