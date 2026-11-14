@@ -15,6 +15,7 @@
   <script src="./js/catalyst-audio.js"></script>
   <script src="./js/catalyst-data.js"></script>
   <script src="./js/catalyst-meanings.js"></script>
+  <script src="./js/catalyst-preferences.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
@@ -67,16 +68,10 @@
     }
     const FN_URL = `${SUPABASE_URL}/functions/v1/catalyst-sentence`;
 
-    const LANG = {
-      ja: { name: 'Japanese', native: '日本語', font: 'font-japanese', dot: 'bg-red-500' },
-      my: { name: 'Burmese', native: 'မြန်မာ', font: 'font-burmese', dot: 'bg-amber-500' },
-      zh: { name: 'Chinese', native: '中文', font: 'font-chinese', dot: 'bg-rose-700' },
-      mr: { name: 'Marathi', native: 'मराठी', font: 'font-devanagari', dot: 'bg-orange-500' },
-      en: { name: 'English', native: 'English', font: 'font-body', dot: 'bg-slate-500' },
-    };
+    const LANG = window.CatalystPreferences.registry;
     const ORDER = ['ja', 'my', 'zh', 'mr', 'en'];
     const STUDY = ['ja', 'my', 'zh'];
-    const ANCHORS = ['mr', 'en'];
+    const ANCHORS = window.CatalystPreferences.meaningLanguages;
     const LEVEL = {
       close:   { label: 'Close', sym: '≈', chip: 'bg-emerald-50 text-emerald-800 border-emerald-200', cell: 'bg-emerald-500 text-white' },
       partial: { label: 'Partial', sym: '~', chip: 'bg-amber-50 text-amber-800 border-amber-200', cell: 'bg-amber-400 text-amber-950' },
@@ -87,14 +82,14 @@
 
     // ---- settings + learned, on this device ----
     const SETTINGS_KEY = 'catalyst_settings';
-    const DEFAULTS = { anchor: 'mr', showEnglish: false, show: { ja: true, my: true, zh: true }, dev: true, reading: true, view: 'lang', learned: [] };
+    const DEFAULTS = window.CatalystPreferences.normalize({});
     function useSettings() {
       const [s, setS] = useState(() => {
-        try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); return { ...DEFAULTS, ...v, show: { ...DEFAULTS.show, ...(v.show || {}) } }; }
+        try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); return window.CatalystPreferences.normalize(v); }
         catch (e) { return DEFAULTS; }
       });
       const update = (p) => setS(prev => {
-        const next = { ...prev, ...(typeof p === 'function' ? p(prev) : p) };
+        const next = window.CatalystPreferences.normalize({ ...prev, ...(typeof p === 'function' ? p(prev) : p) });
         try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) {}
         return next;
       });
@@ -224,10 +219,10 @@
         <div className="py-2.5 border-t border-slate-100 first:border-t-0">
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <div className={`${L.font} text-lg text-slate-900 leading-snug break-words`}><Highlight text={ex.t} parts={ex.h} /></div>
+              <div lang={lang} dir={L.dir} className={`${L.font} text-lg text-slate-900 leading-snug break-words`}><Highlight text={ex.t} parts={ex.h} /></div>
               {settings.dev && dev && <div className="dev-line text-[15px] leading-snug mt-0.5">{dev}</div>}
               {settings.reading && ex.r && <div className="text-xs text-slate-400 mt-0.5">{ex.r}</div>}
-              {ex.e && lang !== 'en' && <Meaning text={ex.e} settings={settings}/>}
+              {ex.e && <Meaning text={ex.e} settings={settings}/>}
             </div>
             {lang !== 'en' && <Speak text={ex.t} lang={lang} />}
           </div>
@@ -409,25 +404,26 @@
 
     const GROUP_ICON = {'Word order':'🧩','Particles':'🔗','Questions and endings':'💬','Tense and aspect':'⏳','Mood':'✨','Politeness and negation':'🤝','Counting':'🔢'};
     const shuffle = (xs) => { const a = [...xs]; for (let i=a.length-1;i>0;i--) {const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
-    function makeQuestions(concepts, langs, kind='meaning', meaningLanguage='en') {
+    function makeQuestions(concepts, langs, kind='meaning', meaningLanguage='en', targetLanguages=STUDY) {
       const pool=[];
       for (const c of concepts) {
-        for (const l of langs.filter(l=>STUDY.includes(l))) {
+        for (const l of langs.filter(l=>targetLanguages.includes(l))) {
           const e=c.entries[l]; if (!e) continue;
           if (kind==='meaning') for (const x of e.ex || []) {
-            const translated=window.CatalystMeanings.translate(x.e,meaningLanguage);
+            const translated=window.CatalystMeanings.translate(x.e || (l==='en'?x.t:''),meaningLanguage);
             if (!translated) continue;
             // Only use unique translations; never invent distractor translations.
-            const wrong=[...new Set(concepts.flatMap(o=>(o.entries[l]?.ex||[]).map(z=>window.CatalystMeanings.translate(z.e,meaningLanguage))).filter(t=>t && t!==translated))];
+            const wrong=[...new Set(concepts.flatMap(o=>(o.entries[l]?.ex||[]).map(z=>window.CatalystMeanings.translate(z.e || (l==='en'?z.t:''),meaningLanguage))).filter(t=>t && t!==translated))];
             if (wrong.length<2) continue;
-            pool.push({id:`${c.id}-${l}-${x.t}`,concept:c,lang:l,prompt:'What does this example mean?',text:x.t,answer:translated,options:shuffle([translated,...shuffle(wrong).slice(0,2)]),note:e.note,example:x});
+            pool.push({id:`${c.id}-${l}-${x.t}`,concept:c,lang:l,prompt:'What does this example mean?',text:x.t,answer:translated,options:shuffle([translated,...shuffle(wrong).slice(0,2)]),note:e.note,example:{...x,e:x.e || (l==='en'?x.t:'')}});
           }
         }
         if (kind==='connections') for(let i=0;i<langs.length;i++) for(let j=i+1;j<langs.length;j++) {
+          if (!targetLanguages.includes(langs[i]) && !targetLanguages.includes(langs[j])) continue;
           const level=levelOf(c,langs[i],langs[j]); if (!LEVEL[level]) continue;
           pool.push({id:`${c.id}-${langs[i]}-${langs[j]}`,concept:c,prompt:`For “${c.title}”, how closely do these languages match?`,text:`${LANG[langs[i]].name} ↔ ${LANG[langs[j]].name}`,answer:LEVEL[level].label,options:shuffle(Object.values(LEVEL).map(x=>x.label)),note:c.pairNotes[pairKey(langs[i],langs[j])] || c.summary});
         }
-        if (kind==='forms') for(const l of langs.filter(l=>STUDY.includes(l))) {
+        if (kind==='forms') for(const l of langs.filter(l=>targetLanguages.includes(l))) {
           const e=c.entries[l]; if(!e || e.none) continue;
           const wrong=concepts.filter(o=>o.id!==c.id && o.entries[l]?.form!==e.form).map(o=>o.title);
           if(wrong.length<2) continue;
@@ -441,9 +437,9 @@
       const [deck,setDeck]=useState(null); const [index,setIndex]=useState(0);
       const [answer,setAnswer]=useState(null); const [missed,setMissed]=useState([]); const [score,setScore]=useState(0);
       const [retry,setRetry]=useState(false);
-      const langs=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const langs=window.CatalystPreferences.languages(settings);
       const start=(questions,isRetry=false)=>{setDeck(questions);setIndex(0);setAnswer(null);setMissed([]);setScore(0);setRetry(isRetry);};
-      const available=makeQuestions(concepts,langs,kind,window.CatalystMeanings.language(settings)).filter(q=>!focus || q.concept.id===focus);
+      const available=makeQuestions(concepts,langs,kind,window.CatalystMeanings.language(settings),[settings.targetLanguage]).filter(q=>!focus || q.concept.id===focus);
       const choose=(value)=>{
         if(answer!==null) return;
         setAnswer(value); const q=deck[index],correct=value===q.answer;
@@ -452,14 +448,14 @@
         update(s=>{ const p=s.practice||{}, old=p.byConcept?.[q.concept.id]||{attempts:0,correct:0}; return {practice:{...p,answers:(p.answers||0)+1,correct:(p.correct||0)+(correct?1:0),day,today:(p.day===day?p.today||0:0)+1,byConcept:{...p.byConcept,[q.concept.id]:{attempts:old.attempts+1,correct:old.correct+(correct?1:0)}}}}; });
       };
       return <section className="study-panel">
-        <EnglishOption settings={settings} update={update}/><div className="flex items-center justify-between mb-5"><span className="eyebrow">🎯 Practice lab</span><button className="quiet-btn" onClick={onClose}>Close practice</button></div>
+        <p className="text-sm text-slate-600 mb-2">Practising {LANG[settings.targetLanguage].name}{settings.anchor!=='none'?` · reference: ${LANG[settings.anchor].name}`:''}</p><EnglishOption settings={settings} update={update}/><div className="flex items-center justify-between mb-5"><span className="eyebrow">🎯 Practice lab</span><button className="quiet-btn" onClick={onClose}>Close practice</button></div>
         {!deck ? <><h2 className="study-title">Make it stick.</h2><p className="text-slate-500 mt-2">Five questions. No timer. Learn from every answer.</p>
           <div className="grid sm:grid-cols-3 gap-3 my-6">{[['meaning','💭','Meaning','Understand a sentence'],['forms','🧩','Grammar forms','Recognise the pattern'],['connections','🌏','Connections','Compare languages']].map(([id,icon,title,sub])=><button key={id} onClick={()=>setKind(id)} aria-pressed={kind===id} className={`mode-card ${kind===id?'selected':''}`}><span className="text-3xl">{icon}</span><strong className="block mt-3">{title}</strong><span className="text-sm text-slate-500">{sub}</span></button>)}</div>
           <button className="primary-btn" disabled={!available.length} onClick={()=>start(available.slice(0,5))}>Start {Math.min(5,available.length)} questions →</button>
-          {!available.length && <p className="mt-3 text-slate-500">No questions available for this selection. Try another mode or language.</p>}</>
+          {!available.length && <p className="mt-3 text-slate-500">No questions available for this combination. Connections needs a reference or comparison language. Meaning practice requires a matching translation; no English fallback is added automatically.</p>}</>
         : index>=deck.length ? <div className="text-center py-7"><div className="text-6xl">{score===deck.length?'🌟':'🌱'}</div><h2 className="study-title mt-4">{score===deck.length?'Beautiful connections!':'A little stronger already.'}</h2><p className="text-lg mt-3">{score} of {deck.length} correct{retry?' in your retry':''}</p><p className="text-slate-500 mt-2">{missed.length?'Revisit the tricky ones while they’re fresh.':'Keep building with another lesson.'}</p><div className="flex flex-wrap gap-3 justify-center mt-6">{missed.length>0 && <button className="primary-btn" onClick={()=>start(shuffle(missed),true)}>Retry {missed.length} mistakes</button>}<button className="quiet-btn" onClick={()=>setDeck(null)}>Choose practice</button><button className="quiet-btn" onClick={onClose}>Done</button></div></div>
         : <><div className="flex justify-between text-sm text-slate-500"><span>Question {index+1} / {deck.length}</span><span>{score} correct</span></div><div className="progress-track my-3"><div style={{width:`${index/deck.length*100}%`}} /></div>
-          <h2 className="text-lg font-semibold mt-6">{deck[index].prompt}</h2>{deck[index].lang && <div className="mt-4"><LangTag lang={deck[index].lang}/></div>}<div className={`question-text ${deck[index].lang?LANG[deck[index].lang].font:''}`}>{deck[index].text}</div>
+          <h2 className="text-lg font-semibold mt-6">{deck[index].prompt}</h2>{deck[index].lang && <div className="mt-4"><LangTag lang={deck[index].lang}/></div>}<div lang={deck[index].lang} dir={LANG[deck[index].lang]?.dir} className={`question-text ${deck[index].lang?LANG[deck[index].lang].font:''}`}>{deck[index].text}</div>
           <div className="grid gap-3">{deck[index].options.map((option,i)=><button key={option} disabled={answer!==null} onClick={()=>choose(option)} className={`answer-btn ${answer!==null && option===deck[index].answer?'correct':''} ${answer===option && option!==deck[index].answer?'incorrect':''}`}><span className="answer-number">{i+1}</span><span>{option}</span>{answer!==null && option===deck[index].answer && <span>✓</span>}</button>)}</div>
           {answer!==null && <div className="feedback" role="status"><strong>{answer===deck[index].answer?'✓ That’s right!':'Keep this connection in mind.'}</strong><p className="mt-2">{answer!==deck[index].answer && <span>Answer: {deck[index].answer}. </span>}{(window.CatalystMeanings.language(settings)==='en' || settings.showEnglish) && deck[index].note}</p>{kind==='meaning' && settings.showEnglish && <p className="mt-2">English: {deck[index].example?.e}</p>}<button className="primary-btn mt-4" onClick={()=>{setIndex(i=>i+1);setAnswer(null);}}>{index===deck.length-1?'See results':'Next question →'}</button></div>}
         </>}
@@ -470,9 +466,9 @@
       const active=langs.includes(lang)?lang:langs[0],entry=concept.entries[active];
       const examples=entry?.ex||[],ex=examples[n]||examples[0];
       return <div className="study-panel"><div className="flex items-center justify-between gap-2"><span className="eyebrow">01 / Explore the pattern</span><span className="text-2xl">{GROUP_ICON[concept.group]}</span></div>
-        <div className="flex gap-2 flex-wrap mt-5">{langs.map(l=><button className={`language-pill ${active===l?'selected':''}`} key={l} onClick={()=>{setLang(l);setN(0);setReveal(false);}}>{LANG[l].name}{l===settings.anchor?' · anchor':''}</button>)}</div>
+        <div className="flex gap-2 flex-wrap mt-5">{langs.map(l=><button className={`language-pill ${active===l?'selected':''}`} key={l} onClick={()=>{setLang(l);setN(0);setReveal(false);}}>{LANG[l].name}{l===settings.targetLanguage?' · learning':l===settings.anchor?' · reference':''}</button>)}</div>
         <div className="pattern-box"><div className={`text-2xl font-bold ${LANG[active].font}`}>{entry?.form||'No entry yet'}</div><p className="mt-3 text-slate-600">{entry?.note}</p></div>
-        {ex && <><div className="flex justify-between items-center text-sm text-slate-500"><span>Example {Math.min(n+1,examples.length)} of {examples.length}</span><span>Read · listen · recall</span></div><Example ex={{...ex,e:reveal?ex.e:''}} lang={active} settings={settings} conv={conv}/>
+        {ex && <><div className="flex justify-between items-center text-sm text-slate-500"><span>Example {Math.min(n+1,examples.length)} of {examples.length}</span><span>Read · listen · recall</span></div><Example ex={{...ex,e:reveal?(ex.e || (active==='en'?ex.t:'')):''}} lang={active} settings={settings} conv={conv}/>
           <button className="quiet-btn w-full mt-2" aria-expanded={reveal} onClick={()=>setReveal(v=>!v)}>{reveal?'Hide meaning':'Think of the meaning, then tap to reveal'}</button>
           <div className="flex gap-3 mt-5"><button className="quiet-btn flex-1" disabled={n===0} onClick={()=>{setN(i=>i-1);setReveal(false);}}>← Previous</button><button className="quiet-btn flex-1" disabled={n>=examples.length-1} onClick={()=>{setN(i=>i+1);setReveal(false);}}>Next example →</button></div></>}
         <button className="primary-btn w-full mt-5" onClick={onPractice}>02 / Try it yourself →</button>
@@ -480,7 +476,7 @@
     }
     function ConceptPage({ concept, concepts, settings, update, conv, session, openSettings }) {
       const [pick,setPick]=useState(null); const [mode,setMode]=useState('learn');
-      const langs=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const langs=window.CatalystPreferences.languages(settings);
       const i=concepts.findIndex(c=>c.id===concept.id),next=concepts[i+1];
       const learned=settings.learned.includes(concept.id);
       return <div className="space-y-5"><div className="lesson-heading"><div className="eyebrow">{concept.group} · Lesson {i+1} of {concepts.length}</div><h1 className="study-title mt-2">{concept.title}</h1><p className="text-slate-500 mt-3 max-w-2xl">{concept.summary}</p></div>
@@ -499,7 +495,7 @@
       const learned=concepts.filter(c=>settings.learned.includes(c.id)).length;
       const next=concepts.find(c=>c.id===settings.lastConcept && !settings.learned.includes(c.id))||concepts.find(c=>!settings.learned.includes(c.id))||concepts[0];
       const p=settings.practice||{},today=p.day===new Date().toLocaleDateString('en-CA')?p.today||0:0;
-      const selected=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
+      const selected=window.CatalystPreferences.languages(settings);
       const risky=c=>Object.keys(c.pairNotes||{}).some(k=>k.split('-').every(l=>selected.includes(l))&&c.levels[k]!=='close');
       const list=concepts.filter(c=>(!onlyFalse||risky(c))&&[c.title,c.group,c.summary,...Object.values(c.entries).map(e=>e.form)].join(' ').toLowerCase().includes(q.toLowerCase()));
       return <div className="space-y-7">{screen==='today' && <><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
@@ -515,7 +511,7 @@
 
     function MyLearning({concepts,settings}) {
       const history=concepts.filter(c=>settings.learned.includes(c.id)||settings.practice?.byConcept?.[c.id]?.attempts);
-      return <section className="study-panel w-full"><span className="eyebrow">Your progress</span><h1 className="study-title mt-2">My Learning</h1><p className="text-slate-500 mt-3">Your practice and lessons marked learned, saved on this device. Marking a lesson learned is your own assessment, not a mastery score.</p>
+      return <section className="study-panel w-full"><span className="eyebrow">Your progress</span><h1 className="study-title mt-2">My Learning</h1><p className="text-slate-500 mt-3">Your practice and lessons marked learned across languages, saved on this device. Marking a lesson learned is your own assessment, not a mastery score.</p>
         {!history.length && <div className="pattern-box"><h2 className="text-lg font-bold">Your journey starts with one lesson.</h2><p className="mt-2">Study a pattern or answer a question, and it will appear here.</p><button className="primary-btn mt-4" onClick={()=>go('explore')}>Find a lesson →</button></div>}
         {history.map(c=>{const p=settings.practice?.byConcept?.[c.id];return <button className="lesson-link" key={c.id} onClick={()=>go(c.id)}><span className="lesson-number">{settings.learned.includes(c.id)?'✓':'↻'}</span><span><strong>{c.title}</strong><small>{settings.learned.includes(c.id)?'Marked learned · ':''}{p?.attempts?`${p.correct} of ${p.attempts} practice answers correct`:'No practice answers yet'}</small></span></button>})}
         <p className="text-sm text-slate-500 mt-5">Saved AI sentences remain in each lesson’s “Your words” tab. Sign in there to access them.</p>
@@ -553,40 +549,32 @@
       );
     }
 
-    function SettingsSheet({ settings, update, onClose, source, session }) {
+    function SettingsSheet({ settings, update, onClose, source, session, concepts }) {
       const Row = ({ label, children }) => <div className="flex items-center justify-between gap-3 py-2.5"><span className="text-slate-700">{label}</span>{children}</div>;
       const Toggle = ({ on, set }) => (
-        <button onClick={() => set(!on)} className={`w-11 h-6 rounded-full relative transition ${on ? 'bg-sky-600' : 'bg-slate-300'}`}>
+        <button role="switch" aria-checked={on} onClick={() => set(!on)} className={`w-11 h-6 rounded-full relative transition ${on ? 'bg-sky-600' : 'bg-slate-300'}`}>
           <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition ${on ? 'left-[22px]' : 'left-0.5'}`}></span>
         </button>
       );
-      const shownCount = STUDY.filter(l => settings.show[l]).length;
+      const targets = window.CatalystPreferences.availableTargets(concepts);
       return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30" onClick={onClose}>
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 safe-bottom max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-display text-xl">Settings</h3>
-              <button onClick={onClose} className="text-slate-400 text-2xl leading-none px-2">×</button>
+              <button aria-label="Close settings" onClick={onClose} className="text-slate-400 text-2xl leading-none px-2">×</button>
             </div>
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-2">Grammar reference</div>
-            <div className="flex gap-2 mt-1.5">
-              {ANCHORS.map(a => (
-                <button key={a} onClick={() => update({ anchor: a })} className={`flex-1 py-2 rounded-xl border font-medium ${settings.anchor === a ? 'bg-orange-50 border-orange-300 text-orange-800' : 'border-slate-200 text-slate-600'}`}>
-                  <span className={LANG[a].font}>{LANG[a].native}</span>
-                </button>
-              ))}
-            </div>
-            <label className="block text-sm text-slate-700 mt-4">Meaning language<select className="block w-full border rounded-xl p-2 mt-1" value={window.CatalystMeanings.language(settings)} onChange={e=>update({meaningLanguage:e.target.value})}>{ANCHORS.map(l=><option value={l} key={l}>{LANG[l].native}</option>)}</select></label>
+            <p className="text-sm text-slate-500 mt-2">Choose what you learn separately from the languages that help you understand it.</p>
+            <label className="preference-field">I’m learning<select value={settings.targetLanguage} onChange={e=>update({targetLanguage:e.target.value})}>{targets.map(l=><option key={l} value={l}>{LANG[l].name} · {LANG[l].native}</option>)}</select></label>
+            <label className="preference-field">Grammar reference<select value={settings.anchor} onChange={e=>update({anchor:e.target.value})}><option value="none">None — study without a comparison</option>{ORDER.map(l=><option key={l} value={l}>{LANG[l].name} · {LANG[l].native}</option>)}</select></label>
+            <p className="text-xs text-slate-500">A reference helps you compare structure. It does not change the meaning language.</p>
+            <label className="preference-field">Meaning language<select value={settings.meaningLanguage} onChange={e=>update({meaningLanguage:e.target.value})}>{ANCHORS.map(l=><option value={l} key={l}>{LANG[l].name} · {LANG[l].native}</option>)}</select></label>
             <EnglishOption settings={settings} update={update}/>
-            <p className="text-xs text-slate-500">Marathi meanings are draft translations. Grammar notes and menus currently remain in English. New examples without a translation are excluded from Marathi meaning quizzes.</p>
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4">Languages</div>
-            <div className="divide-y divide-slate-100">
-              {STUDY.map(l => (
-                <Row key={l} label={<LangTag lang={l} />}>
-                  <Toggle on={settings.show[l]} set={(v) => { if (!v && shownCount === 1) return; update(s => ({ show: { ...s.show, [l]: v } })); }} />
-                </Row>
-              ))}
-            </div>
+            <label className="preference-field">Interface language<select value={settings.interfaceLanguage} onChange={e=>update({interfaceLanguage:e.target.value})}><option value="en">English — currently available</option></select></label>
+            <p className="text-xs text-slate-500">Menus and grammar explanations are currently in English. Marathi sentence meanings are drafts. Other meaning languages will appear when translations are available.</p>
+            <fieldset className="mt-4"><legend className="text-sm font-semibold">Additional comparisons (optional)</legend><p className="text-xs text-slate-500 my-2">These appear in lessons; quizzes focus on your learning language.</p>
+              {ORDER.filter(l=>l!==settings.targetLanguage && l!==settings.anchor).map(l=><label key={l} className="flex items-center gap-3 py-2"><input type="checkbox" checked={settings.comparisonLanguages.includes(l)} onChange={e=>update(s=>({comparisonLanguages:e.target.checked?[...s.comparisonLanguages,l]:s.comparisonLanguages.filter(x=>x!==l)}))}/><LangTag lang={l}/></label>)}
+            </fieldset>
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4">Show</div>
             <div className="divide-y divide-slate-100">
               <Row label={<span>Devanagari line <span className="dev-line">देवनागरी</span></span>}><Toggle on={settings.dev} set={(v) => update({ dev: v })} /></Row>
@@ -620,7 +608,7 @@
               <button onClick={() => go(null)} className="flex-1 min-w-0 text-left">
                 <div className="font-body font-bold text-xl leading-tight">Catalyst</div>
                 <div className="text-[11px] text-sky-200 truncate">
-                  {STUDY.filter(l => settings.show[l]).map(l => LANG[l].name).join(' · ')} · reference {LANG[settings.anchor].name}
+                  Learning {LANG[settings.targetLanguage].name} · {settings.anchor==='none'?'no reference':`reference ${LANG[settings.anchor].name}`}
                 </div>
               </button>
               <span className="text-xs text-sky-200 tabular-nums">{settings.learned.filter(x => concepts.some(c => c.id === x)).length}/{concepts.length}</span>
@@ -629,11 +617,11 @@
           </header>
           <main id="main-content" className="max-w-6xl mx-auto px-4 py-6 app-content">
             {concept
-              ? <ConceptPage key={concept.id} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
-              : <Home key={screen} concepts={concepts} settings={settings} update={update} screen={screen} />}
+              ? <ConceptPage key={`${concept.id}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
+              : <Home key={`${screen}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concepts={concepts} settings={settings} update={update} screen={screen} />}
           </main>
           <nav className="app-navigation" aria-label="Main navigation">{[['today','Today','☀'],['explore','Explore','⌕'],['practice','Practice','✦'],['learning','My Learning','◷']].map(([key,label,icon])=><button key={key} aria-current={!concept && screen===key?'page':undefined} onClick={()=>go(key==='today'?null:key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
-          {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} />}
+          {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} concepts={concepts} />}
         </div>
       );
     }

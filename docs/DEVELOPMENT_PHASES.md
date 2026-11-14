@@ -4,7 +4,7 @@ Upgrade the existing GitHub Pages app incrementally. Preserve concept IDs, exist
 
 ## 1. Navigation and study dashboard
 
-Status: implemented on the phase-1 branch; awaiting review.
+Status: deployed (PR #1).
 
 - Today: continue an unfinished lesson, daily answer count and practice entry.
 - Explore: existing searchable grouped lessons and tricky-match filter.
@@ -16,6 +16,13 @@ Status: implemented on the phase-1 branch; awaiting review.
 Acceptance: all four screens work on mobile and desktop; reload retains history; direct lesson links and browser Back work; authentication callback hashes are not rewritten by initialization; existing question checks pass.
 
 ## 2. Language preferences and content contract
+
+Status: preference foundation implemented. Target, grammar reference, meaning language, interface language and optional comparisons are independent. Legacy settings and progress are retained. Quizzes focus on one target; additional comparisons do not silently expand that target. No-reference mode is supported.
+
+Current coverage: five bundled target/reference languages; Marathi and English meanings; English interface and grammar explanations. The interface selector explicitly lists only English. This is not a claim of complete translation into every language. English sentence support is optional and off by default. Marathi meanings remain drafts. New content without a matching translation is skipped by meaning quizzes and labelled unavailable in lesson views.
+
+Audio controls in practice, Burmese-app rating integration and removal of the backend's multilingual vocabulary minimum remain Phase 5 work. Basic lessons and quizzes are independent of that generator. Shared legacy lesson progress is retained and labelled as spanning languages; finer per-language skill tracking belongs to Phase 4.
+
 
 Separate target, explanation, interface and optional comparison languages. Migrate legacy anchor/show preferences without dropping progress. Make the data model extensible to additional language codes and scripts, including right-to-left layouts. Offer only available language coverage; show explicit fallback when explanations are missing. Do not claim that switching the anchor translates English notes.
 
