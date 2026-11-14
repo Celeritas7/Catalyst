@@ -404,6 +404,9 @@
 
     const GROUP_ICON = {'Word order':'🧩','Particles':'🔗','Questions and endings':'💬','Tense and aspect':'⏳','Mood':'✨','Politeness and negation':'🤝','Counting':'🔢'};
     const shuffle = (xs) => { const a = [...xs]; for (let i=a.length-1;i>0;i--) {const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
+    // Concept labels describe meaning, independently of Japanese source titles.
+    const QUIZ_LABELS = {"verb_final": {"en": "Verb at the end", "mr": "वाक्याच्या शेवटी क्रियापद"}, "modifier_before_noun": {"en": "Describing clause before the noun", "mr": "नामापूर्वी वर्णन करणारे उपवाक्य"}, "topic_wa": {"en": "Topic marker", "mr": "विषय दर्शवणारा शब्द"}, "subject_ga": {"en": "Subject marker", "mr": "कर्ता दर्शवणारा शब्द"}, "object_o": {"en": "Object marker", "mr": "कर्म दर्शवणारा शब्द"}, "place_de_ni": {"en": "Place of action / existence", "mr": "क्रियेचे ठिकाण / अस्तित्वाचे ठिकाण"}, "direction_ni_e": {"en": "Destination / recipient", "mr": "गंतव्य / प्राप्तकर्ता"}, "also_mo": {"en": "Also / too", "mr": "सुद्धा / देखील"}, "from_until": {"en": "From / until", "mr": "पासून / पर्यंत"}, "possessive_no": {"en": "Possession", "mr": "मालकी / संबंध"}, "with_to": {"en": "And / with", "mr": "आणि / सोबत"}, "yes_no_ka": {"en": "Yes/no question", "mr": "होय / नाही असे उत्तर असलेला प्रश्न"}, "wh_question": {"en": "Question words", "mr": "प्रश्नार्थक शब्द"}, "tag_ne": {"en": "Seeking agreement", "mr": "संमती विचारणे"}, "past": {"en": "Past tense", "mr": "भूतकाळ"}, "progressive": {"en": "Ongoing action / state", "mr": "चालू क्रिया / स्थिती"}, "future": {"en": "Future / plans", "mr": "भविष्यकाळ / योजना"}, "experience": {"en": "Past experience", "mr": "पूर्वी केलेल्या गोष्टीचा अनुभव"}, "want_tai": {"en": "Want to do", "mr": "काही करण्याची इच्छा"}, "ability": {"en": "Ability / can", "mr": "क्षमता / शकणे"}, "because": {"en": "Reason / because", "mr": "कारण सांगणे"}, "politeness": {"en": "Politeness", "mr": "आदरार्थी भाषा"}, "negation": {"en": "Negation / not", "mr": "नकार / नाही"}, "counters": {"en": "Counting words", "mr": "मोजणीचे शब्द"}};
+    const quizLabel = (concept, language) => QUIZ_LABELS[concept.id]?.[language] || null;
     function makeQuestions(concepts, langs, kind='meaning', meaningLanguage='en', targetLanguages=STUDY) {
       const pool=[];
       for (const c of concepts) {
@@ -421,13 +424,14 @@
         if (kind==='connections') for(let i=0;i<langs.length;i++) for(let j=i+1;j<langs.length;j++) {
           if (!targetLanguages.includes(langs[i]) && !targetLanguages.includes(langs[j])) continue;
           const level=levelOf(c,langs[i],langs[j]); if (!LEVEL[level]) continue;
-          pool.push({id:`${c.id}-${langs[i]}-${langs[j]}`,concept:c,prompt:`For “${c.title}”, how closely do these languages match?`,text:`${LANG[langs[i]].name} ↔ ${LANG[langs[j]].name}`,answer:LEVEL[level].label,options:shuffle(Object.values(LEVEL).map(x=>x.label)),note:c.pairNotes[pairKey(langs[i],langs[j])] || c.summary});
+          pool.push({id:`${c.id}-${langs[i]}-${langs[j]}`,concept:c,prompt:`For “${quizLabel(c,meaningLanguage) || c.id}”, how closely do these languages match?`,text:`${LANG[langs[i]].name} ↔ ${LANG[langs[j]].name}`,answer:LEVEL[level].label,options:shuffle(Object.values(LEVEL).map(x=>x.label)),note:c.pairNotes[pairKey(langs[i],langs[j])] || c.summary});
         }
         if (kind==='forms') for(const l of langs.filter(l=>targetLanguages.includes(l))) {
           const e=c.entries[l]; if(!e || e.none) continue;
-          const wrong=concepts.filter(o=>o.id!==c.id && o.entries[l]?.form!==e.form).map(o=>o.title);
+          const answer=quizLabel(c,meaningLanguage); if(!answer) continue;
+          const wrong=[...new Set(concepts.filter(o=>o.id!==c.id && o.entries[l] && !o.entries[l].none && o.entries[l].form!==e.form).map(o=>quizLabel(o,meaningLanguage)).filter(label=>label && label!==answer))];
           if(wrong.length<2) continue;
-          pool.push({id:`${c.id}-${l}-form`,concept:c,lang:l,prompt:'Which grammar lesson uses this form?',text:e.form,answer:c.title,options:shuffle([c.title,...shuffle(wrong).slice(0,2)]),note:e.note});
+          pool.push({id:`${c.id}-${l}-form`,concept:c,lang:l,prompt:'Which grammar lesson uses this form?',text:e.form,answer,options:shuffle([answer,...shuffle(wrong).slice(0,2)]),note:e.note});
         }
       }
       return shuffle(pool);
