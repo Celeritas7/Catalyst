@@ -478,22 +478,33 @@
         <p className="text-xs text-slate-500">Learning progress is saved on this device. Examples await native-speaker review.</p>
       </div>;
     }
-    function Home({concepts,settings,update}) {
-      const [q,setQ]=useState(''),[tab,setTab]=useState('learn');
+    function Home({concepts,settings,update,screen}) {
+      const [q,setQ]=useState('');
       const [onlyFalse,setOnlyFalse]=useState(false);
       const learned=concepts.filter(c=>settings.learned.includes(c.id)).length;
-      const next=concepts.find(c=>!settings.learned.includes(c.id))||concepts[0];
+      const next=concepts.find(c=>c.id===settings.lastConcept && !settings.learned.includes(c.id))||concepts.find(c=>!settings.learned.includes(c.id))||concepts[0];
       const p=settings.practice||{},today=p.day===new Date().toLocaleDateString('en-CA')?p.today||0:0;
       const selected=[...STUDY.filter(l=>settings.show[l]),settings.anchor];
       const risky=c=>Object.keys(c.pairNotes||{}).some(k=>k.split('-').every(l=>selected.includes(l))&&c.levels[k]!=='close');
       const list=concepts.filter(c=>(!onlyFalse||risky(c))&&[c.title,c.group,c.summary,...Object.values(c.entries).map(e=>e.form)].join(' ').toLowerCase().includes(q.toLowerCase()));
-      return <div className="space-y-7"><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
-        <div className="stats-grid"><div><span>🌱 Lessons learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
-        <nav className="study-tabs" aria-label="Study area">{[['learn','📚 Learning path'],['practice','🎯 Practice lab']].map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={tab===id?'selected':''}>{label}</button>)}</nav>
-        {tab==='practice'?<Practice concepts={concepts} settings={settings} update={update} onClose={()=>setTab('learn')}/>:<><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
+      return <div className="space-y-7">{screen==='today' && <><section className="hero"><div className="hero-copy"><span className="hero-kicker">SMALL LESSONS. BIG CONNECTIONS.</span><h1>Grammar that<br/><em>clicks.</em></h1><p>Use the languages you know to unlock the ones you’re learning.</p><button className="hero-button" disabled={!next} onClick={()=>next&&go(next.id)}>{learned===concepts.length && concepts.length?'Revisit a lesson':learned?'Continue learning':'Start your first lesson'} <span>↗</span></button>{next && <div className="hero-next">Up next · {next.title}</div>}</div><div className="grammar-art" aria-hidden="true"><div className="art-orbit"></div><div className="art-core">あ<span>↔</span>က</div><span className="art-tag tag-one">你好</span><span className="art-tag tag-two">नमस्कार</span><span className="art-spark">✦</span><span className="art-caption">Different words.<br/>Connected ideas.</span></div></section>
+        <div className="stats-grid"><div><span>🌱 Marked learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
+        <section className="study-panel w-full"><h2 className="text-xl font-bold">A little practice today</h2><p className="text-slate-500 mt-2">Recall a meaning, recognise a form, or compare languages. Five questions, at your pace.</p><button className="primary-btn mt-4" onClick={()=>go('practice')}>Start practice →</button><button className="quiet-btn mt-4 ml-3" onClick={()=>go('explore')}>Explore lessons</button></section></>}
+        {screen==='practice' && <Practice concepts={concepts} settings={settings} update={update} onClose={()=>go(null)}/>}
+        {screen==='learning' && <MyLearning concepts={concepts} settings={settings}/>}
+        {screen==='explore' && <><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
           <div className="course-grid">{[...new Set(list.map(c=>c.group))].map(g=>{const items=list.filter(c=>c.group===g);return <section className="course-card" key={g}><div className="flex items-center gap-3 mb-4"><div className="course-icon">{GROUP_ICON[g]||'📚'}</div><div><h3 className="font-bold text-lg">{g}</h3><p className="text-xs text-slate-500">{items.filter(c=>settings.learned.includes(c.id)).length} of {items.length} learned</p></div></div>{items.map(c=><button key={c.id} onClick={()=>go(c.id)} className="lesson-link"><span className={`lesson-number ${settings.learned.includes(c.id)?'done':''}`}>{settings.learned.includes(c.id)?'✓':concepts.indexOf(c)+1}</span><span className="flex-1"><strong>{c.title}</strong><small>{p.byConcept?.[c.id]?.attempts?`${p.byConcept[c.id].correct}/${p.byConcept[c.id].attempts} practice answers correct`:'Explore · recall · practise'}</small></span><span className="text-violet-400">↗</span></button>)}</section>})}</div>{!list.length&&<p className="study-panel text-center">No matching lessons. Try another word.</p>}</>}
         <p className="text-xs text-slate-500 text-center">A little every day goes a long way. Progress stays on this device.</p>
       </div>;
+    }
+
+    function MyLearning({concepts,settings}) {
+      const history=concepts.filter(c=>settings.learned.includes(c.id)||settings.practice?.byConcept?.[c.id]?.attempts);
+      return <section className="study-panel w-full"><span className="eyebrow">Your progress</span><h1 className="study-title mt-2">My Learning</h1><p className="text-slate-500 mt-3">Your practice and lessons marked learned, saved on this device. Marking a lesson learned is your own assessment, not a mastery score.</p>
+        {!history.length && <div className="pattern-box"><h2 className="text-lg font-bold">Your journey starts with one lesson.</h2><p className="mt-2">Study a pattern or answer a question, and it will appear here.</p><button className="primary-btn mt-4" onClick={()=>go('explore')}>Find a lesson →</button></div>}
+        {history.map(c=>{const p=settings.practice?.byConcept?.[c.id];return <button className="lesson-link" key={c.id} onClick={()=>go(c.id)}><span className="lesson-number">{settings.learned.includes(c.id)?'✓':'↻'}</span><span><strong>{c.title}</strong><small>{settings.learned.includes(c.id)?'Marked learned · ':''}{p?.attempts?`${p.correct} of ${p.attempts} practice answers correct`:'No practice answers yet'}</small></span></button>})}
+        <p className="text-sm text-slate-500 mt-5">Saved AI sentences remain in each lesson’s “Your words” tab. Sign in there to access them.</p>
+      </section>;
     }
 
     function Account({ session }) {
@@ -579,6 +590,8 @@
       const [sheet, setSheet] = useState(false);
       const session = useSession();
       const concept = concepts.find(c => c.id === id);
+      const screen = ['explore','practice','learning'].includes(id) ? id : 'today';
+      useEffect(() => { if (concept && settings.lastConcept !== concept.id) update({lastConcept:concept.id}); }, [concept?.id]);
       return (
         <div className="min-h-screen">
           <header className="sticky top-0 z-40 bg-[#251c48] text-white">
@@ -596,11 +609,12 @@
               <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
             </div>
           </header>
-          <main className="max-w-6xl mx-auto px-4 py-6 safe-bottom">
+          <main id="main-content" className="max-w-6xl mx-auto px-4 py-6 app-content">
             {concept
               ? <ConceptPage key={concept.id} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
-              : <Home concepts={concepts} settings={settings} update={update} />}
+              : <Home key={screen} concepts={concepts} settings={settings} update={update} screen={screen} />}
           </main>
+          <nav className="app-navigation" aria-label="Main navigation">{[['today','Today','☀'],['explore','Explore','⌕'],['practice','Practice','✦'],['learning','My Learning','◷']].map(([key,label,icon])=><button key={key} aria-current={!concept && screen===key?'page':undefined} onClick={()=>go(key==='today'?null:key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
           {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} />}
         </div>
       );
