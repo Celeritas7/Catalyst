@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict');
+require('../js/catalyst-vocabulary.js');
+const api=globalThis.CatalystVocabulary;
+const words=[{id:1,burmese_word:'ကျောင်း',english_meaning:'school'},{id:2,burmese_word:'ကျောင်းသား'},{id:3,burmese_word:'စား'}];
+const states=[{user_id:'a',word_id:1,word_type:'word',mastery_level:4},{user_id:'b',word_id:2,word_type:'word',mastery_level:5},{user_id:'a',word_id:3,word_type:'word',mastery_level:0},{user_id:'a',word_id:2,word_type:'anchor',mastery_level:5}];
+const joined=api.join(words,states,'a');
+assert.deepEqual(joined.map(w=>w.status),['known','unrated','learning']);
+assert.equal(joined[2].level,0);
+assert.deepEqual(api.matches('ကျောင်းသား',joined).map(w=>w.id),[2]);
+assert.deepEqual(api.matches('unknown',joined),[]);
+assert.equal(api.join(words,states,'b')[0].status,'unrated');
+(async()=>{
+ const calls=[];
+ const client={from(table){const filters={};calls.push({table,filters});const q={select(){return q},order(){return q},range(a,b){filters.range=[a,b];return q},eq(k,v){filters[k]=v;return q},then(resolve){return Promise.resolve({data:table==='burmese_app_words'?words:states}).then(resolve)}};return q}};
+ assert.deepEqual((await api.load(client,'a')).map(w=>w.status),['known','unrated','learning']);
+ const request=calls.find(c=>c.table==='burmese_app_user_state');
+ assert.equal(request.filters.user_id,'a');assert.equal(request.filters.word_type,'word');
+ await assert.rejects(api.load(client,null),/Sign in/);
+ const bad={from(){const q={select(){return q},order(){return q},range(){return q},eq(){return q},then(resolve){return Promise.resolve({error:{message:'denied'}}).then(resolve)}};return q}};
+ await assert.rejects(api.load(bad,'a'),/unavailable/);
+ console.log('Vocabulary: account/type isolation, level zero, unmatched text, overlapping matches, explicit filters and failure states passed.');
+})();

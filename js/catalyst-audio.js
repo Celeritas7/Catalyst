@@ -86,6 +86,8 @@
 
   function play(text, lang, opts) {
     const slow = !!(opts && opts.slow);
+    if (current && current.key === keyOf(text, lang, slow)) { stop(); return true; }
+    stop();
     const url = resolve(text, lang, opts && opts.voice);
     if (!url) {
       if (speakTTS(text, lang, slow)) return true;
