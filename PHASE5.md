@@ -25,3 +25,13 @@ Audit on 2026-11-15 found no Catalyst content/generated tables or `catalyst-sent
 - Review Burmese progress RLS before wider multi-user release: existing table has permissive public policies. This release uses explicit user filters and read-only access but does not fix those underlying policies or change the Burmese app's access.
 
 No database changes or audio generation charges were made in 5A.
+
+## 5A follow-up — multiple vocabulary sources
+
+- Added read-only KG Chart word ratings (language-scoped) and Japanese Study markings (kanji-keyed, as in that app). My Learning has a source selector; source changes clear previous results. Target/account changes remount the provider and discard stale replies.
+- Original rating labels replace a misleading universal mastery scale. KG rating 1 means Monthly Review; rating 5 means Don't know. Japanese custom categories are read when available; the optional missing category table falls back to source defaults.
+- Current Catalyst targets with KG support: Japanese, Burmese, Chinese, Marathi. English has no connected provider. Registry can extend to the other KG languages when Catalyst lesson targets support them; this release does not claim those lesson packs exist.
+- Burmese zero-count diagnosis: regular Study's REST client is anonymous and omits user_id when saving; `burmese_app_user_state.user_id` defaults to `gen_random_uuid()`. Thus populated legacy records are not reliably account-owned. New UI says No account-linked rating and explains the limitation. No legacy rows were reassigned, copied to a user, or exposed through a broader query.
+- Burmese Song reviews use separate private storage; this connection does not conflate them with regular Study progress.
+- Kata Kita `src/srs/local-review.js` stores reviews under `kk.reviews.v1` in localStorage. No cloud review source exists in its current integration. Cloud sync/import and verified ownership migration are follow-ups.
+- Validation: existing tests plus connections tests (original rating meanings, custom labels, account/language isolation, source availability, 1001-row pagination, error handling) pass. Browser checked source selector and Burmese→Japanese target switch as guest. Signed-in end-to-end checks remain unverified.
