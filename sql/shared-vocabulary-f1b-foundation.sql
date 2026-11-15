@@ -80,7 +80,7 @@ create table public.lex_source_records (
     check (mapping_status in ('unmapped','candidate','approved','excluded','conflict')),
   first_seen_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now(),
-  unique (source_project, source_app, source_table, source_pk),
+  unique (source_project, source_app, source_table, source_pk_type, source_pk),
   constraint lex_source_keys_nonempty check (
     length(btrim(source_project)) > 0 and length(btrim(source_app)) > 0
     and length(btrim(source_table)) > 0 and length(btrim(source_pk)) > 0
@@ -125,7 +125,7 @@ create table public.lex_source_links (
   related_source_pk text not null,
   related_source_pk_type text not null,
   metadata jsonb not null default '{}'::jsonb,
-  unique (source_record_id, relation_type, related_source_project, related_source_table, related_source_pk)
+  unique (source_record_id, relation_type, related_source_project, related_source_table, related_source_pk_type, related_source_pk)
 );
 
 -- Raw user events never inherit ownership from legacy random user IDs.
