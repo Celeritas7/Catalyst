@@ -59,3 +59,24 @@ Acceptance: downloaded lessons reopen without network; updates preserve progress
 ## Source review boundaries
 
 The Language_package inventory covered approximately 3,956 files outside quarantine. Fifteen core files were examined; larger files were sampled. The full archive has not been read or linguistically validated. It is private source material, not an authorization to publish those files. Relevant findings: Marathi-supported Japanese comparisons, supporting-word sentence chunks, separate reading/recall directions, and guidance to test sample layouts before expanding. The new conjunction list includes ところで. Chinese-labelled files contain Japanese template material, so filename alone cannot identify content language.
+
+### Phase 5B — personal sentence notebook
+
+Implemented a device-local notebook in My Learning. Learners choose an optional
+lesson, preserve an original sentence and their intended meaning, then append
+correction notes without replacing the original. Meaning input follows the chosen
+meaning language. Entries are separated by signed-in account (or guest) and target
+language; guest and older guided-activity drafts are not silently reassigned.
+JSON export lets learners retain a copy. Corrupt/unsupported stored data blocks
+writes rather than resetting history; write failures retain the current input.
+
+This is user-entered writing and self-review, not AI correction, validated course
+content, cloud sync or a vocabulary database. It does not change ratings, review
+intervals, shared lex tables or Akatsuki contracts. Existing guided drafts and
+AI-generated sentences remain in their existing locations. Full Phase 5 backend
+and personal-sentence integration are still pending.
+
+Source review remains partial. A fresh folder check confirmed separate Burmese
+script, vocabulary, grammar, reading, listening and practice sections. This change
+publishes no private source content and does not claim those sections were fully
+read or validated.

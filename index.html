@@ -18,6 +18,7 @@
   <script src="./js/catalyst-preferences.js"></script>
   <script src="./js/catalyst-activities.js"></script>
   <script src="./js/catalyst-review.js"></script>
+  <script src="./js/catalyst-notebook.js"></script>
   <script src="./js/catalyst-vocabulary.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -684,11 +685,35 @@
         {screen==='today'&&<ReviewQueue concepts={concepts} settings={settings} compact/>}
         {['today','explore'].includes(screen)&&<ActivityLibrary settings={settings} update={update}/>}
         {screen==='practice' && <Practice concepts={concepts} settings={settings} update={update} onClose={()=>go(null)}/>}
-        {screen==='learning' && <><ReviewQueue concepts={concepts} settings={settings}/><VocabularyPanel settings={settings}/><MyLearning concepts={concepts} settings={settings}/></>}
+        {screen==='learning' && <><SentenceNotebook key={`${settings.targetLanguage}-${settings.meaningLanguage}`} concepts={concepts} settings={settings}/><ReviewQueue concepts={concepts} settings={settings}/><VocabularyPanel settings={settings}/><MyLearning concepts={concepts} settings={settings}/></>}
         {screen==='explore' && <><div className="flex flex-wrap gap-3 items-center"><div className="flex-1 min-w-0"><h2 className="text-2xl font-bold text-slate-800">Your learning path</h2><p className="text-sm text-slate-500 mt-1">Explore in order, or follow your curiosity.</p></div><span className="text-sm text-slate-500">{concepts.length} bite-size lessons</span></div><div className="flex gap-2"><input aria-label="Search lessons" className="search-input flex-1 min-w-0" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a pattern: は, ကို, past…"/><button className={`language-pill ${onlyFalse?'selected':''}`} aria-pressed={onlyFalse} onClick={()=>setOnlyFalse(v=>!v)}>Tricky matches</button></div>
           <div className="course-grid">{[...new Set(list.map(c=>c.group))].map(g=>{const items=list.filter(c=>c.group===g);return <section className="course-card" key={g}><div className="flex items-center gap-3 mb-4"><div className="course-icon">{GROUP_ICON[g]||'📚'}</div><div><h3 className="font-bold text-lg">{g}</h3><p className="text-xs text-slate-500">{items.filter(c=>settings.learned.includes(c.id)).length} of {items.length} learned</p></div></div>{items.map(c=><button key={c.id} onClick={()=>go(c.id)} className="lesson-link"><span className={`lesson-number ${settings.learned.includes(c.id)?'done':''}`}>{settings.learned.includes(c.id)?'✓':concepts.indexOf(c)+1}</span><span className="flex-1"><strong>{c.title}</strong><small>{p.byConcept?.[c.id]?.attempts?`${p.byConcept[c.id].correct}/${p.byConcept[c.id].attempts} practice answers correct`:'Explore · recall · practise'}</small></span><span className="text-violet-400">↗</span></button>)}</section>})}</div>{!list.length&&<p className="study-panel text-center">No matching lessons. Try another word.</p>}</>}
         <p className="text-xs text-slate-500 text-center">A little every day goes a long way. Progress stays on this device.</p>
       </div>;
+    }
+
+    function SentenceNotebook({concepts,settings}) {
+      const {scope}=React.useContext(ReviewContext),api=window.CatalystNotebook;
+      const [data,setData]=useState({version:1,entries:[]}),[error,setError]=useState(''),[status,setStatus]=useState('');
+      const [original,setOriginal]=useState(''),[meaning,setMeaning]=useState(''),[lesson,setLesson]=useState('');
+      const [corrections,setCorrections]=useState({});
+      const key=scope==='loading'?null:api.key(scope,settings.targetLanguage);
+      const dirty=!!(original||meaning||Object.values(corrections).some(Boolean));
+      useEffect(()=>{const warn=e=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
+      const read=()=>{if(!key)return;try{setData(api.parse(localStorage.getItem(key)));setError('');}catch(e){setError('Notebook could not be read. Existing records have not been overwritten.');}};
+      useEffect(()=>{read();const sync=e=>{if(e.key===key)read();};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);},[key]);
+      const commit=change=>{if(!key)return false;try{const next=change(api.parse(localStorage.getItem(key)));localStorage.setItem(key,JSON.stringify(next));setData(next);setError('');setStatus('Saved on this device.');return true;}catch(e){setError('Could not save. Copy your writing before leaving and try again. Existing records are preserved.');return false;}};
+      const exportNotes=()=>{const blob=new Blob([JSON.stringify({language:settings.targetLanguage,...data},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='catalyst-notebook-'+settings.targetLanguage+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+      return <section className="study-panel w-full"><span className="eyebrow">WRITE · REFLECT · REVISIT</span><h2 className="study-title mt-2">My sentence notebook</h2><p className="mt-3">{LANG[settings.targetLanguage].name} · {scope==='guest'?'Guest notebook':'Account notebook'} · saved on this device only. Corrections are your notes, not automatic grading.</p>
+        <label className="block mt-4">Lesson (optional)<select className="search-input block w-full mt-2" value={lesson} onChange={e=>setLesson(e.target.value)}><option value="">Everyday writing</option>{concepts.map(c=><option key={c.id} value={c.id}>{quizLabel(c,settings.meaningLanguage)||c.id}</option>)}</select></label>
+        <label className="block mt-4">My original sentence<textarea className="search-input block w-full mt-2" lang={settings.targetLanguage} rows="3" maxLength={5000} value={original} onChange={e=>setOriginal(e.target.value)}/></label>
+        <label className="block mt-4">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)<textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows="2" maxLength={5000} value={meaning} onChange={e=>setMeaning(e.target.value)}/></label>
+        <button className="primary-btn mt-4" disabled={!key||!original.trim()||!!error} onClick={()=>{if(commit(d=>api.add(d,{id:crypto.randomUUID(),original,meaning,meaningLanguage:settings.meaningLanguage,lesson,createdAt:new Date().toISOString()}))){setOriginal('');setMeaning('');}}}>Save original sentence</button>
+        {error&&<p role="alert" className="review-notice">{error} <button className="quiet-btn" onClick={read}>Retry loading</button></p>}<p role="status" className="text-sm mt-3">{dirty?'Unsaved writing: save each entry before changing page or language.':status}</p>
+        <div className="flex justify-between items-center mt-6"><h3 className="font-bold">Saved sentences ({data.entries.length})</h3><button className="quiet-btn" disabled={!data.entries.length||!!error} onClick={exportNotes}>Export notebook</button></div>
+        {!data.entries.length&&<p className="mt-3 text-slate-500">Write one sentence about your day. Your original stays here when you add a correction.</p>}
+        {data.entries.map(entry=><details className="activity-detail" key={entry.id}><summary className="break-words" lang={settings.targetLanguage}>{entry.original}</summary><p className="text-xs text-slate-500 mt-3">{new Date(entry.createdAt).toLocaleString()} · {entry.corrections.length?'Has correction notes':'Not reviewed'}</p>{entry.lesson&&<button className="quiet-btn mt-2" onClick={()=>go(entry.lesson)}>Revisit lesson →</button>}{entry.meaning&&<p className="mt-3 whitespace-pre-wrap" lang={entry.meaningLanguage}>{entry.meaning}</p>}<h4 className="font-bold mt-4">Original attempt</h4><p className="whitespace-pre-wrap break-words" lang={settings.targetLanguage}>{entry.original}</p>{entry.corrections.map((c,i)=><div key={i} className="pattern-box"><strong>Correction note {i+1} · user-entered</strong><p lang={settings.targetLanguage} className="whitespace-pre-wrap break-words mt-2">{c.text}</p></div>)}<label className="block mt-4">Add a correction or explanation<textarea className="search-input block w-full mt-2" rows="3" maxLength={5000} value={corrections[entry.id]||''} onChange={e=>setCorrections({...corrections,[entry.id]:e.target.value})}/></label><button className="quiet-btn mt-3" disabled={!key||!!error||!corrections[entry.id]?.trim()} onClick={()=>{if(commit(d=>api.correct(d,entry.id,corrections[entry.id],new Date().toISOString())))setCorrections({...corrections,[entry.id]:''});}}>Save correction separately</button></details>)}
+      </section>;
     }
 
     function MyLearning({concepts,settings}) {
