@@ -80,3 +80,34 @@ Source review remains partial. A fresh folder check confirmed separate Burmese
 script, vocabulary, grammar, reading, listening and practice sections. This change
 publishes no private source content and does not claim those sections were fully
 read or validated.
+
+### Phase 5C — restore notebooks and keep guided writing
+
+Implemented merge-only JSON import under My Learning → My sentence notebook →
+Import / restore notebook. File selection previews the destination, additions,
+missing correction notes and conflicting versions before an explicit import.
+The existing version 1 exports remain compatible. A wrong target language,
+invalid/unsupported schema, duplicate IDs, oversized input or unreadable local
+notebook prevents the write. Files are read locally, not sent to a server.
+
+Existing originals and correction notes are retained. Matching records acquire
+only missing notes. Conflicting originals/meanings are kept as separate copies;
+re-importing the same content is idempotent, including those copies. A changed
+notebook since preview requires reviewing updated counts before import. Failed
+storage writes retain the preview for retry. Account/target switches invalidate
+pending file reads rather than transferring them to another notebook.
+
+Guided activities now offer Save to notebook in Use it yourself, with an optional
+intended meaning in the selected meaning language. The original writing carries
+its activity ID and lesson link (where one exists). Repeated saves of the same
+activity writing/meaning avoid duplicates; changed writing creates a new attempt.
+This action does not grade, schedule reviews or complete the activity. Legacy
+activity drafts remain in place and are copied only by an explicit learner action.
+
+Validation: notebook merge/validation/failed-write/account-language/legacy-export
+and guided-save tests, existing regression suite, and application JSX compilation.
+Browser QA confirmed restoring a version 1 export with a Marathi meaning and a
+correction, repeated-import detection, guided save/repeated-save detection,
+source/lesson display, reload persistence and target-language isolation. Physical
+iPad file-picker/download testing remains pending. This is still device-local
+storage, not cloud synchronization or offline application startup support.
