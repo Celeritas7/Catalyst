@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+require('../js/catalyst-notebook.js');
+const n=globalThis.CatalystNotebook;
+const empty=n.parse(null), first=n.add(empty,{id:'a',original:'မင်္ဂလာပါ',meaning:'नमस्कार',meaningLanguage:'mr',createdAt:'2026-11-22'});
+const next=n.correct(first,'a','My correction','2026-11-23');
+assert.equal(next.entries[0].original,'မင်္ဂလာပါ');
+assert.equal(next.entries[0].corrections.length,1);
+assert.equal(first.entries[0].corrections.length,0);
+assert.equal(empty.entries.length,0);
+assert.deepEqual(n.parse(JSON.stringify(next)),next);
+assert.notEqual(n.key('guest','my'),n.key('user','my'));
+assert.notEqual(n.key('user','my'),n.key('user','ja'));
+assert.throws(()=>n.key('loading','my'));
+for(const raw of ['{','{}','{"version":2,"entries":[]}','{"version":1,"entries":[{}]}'])assert.throws(()=>n.parse(raw));
+assert.throws(()=>n.add(first,{id:'a',original:'duplicate'}));
+assert.throws(()=>n.correct(first,'missing','note','now'));
+assert.throws(()=>n.correct(first,'a',' ','now'));
+console.log('Notebook: preservation, serialization, account/language isolation and invalid data checks passed');
