@@ -111,3 +111,22 @@ correction, repeated-import detection, guided save/repeated-save detection,
 source/lesson display, reload persistence and target-language isolation. Physical
 iPad file-picker/download testing remains pending. This is still device-local
 storage, not cloud synchronization or offline application startup support.
+
+### Phase 5D — selected-language generation
+
+Prepared a v2 sentence API and matching lesson UI. It reads only the selected
+target's eligible KG Chart vocabulary, requests the chosen Marathi/English meaning,
+and retains older multilingual saved rows. API version checks prevent calling the
+old three-language workflow. Account/target changes discard late responses; failed
+flags retain the visible sentence.
+
+An additive migration adds nullable language metadata and a private daily request
+ledger with a service-role-only atomic reservation RPC. Browser access is restricted
+to own-row reading/deletion and the flag column. Failed paid attempts count toward
+the per-user UTC-day request limit; preflight failures do not.
+
+See [Phase 5D](PHASE5D_GENERATION.md) for tests and deployment gates. Production SQL,
+Edge Function deployment, live model validation, physical browser/iPad acceptance,
+notebook cloud synchronization and a central generated-sentence view remain pending.
+The user's desktop notebook refresh and duplicate-prevention checks passed before
+this phase; the separate iPad notebook file test remains pending.

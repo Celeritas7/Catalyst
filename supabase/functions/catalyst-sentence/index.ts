@@ -1,6 +1,7 @@
 // Catalyst ✨ sentences from your words: Supabase Edge Function. The logic is in core.ts (tested outside Supabase);
 // this file only wires in the real Supabase clients and Deno's environment. Same pattern as KG Chart's kg-pronounce.
-// Secrets (Supabase → Edge Functions → Secrets): ANTHROPIC_API_KEY, optional CATALYST_MODEL (default claude-sonnet-5-5).
+// Secrets: ANTHROPIC_API_KEY and an explicitly chosen CATALYST_MODEL are both required.
+// Apply sql/catalyst-generation-v2.sql before deploying this function. See docs/PHASE5D_GENERATION.md.
 // SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 // Deploy with verify_jwt off: the browser's CORS preflight has no token; core.ts checks the login itself.
 //   supabase functions deploy catalyst-sentence --no-verify-jwt

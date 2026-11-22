@@ -16,7 +16,7 @@
 - Browser preview: Burmese quiz with Marathi choices, optional English off, unavailable audio notice, ratings hidden until answering, guest vocabulary view.
 - Signed-in end-to-end account switching and physical phone audio have not been tested.
 
-## 5B — pending
+## Backend work — historical audit and remaining deployment
 Audit on 2026-11-15 found no Catalyst content/generated tables or `catalyst-sentence` function in the configured Supabase project. Existing repository SQL/function code is not evidence of a deployed backend.
 - Deploy and validate own-user personal sentence storage and atomic daily quotas.
 - Replace mandatory three-language vocabulary minimum with a selected-target provider.
@@ -35,3 +35,21 @@ No database changes or audio generation charges were made in 5A.
 - Burmese Song reviews use separate private storage; this connection does not conflate them with regular Study progress.
 - Kata Kita `src/srs/local-review.js` stores reviews under `kk.reviews.v1` in localStorage. No cloud review source exists in its current integration. Cloud sync/import and verified ownership migration are follow-ups.
 - Validation: existing tests plus connections tests (original rating meanings, custom labels, account/language isolation, source availability, 1001-row pagination, error handling) pass. Browser checked source selector and Burmese→Japanese target switch as guest. Signed-in end-to-end checks remain unverified.
+
+## 5B and 5C — personal notebook
+
+The device-local original/correction notebook, export/merge-only restore and guided
+writing save are implemented (PRs #13 and #14). The user confirmed desktop refresh
+persistence and unchanged-writing duplicate prevention. Physical iPad export/import
+remains pending. See [Notebook](docs/NOTEBOOK.md).
+
+## 5D — selected-language generation prepared
+
+The backend now requires an explicit target and reads only that language's KG Chart
+progress. Marathi/English meanings are independent, legacy generated examples stay
+readable, and an additive migration provides atomic daily request reservations and
+explicit permissions. The frontend handles unavailable/older services and stale
+account/target responses. See [implementation, tests and deployment gates](docs/PHASE5D_GENERATION.md).
+
+This code has not been deployed to production or validated with a paid model.
+Notebook cloud sync and the central generated-sentence view remain pending.

@@ -10,28 +10,38 @@ You learn one grammar point by seeing how Japanese, Burmese and Chinese handle i
 - **Example n is the same sentence in every language**, so *By sentence* view lines them up.
 
 ## ✨ Sentences from your words (Claude)
-On each concept page, **New sentence from my words** asks Claude for a fresh sentence that uses this grammar point, in Japanese, Burmese, Chinese and Marathi, built only from words you have learned in KG Chart.
-- **Learned words** = every word in a KG Chart topic you completed, plus any word you answered correctly at least twice. Read with your own login, so only your progress.
-- **Checks before saving:** each listed word must be in your learned list and appear in the sentence, the grammar form must appear, readings must be kana / pinyin. One retry with the problems listed; otherwise you get a "try again".
-- **Saved** in `catalyst_generated`, so a sentence is made once. 🚩 Wrong hides it (kept for review). Daily limit 30 (change with a `kg_chart_settings` row, key `catalyst_daily_limit`, value e.g. `50`).
-- Needs at least 8 learned words in each of Japanese, Burmese and Chinese.
-- Audio: generated sentences use the phone's voice (no recorded clips).
 
-Setup (once):
-1. Run `sql/catalyst-generated.sql` in the Supabase SQL editor (after `catalyst-schema.sql` and `catalyst-seed.sql`).
-2. Supabase → Edge Functions → Secrets: add `ANTHROPIC_API_KEY` (from console.anthropic.com). Optional `CATALYST_MODEL` (default `claude-sonnet-5-5`).
-3. Deploy: `supabase functions deploy catalyst-sentence --no-verify-jwt` (same as kg-pronounce; the function checks the login itself).
-4. Check: open `https://ulgrfumbwjovbjzjiems.supabase.co/functions/v1/catalyst-sentence?check=1` → `{"ok":true,"configured":true}`.
-5. Sign-in with Google from Catalyst: add Catalyst's Pages URL to Supabase → Authentication → URL Configuration → Redirect URLs. On `celeritas7.github.io` you are usually already signed in, because KG Chart and Catalyst share the saved login.
+Phase 5D prepares **New sentence from my words** to use only the selected learning
+language's KG Chart progress. Japanese, Burmese, Chinese and Marathi each require
+at least eight eligible words in that language; no progress in other languages is
+required. A meaning is generated in the selected meaning language (Marathi or
+English). Examples are AI generated and not reviewed.
 
-Tests for the function logic (fake Claude and database): `node tests/sentence.test.ts`.
+Eligible words come from completed KG Chart topics or at least two correct quiz
+answers. Word ratings are separate. Older multilingual saved sentences remain
+readable; the device-local learner notebook keeps originals and corrections intact.
+
+Generation requires an approved backend setup. The frontend checks the API version
+and configuration before enabling generation. The additive database migration,
+explicit model configuration, permissions, atomic daily request limits, failure
+behavior, validation and deployment/rollback steps are documented in
+[Phase 5D](docs/PHASE5D_GENERATION.md). Merging code does not deploy the backend.
+`ANTHROPIC_API_KEY` and `CATALYST_MODEL` are both required; no default model is assumed.
+
+Daily limits count generation requests, including attempts that reach the model
+but later fail. The default is 30 per user per UTC day across languages. Generated
+examples are saved in `catalyst_generated`; 🚩 Wrong hides a sentence after its flag
+is successfully saved. New generation requires an internet connection.
+
+Tests: `npm ci`, `npm test`, `npm run check:app` (Node 22.18+). No production
+credentials or paid model calls are needed for these checks.
 
 ## Stack (same as KG Chart)
 - `index.html`: React + Tailwind + Babel in the page. No build step for the page. Babel is pinned to `@7` (see note below).
 - Supabase project `ulgrfumbwjovbjzjiems`, tables `catalyst_concepts`, `catalyst_entries`, `catalyst_examples`. Read-only from the browser.
 - Devanagari: Burmese and Chinese from `celeritas7.github.io/language-utils` (same converters as KG Chart); Japanese from the kana reading in `js/catalyst-scripts.js`.
 - Audio: `js/catalyst-audio.js` (copy of KG Chart's player). Clips in `vocabulary-assets/audio-grammar/<lang>/`. Until clips exist, the phone's own voice is used if it has one.
-- The page also carries a built-in copy of the content (`js/catalyst-data.js`), so it works before the tables exist and offline.
+- The page also carries a built-in copy of the content (`js/catalyst-data.js`), so lessons can load before the tables exist. Reliable offline reopening still requires Phase 6 app/dependency caching.
 
 ## Folders
 ```
@@ -45,6 +55,7 @@ tools/gen_catalyst_audio.py Azure clips → Supabase Storage (same keys as gen_k
 sql/catalyst-schema.sql     tables + RLS (run once)
 sql/catalyst-seed.sql       generated content for Supabase (safe to run twice)
 sql/catalyst-generated.sql  table for Claude's sentences (run once)
+sql/catalyst-generation-v2.sql  selected-language metadata and atomic request quota
 supabase/functions/catalyst-sentence/   Edge Function: core.ts (logic), index.ts (wiring)
 tests/sentence.test.ts     tests for core.ts
 ```
