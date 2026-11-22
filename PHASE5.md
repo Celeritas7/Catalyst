@@ -53,3 +53,16 @@ account/target responses. See [implementation, tests and deployment gates](docs/
 
 This code has not been deployed to production or validated with a paid model.
 Notebook cloud sync and the central generated-sentence view remain pending.
+
+## 5E — backend readiness prepared
+
+A fresh read-only Technical audit confirmed the five source prerequisites pass,
+but Catalyst tables, quota RPC and sentence function are absent. Added explicit
+content grants, a reproducible read-only preflight, and an atomic first-install
+bundle that refuses existing Catalyst objects and starts generation at limit zero.
+
+Local first-install/RLS/grant/rollback tests and a PostgreSQL 17.6 rehearsal with
+20 separate concurrent sessions passed. See [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md)
+for evidence, safe installation and remaining account/model/iPad acceptance.
+Production is unchanged. A fresh backup and separately authorized paused install
+come before deployment and live-model activation.

@@ -52,3 +52,23 @@ drop policy if exists catalyst_entries_read on public.catalyst_entries;
 create policy catalyst_entries_read on public.catalyst_entries for select to anon, authenticated using (true);
 drop policy if exists catalyst_examples_read on public.catalyst_examples;
 create policy catalyst_examples_read on public.catalyst_examples for select to anon, authenticated using (true);
+
+-- RLS does not grant table access. Work with both older broad project defaults
+-- and newer projects that require explicit grants. Do not change global defaults
+-- or permissions on the sibling KG Chart application's tables.
+revoke all on public.catalyst_concepts, public.catalyst_entries, public.catalyst_examples
+  from public, anon, authenticated, service_role;
+-- Table-level REVOKE does not remove earlier column grants.
+do $$
+declare v_table text; v_columns text;
+begin
+  foreach v_table in array array['catalyst_concepts','catalyst_entries','catalyst_examples'] loop
+    select string_agg(quote_ident(attname), ', ' order by attnum) into v_columns
+      from pg_attribute
+      where attrelid = format('public.%I', v_table)::regclass and attnum > 0 and not attisdropped;
+    execute format('revoke select (%1$s), insert (%1$s), update (%1$s), references (%1$s)
+      on public.%2$I from public, anon, authenticated, service_role', v_columns, v_table);
+  end loop;
+end $$;
+grant select on public.catalyst_concepts, public.catalyst_entries, public.catalyst_examples
+  to anon, authenticated, service_role;

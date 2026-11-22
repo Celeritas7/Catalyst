@@ -130,3 +130,20 @@ Edge Function deployment, live model validation, physical browser/iPad acceptanc
 notebook cloud synchronization and a central generated-sentence view remain pending.
 The user's desktop notebook refresh and duplicate-prevention checks passed before
 this phase; the separate iPad notebook file test remains pending.
+
+### Phase 5E — backend readiness and first-install rehearsal
+
+Read-only inspection confirmed compatible KG source columns, RLS flags, required
+grants, the vocabulary translation relationship and allow-list execution. Catalyst
+tables/RPC and the sentence function are absent in the configured Technical project.
+Prepared explicit grammar content grants, a read-only preflight and a reproducible
+atomic first-install bundle. It rejects any existing Catalyst objects and starts
+with the generation limit at zero.
+
+Full installation tests cover broad and explicit-only default privileges, rollback,
+preservation and denied writes. A disposable PostgreSQL 17.6 cluster verified the
+quota under 20 distinct simultaneous sessions, including legacy usage, independent
+users and non-refundable reservations. Hosted staging, actual Auth/Edge behavior,
+live-model validation and physical browser/iPad testing remain separate gates.
+See [Phase 5E](PHASE5E_BACKEND_READINESS.md). No production writes or deployment
+occurred. Next: current backup, approved paused installation, then staged activation.

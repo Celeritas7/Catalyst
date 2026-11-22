@@ -36,6 +36,12 @@ is successfully saved. New generation requires an internet connection.
 Tests: `npm ci`, `npm test`, `npm run check:app` (Node 22.18+). No production
 credentials or paid model calls are needed for these checks.
 
+Backend readiness and a guarded, paused first-install package are prepared in
+[Phase 5E](docs/PHASE5E_BACKEND_READINESS.md). The fresh hosted audit found no
+Catalyst tables or sentence function. Use `npm run check:backend` to check the
+SQL package and `npm run test:postgres` for the disposable PostgreSQL concurrency
+rehearsal. Production installation and live generation still need separate approval.
+
 ## Stack (same as KG Chart)
 - `index.html`: React + Tailwind + Babel in the page. No build step for the page. Babel is pinned to `@7` (see note below).
 - Supabase project `ulgrfumbwjovbjzjiems`, tables `catalyst_concepts`, `catalyst_entries`, `catalyst_examples`. Read-only from the browser.
@@ -56,19 +62,27 @@ sql/catalyst-schema.sql     tables + RLS (run once)
 sql/catalyst-seed.sql       generated content for Supabase (safe to run twice)
 sql/catalyst-generated.sql  table for Claude's sentences (run once)
 sql/catalyst-generation-v2.sql  selected-language metadata and atomic request quota
+sql/catalyst-preflight.sql  read-only backend prerequisite inspection
+sql/catalyst-initial-install.sql  guarded atomic first install; generation paused
 supabase/functions/catalyst-sentence/   Edge Function: core.ts (logic), index.ts (wiring)
 tests/sentence.test.ts     tests for core.ts
 ```
 
 ## Setup
 1. New GitHub repo (e.g. `Celeritas7/catalyst`), push this folder, turn on GitHub Pages.
-2. Supabase SQL editor: run `sql/catalyst-schema.sql`, then `sql/catalyst-seed.sql`. ⚙︎ Settings then shows "Content: Supabase".
+2. Review [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md), the read-only preflight and
+   first-install bundle before an approved backend installation. The first-install
+   bundle refuses existing Catalyst objects; never use it for upgrades. Once the
+   content tables are installed, ⚙︎ Settings shows "Content: Supabase".
 3. Audio: `python tools/gen_catalyst_audio.py --lang ja --dry-run`, then without `--dry-run`; repeat for `my`, `zh`, `mr`. About 2,600 characters in total.
 
 ## Changing content
 1. Edit `data/grammar.yaml`.
 2. `npm install` (once), then `node tools/build_data.mjs`. It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
-3. Commit `js/catalyst-data.js`, run `sql/catalyst-seed.sql` in Supabase, rerun the audio script for changed sentences.
+3. Run `npm run prepare:backend` and commit the generated data/SQL. Before an
+   approved database content update, review `sql/catalyst-seed.sql`: it deletes
+   removed concepts and can cascade to saved sentences. Prepare a preservation
+   plan for any removals. Rerun the audio script only for approved changed content.
 
 Japanese readings are written as pronounced: topic は → わ, へ → え, を → お. Mark an entry `checked: true` once a native speaker has checked it.
 
