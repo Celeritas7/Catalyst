@@ -108,7 +108,9 @@ refusal, model retry limits, invalid responses, save failures and legacy rows.
 An isolated PostgreSQL engine (PGlite) applies the migration twice and checks
 existing JSON, RLS, table/column grants, per-user/day limits, disabled/malformed
 settings and non-refundable usage. PGlite queues parallel calls on one backend;
-real multi-session contention still requires isolated Supabase/PostgreSQL staging.
+real multi-session contention was a remaining gate at the end of this phase.
+[Phase 5E](PHASE5E_BACKEND_READINESS.md) subsequently passed a disposable PostgreSQL
+17.6 test using 20 separate sessions. Hosted Auth/Edge validation remains pending.
 Mounted React interaction tests cover legacy/new meaning display, flag/save
 failures, outdated-service gating, delayed responses after account changes,
 language/meaning changes and sign-out. These do not substitute for visual browser,
