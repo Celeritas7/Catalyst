@@ -20,6 +20,7 @@
   <script src="./js/catalyst-review.js"></script>
   <script src="./js/catalyst-notebook.js"></script>
   <script src="./js/catalyst-vocabulary.js"></script>
+  <script src="./js/catalyst-generation.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Sans+Devanagari:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Myanmar:wght@400;500;700&display=swap" rel="stylesheet">
@@ -362,85 +363,81 @@
       );
     }
 
-    // ✨ Sentences Claude made for this concept from the learner's KG Chart words (Edge Function catalyst-sentence)
-    function YourSentences({ concept, langs, settings, conv, session, openSettings }) {
-      const [rows, setRows] = useState(null);       // null = loading
-      const [busy, setBusy] = useState(false);
-      const [msg, setMsg] = useState(null);         // { kind: 'error' | 'info', text }
-      const [known, setKnown] = useState(null);
-      useEffect(() => {
-        setRows(null); setMsg(null);
-        if (!sb || !session) return;
-        let cancelled = false;
-        sb.from('catalyst_generated').select('*').eq('concept_id', concept.id).eq('flagged', false)
-          .order('created_at', { ascending: false }).limit(30)
-          .then(({ data, error }) => { if (!cancelled) {setRows(error ? [] : data || []); if(error)setMsg({kind:'error',text:'Personal sentences are unavailable. The sentence backend still needs setup; your saved learning progress is unaffected.'});} });
-        return () => { cancelled = true; };
-      }, [concept.id, session?.user?.id]);
-
-      if (!sb) return null;
-      const box = 'bg-gradient-to-br from-violet-50 to-sky-50 border border-violet-200 rounded-2xl p-3.5';
-      if (!session) return (
-        <div className={box}>
-          <div className="font-semibold text-violet-900">✨ Sentences from your words</div>
-          <p className="text-sm text-slate-600 mt-1">Sign in with your KG Chart account. Claude then writes new sentences for this grammar point using only words you've learned there.</p>
-          <button onClick={openSettings} className="mt-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold">Sign in</button>
-        </div>
-      );
-
-      const make = async () => {
-        setBusy(true); setMsg(null);
+    // Account/target/meaning/concept changes remount this component. Aborted or
+    // late requests may finish on the server, but cannot populate a different view.
+    function YourSentences({ concept, settings, conv, session, openSettings }) {
+      const api=window.CatalystGeneration,target=settings.targetLanguage,meaningLanguage=settings.meaningLanguage;
+      const [rows,setRows]=useState(null),[busy,setBusy]=useState(''),[msg,setMsg]=useState(null);
+      const [known,setKnown]=useState(null),[capability,setCapability]=useState(null),[reload,setReload]=useState(0);
+      const active=React.useRef(false),locked=React.useRef(false),pending=React.useRef(null);
+      useEffect(()=>{active.current=true;return()=>{active.current=false;pending.current?.abort();};},[]);
+      useEffect(()=>{
+        let cancelled=false;
+        setRows(null);setMsg(null);
+        if(!sb||!session?.user?.id||!api.targets.includes(target)){setRows([]);return;}
+        api.load(sb,session.user.id,concept.id,target).then(data=>{if(!cancelled)setRows(data);})
+          .catch(error=>{if(!cancelled){setRows([]);setMsg({kind:'error',text:error.message});}});
+        return()=>{cancelled=true;};
+      },[reload]);
+      useEffect(()=>{
+        const controller=new AbortController();
+        if(!session?.user?.id||!api.targets.includes(target))return;
+        fetch(FN_URL+'?check=1',{signal:controller.signal,headers:{apikey:SUPABASE_ANON_KEY}})
+          .then(r=>r.ok?r.json():null).then(info=>{if(!controller.signal.aborted)setCapability(api.compatible(info,target));})
+          .catch(()=>{if(!controller.signal.aborted)setCapability(false);});
+        return()=>controller.abort();
+      },[reload]);
+      const box='bg-gradient-to-br from-violet-50 to-sky-50 border border-violet-200 rounded-2xl p-3.5';
+      if(!sb)return <div className={box}>Sentence generation is unavailable. Please reload when connected.</div>;
+      if(session===undefined)return <div className={box} role="status">Checking sign-in…</div>;
+      if(!session)return <div className={box}><div className="font-semibold text-violet-900">✨ Sentences from your words</div><p className="text-sm mt-2">Sign in with your KG Chart account to make examples in your selected learning language.</p><button onClick={openSettings} className="primary-btn mt-3">Sign in</button></div>;
+      if(!api.targets.includes(target))return <div className={box}>Sentence generation has no vocabulary source for {LANG[target].name} yet. Existing lessons and your notebook are available.</div>;
+      const make=async()=>{
+        if(locked.current||!capability)return;
+        locked.current=true;setBusy('generate');setMsg(null);
+        const controller=new AbortController();pending.current=controller;
         try {
-          const r = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ concept_id: concept.id }) });
-          const j = await r.json().catch(() => ({ ok: false, message: `Error ${r.status}` }));
-          if (j.known) setKnown(j.known);
-          if (!j.ok) setMsg({ kind: 'error', text: j.message || 'Something went wrong. Try again.' });
-          else { setRows(prev => [j.row, ...(prev || [])]); setMsg({ kind: 'info', text: `${j.used}/${j.limit} today` }); }
-        } catch (e) { setMsg({ kind: 'error', text: "Couldn't reach the sentence maker. Check your connection." }); }
-        setBusy(false);
+          const response=await fetch(FN_URL,{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(api.request(concept.id,target,meaningLanguage))});
+          const result=await response.json();
+          if(!active.current)return;
+          if(result.known)setKnown(result.known[target]);
+          if(!response.ok||!result.ok)setMsg({kind:'error',text:result.message||'Generation failed. Your saved work is unchanged.'});
+          else if(!api.visible(result.row,session.user.id,target))setMsg({kind:'error',text:'The saved response did not match this account and language. Reload saved sentences.'});
+          else {setRows(prev=>[result.row,...(prev||[]).filter(row=>row.id!==result.row.id)]);setMsg({kind:'info',text:`${result.used}/${result.limit} generation requests today · resets at midnight UTC`});}
+        }catch(error){if(active.current)setMsg({kind:'error',text:'Could not confirm the result. Reload saved sentences before making another request; it may already have been saved.'});}
+        finally{if(active.current){locked.current=false;setBusy('');}pending.current=null;}
       };
-      const flag = async (row) => {
-        setRows(prev => prev.filter(r => r.id !== row.id));
-        const { error } = await sb.from('catalyst_generated').update({ flagged: true }).eq('id', row.id);
-        if (error) window.CatalystAudio.toast("Couldn't save the flag");
-        else window.CatalystAudio.toast('Hidden. Thanks for flagging it.');
+      const flag=async(row)=>{
+        if(locked.current)return;
+        locked.current=true;setBusy('flag');setMsg(null);
+        try{
+          const {data,error}=await sb.from('catalyst_generated').update({flagged:true}).eq('id',row.id).eq('user_id',session.user.id).select('id');
+          if(!active.current)return;
+          if(error||!data?.some(item=>item.id===row.id))setMsg({kind:'error',text:'Could not save the flag. The sentence remains visible; try again.'});
+          else{setRows(prev=>prev.filter(item=>item.id!==row.id));setMsg({kind:'info',text:'Sentence hidden and kept for review.'});}
+        }catch{if(active.current)setMsg({kind:'error',text:'Could not save the flag. Please try again.'});}
+        finally{if(active.current){locked.current=false;setBusy('');}}
       };
-      const shown = langs.filter(l => l !== 'en');
-      return (
-        <div className={box}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-semibold text-violet-900">✨ Sentences from your words</div>
-            {known && <div className="text-[11px] text-slate-500">words: {['ja', 'my', 'zh'].map(l => `${LANG[l].name.slice(0, 2)} ${known[l]}`).join(' · ')}</div>}
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">Made by Claude from words you know in KG Chart. Not checked: flag anything that looks wrong.</p>
-          <button disabled={busy} onClick={make} className="mt-2.5 w-full py-2.5 rounded-xl bg-violet-600 text-white font-semibold disabled:opacity-60">
-            {busy ? 'Claude is writing…' : '✨ New sentence from my words'}
-          </button>
-          {msg && <p className={`text-sm mt-2 ${msg.kind === 'error' ? 'text-rose-700' : 'text-slate-500'}`}>{msg.text}</p>}
-          {rows === null && <p className="text-sm text-slate-400 mt-2">Loading…</p>}
-          <div className="space-y-2.5 mt-2.5">
-            {(rows || []).map(row => (
-              <div key={row.id} className="bg-white rounded-xl border border-slate-200 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <Meaning text={row.sentences.en} settings={settings}/>
-                  <button onClick={() => flag(row)} className="shrink-0 text-xs text-slate-400 px-2 py-1 rounded-lg border border-slate-200 active:bg-rose-50">🚩 Wrong</button>
-                </div>
-                {shown.map(l => {
-                  const x = row.sentences[l];
-                  if (!x) return null;
-                  return (
-                    <div key={l} className="pt-1.5">
-                      <LangTag lang={l} small />
-                      <Example ex={{ t: x.t, r: x.r, h: x.h, e: '' }} lang={l} settings={settings} conv={conv} />
-                      {x.words?.length > 0 && <div className="text-[11px] text-slate-400 -mt-1.5 pb-1">your words: <span className={LANG[l].font}>{x.words.join(' · ')}</span></div>}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
+      return <div className={box}>
+        <div className="font-semibold text-violet-900">✨ Sentences from your {LANG[target].name} words</div>
+        <p className="text-sm mt-2">Uses completed KG Chart topics and words answered correctly at least twice in {LANG[target].name}. You need at least 8 words in this language. Word ratings are separate.</p>
+        <p className="text-xs text-slate-500 mt-2">AI generated · not reviewed. Meanings: {LANG[meaningLanguage].name}. Failed attempts after generation begins also count toward the daily request limit.</p>
+        {known!==null&&<p className="text-xs mt-2">Available {LANG[target].name} words: {known}</p>}
+        {capability===false&&<p className="review-notice">Sentence generation is not available yet. Your saved sentences and notebook remain available. Try again after the service is set up.</p>}
+        {capability===null&&<p role="status" className="text-sm mt-2">Checking sentence service…</p>}
+        <button disabled={busy||!capability||rows===null} onClick={make} className="primary-btn w-full mt-3">{busy==='generate'?'Creating sentence…':busy==='flag'?'Saving flag…':`✨ New ${LANG[target].name} sentence`}</button>
+        <button disabled={busy} className="quiet-btn w-full mt-2" onClick={()=>{setCapability(null);setReload(v=>v+1);}}>Reload saved sentences</button>
+        {msg&&<p role={msg.kind==='error'?'alert':'status'} className={`text-sm mt-2 ${msg.kind==='error'?'text-rose-700':'text-slate-600'}`}>{msg.text}</p>}
+        {rows===null&&<p className="text-sm mt-2" role="status">Loading saved sentences…</p>}
+        {rows?.length===0&&<p className="text-sm mt-3">No saved examples loaded for this lesson and learning language.</p>}
+        <div className="space-y-3 mt-3">{(rows||[]).map(row=><div key={row.id} className="bg-white rounded-xl border border-slate-200 p-3">
+          <div className="flex justify-between gap-2"><span className="text-xs text-slate-500">AI generated · not reviewed{!row.target_language?' · earlier multilingual example':''}</span><button disabled={busy} className="quiet-btn" onClick={()=>flag(row)}>🚩 Wrong</button></div>
+          <LangTag lang={target} small/><Example ex={row.sentences[target]} lang={target} settings={settings} conv={conv}/>
+          <p className="text-sm mt-2" lang={meaningLanguage}>{api.meaning(row,meaningLanguage)||'Meaning unavailable in this language for this saved example.'}</p>
+          {meaningLanguage!=='en'&&settings.showEnglish&&<p className="text-sm text-slate-500 mt-1" lang="en">{api.meaning(row,'en')}</p>}
+          {row.sentences[target].words?.length>0&&<p className="text-xs text-slate-500 mt-2">From your words: <span lang={target}>{row.sentences[target].words.join(' · ')}</span></p>}
+        </div>)}</div>
+      </div>;
     }
 
     const ReviewContext=React.createContext(null);
@@ -561,7 +558,7 @@
         {mode==='learn' && <><ActivityLibrary settings={settings} update={update} conceptId={concept.id}/><Lesson concept={concept} langs={langs} settings={settings} conv={conv} onPractice={()=>setMode('practice')}/></>}
         {mode==='practice' && <Practice concepts={concepts} focus={concept.id} settings={settings} update={update} onClose={()=>setMode('learn')}/>}
         {mode==='compare' && <><Closeness concept={concept} langs={langs} pick={pick} setPick={setPick}/><div className="flex gap-2">{[['lang','By language'],['sentence','By sentence']].map(([v,label])=><button key={v} className={`language-pill ${settings.view===v?'selected':''}`} onClick={()=>update({view:v})}>{label}</button>)}</div>{settings.view==='sentence'?<SentenceView concept={concept} langs={langs} settings={settings} conv={conv}/>:<div className="grid gap-3 md:grid-cols-2">{langs.map(l=><EntryCard key={l} concept={concept} lang={l} langs={langs} settings={settings} conv={conv} pick={pick} setPick={setPick} anchor={l===settings.anchor}/>)}</div>}</>}
-        {mode==='create' && <YourSentences concept={concept} langs={langs} settings={settings} conv={conv} session={session} openSettings={openSettings}/>}
+        {mode==='create' && <YourSentences key={`${concept.id}:${session?.user?.id||'guest'}:${settings.targetLanguage}:${settings.meaningLanguage}`} concept={concept} settings={settings} conv={conv} session={session} openSettings={openSettings}/>}
         <div className="flex flex-wrap gap-3"><button className={`quiet-btn flex-1 ${learned?'text-emerald-700':''}`} onClick={()=>update(s=>({learned:learned?s.learned.filter(x=>x!==concept.id):[...s.learned,concept.id]}))}>{learned?'✓ Learned · tap to undo':'✓ Mark as learned'}</button>{next && <button className="quiet-btn flex-1" onClick={()=>go(next.id)}>Next lesson →</button>}</div>
         <p className="text-xs text-slate-500">Learning progress is saved on this device. Examples await native-speaker review.</p>
       </div>;
