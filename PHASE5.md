@@ -51,18 +51,35 @@ readable, and an additive migration provides atomic daily request reservations a
 explicit permissions. The frontend handles unavailable/older services and stale
 account/target responses. See [implementation, tests and deployment gates](docs/PHASE5D_GENERATION.md).
 
-This code has not been deployed to production or validated with a paid model.
+At the end of 5D, this code had not been deployed or validated with a paid model.
+The later paused deployment is recorded in 5F below; paid-model validation is pending.
 Notebook cloud sync and the central generated-sentence view remain pending.
 
 ## 5E — backend readiness prepared
 
 A fresh read-only Technical audit confirmed the five source prerequisites pass,
-but Catalyst tables, quota RPC and sentence function are absent. Added explicit
+but Catalyst tables, quota RPC and sentence function were absent. Added explicit
 content grants, a reproducible read-only preflight, and an atomic first-install
 bundle that refuses existing Catalyst objects and starts generation at limit zero.
 
 Local first-install/RLS/grant/rollback tests and a PostgreSQL 17.6 rehearsal with
 20 separate concurrent sessions passed. See [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md)
 for evidence, safe installation and remaining account/model/iPad acceptance.
-Production is unchanged. A fresh backup and separately authorized paused install
-come before deployment and live-model activation.
+Production was unchanged at the end of 5E. Backup and the separately authorized
+paused installation/deployment followed in 5F below.
+
+## 5F — installed and deployed; generation paused
+
+On 2026-11-24 (Japan), the owner completed a fresh database backup and applied the
+first-install SQL. Live verification found all five tables, 24 concepts, 120 entries,
+218 examples, expected grants/RLS and the server-only quota function. The daily
+limit is zero.
+
+After owner approval, `catalyst-sentence` version 1 was deployed from the merged
+source. Source readback matched. HTTP capabilities, CORS and missing/invalid-token
+rejection passed. GET reports API version 2 with model configuration incomplete.
+No model requests, reservations or generated rows resulted from these checks.
+
+See [deployment evidence and remaining acceptance](docs/PHASE5F_PAUSED_DEPLOYMENT.md).
+Next: private model/key setup, valid-account checks and an explicitly authorized
+small live-model test. Physical iPad, notebook sync and offline startup remain pending.

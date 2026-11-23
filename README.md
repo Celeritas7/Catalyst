@@ -36,11 +36,13 @@ is successfully saved. New generation requires an internet connection.
 Tests: `npm ci`, `npm test`, `npm run check:app` (Node 22.18+). No production
 credentials or paid model calls are needed for these checks.
 
-Backend readiness and a guarded, paused first-install package are prepared in
-[Phase 5E](docs/PHASE5E_BACKEND_READINESS.md). The fresh hosted audit found no
-Catalyst tables or sentence function. Use `npm run check:backend` to check the
-SQL package and `npm run test:postgres` for the disposable PostgreSQL concurrency
-rehearsal. Production installation and live generation still need separate approval.
+The database and v2 sentence function were installed on 2026-11-24 (Japan), with
+**generation paused at zero requests/day**. Connectivity, CORS and missing/invalid
+authentication checks passed. Model configuration remains incomplete; valid-account
+and live-model acceptance are pending. See the [Phase 5F checkpoint](docs/PHASE5F_PAUSED_DEPLOYMENT.md).
+The [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md) first-install package is for empty
+installations only. Use `npm run check:backend` to check it and `npm run test:postgres`
+for the disposable PostgreSQL concurrency rehearsal.
 
 ## Stack (same as KG Chart)
 - `index.html`: React + Tailwind + Babel in the page. No build step for the page. Babel is pinned to `@7` (see note below).
