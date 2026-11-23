@@ -6,6 +6,9 @@ performed as part of development. Merging the frontend alone does not enable
 live generation. The earlier 2026-11-15 audit recorded an absent backend; that
 historical audit is not a new production availability check.
 
+For the later installed database and paused function deployment on 2026-11-24
+(Japan), see the [Phase 5F checkpoint](PHASE5F_PAUSED_DEPLOYMENT.md).
+
 ## Behavior
 
 A Burmese learner needs at least eight eligible Burmese words in KG Chart, with

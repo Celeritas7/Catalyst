@@ -3,6 +3,10 @@
 Prepared 2026-11-23 (Japan), after PR #15 merged. This phase prepares a reviewed
 installation; it does not install or activate the hosted backend.
 
+**Later checkpoint:** the database and paused function were installed on
+2026-11-24 (Japan). See [Phase 5F](PHASE5F_PAUSED_DEPLOYMENT.md) for the current
+deployment state. The absence/readiness findings below describe the earlier audit.
+
 ## Current hosted state
 
 A fresh read-only inspection of the configured **Technical** project found:

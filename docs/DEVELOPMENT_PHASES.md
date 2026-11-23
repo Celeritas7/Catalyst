@@ -135,7 +135,8 @@ this phase; the separate iPad notebook file test remains pending.
 
 Read-only inspection confirmed compatible KG source columns, RLS flags, required
 grants, the vocabulary translation relationship and allow-list execution. Catalyst
-tables/RPC and the sentence function are absent in the configured Technical project.
+tables/RPC and the sentence function were absent in the configured Technical project
+at that phase's audit.
 Prepared explicit grammar content grants, a read-only preflight and a reproducible
 atomic first-install bundle. It rejects any existing Catalyst objects and starts
 with the generation limit at zero.
@@ -146,4 +147,22 @@ quota under 20 distinct simultaneous sessions, including legacy usage, independe
 users and non-refundable reservations. Hosted staging, actual Auth/Edge behavior,
 live-model validation and physical browser/iPad testing remain separate gates.
 See [Phase 5E](PHASE5E_BACKEND_READINESS.md). No production writes or deployment
-occurred. Next: current backup, approved paused installation, then staged activation.
+occurred during 5E. The later production checkpoint is recorded below.
+
+### Phase 5F — paused backend deployed
+
+On 2026-11-24 (Japan), the owner completed a fresh backup and installed the guarded
+SQL bundle. Verified all five tables, 24 concepts, 120 entries, 218 examples,
+expected grants/own-user policies and the private quota function. Generation is
+paused at zero requests per day.
+
+With explicit owner approval, deployed `catalyst-sentence` version 1 from the merged
+source and verified exact deployed-file contents. Live GET, browser CORS preflight,
+missing/invalid-token rejection and unsupported-method checks passed. GET reports
+API v2 and incomplete model configuration. Zero generated rows and quota ledger
+rows remained after testing; no paid model call was made.
+
+See [Phase 5F](PHASE5F_PAUSED_DEPLOYMENT.md). Remaining work: model/key configuration,
+positive-account and multi-user acceptance, an approved live-model test, and
+physical browser/iPad checks. This checkpoint does not complete live activation,
+notebook sync, central saved-sentence navigation or offline startup.
