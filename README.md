@@ -40,8 +40,12 @@ requires all required files plus matching app/worker versions. [Phase 6D](docs/P
 adds explicit account preparation, offline notebook ownership and complete source
 snapshots with dates, refresh and permission checks. KG snapshots currently show
 unavailable because the required permission endpoints are not deployed; Burmese
-Study and Japanese Study sources can be prepared independently. Audio is not
-downloaded. Next are 6E audio and 6F physical iPad acceptance. Existing data
+Study and Japanese Study sources can be prepared independently. [Phase 6E](docs/PHASE6E_OFFLINE_AUDIO.md)
+adds optional recorded-audio downloads by language and voice, verified sizes and
+checksums, pause/resume, repair and selective removal. No Catalyst recordings
+were published in Storage at the 2026-11-25 audit; the app reports this explicitly.
+Device speech is separate and may need a connection. Next is 6F physical iPad
+acceptance, with recorded speech blocked until clips are published. Existing data
 stays at the same app URL; updates never require clearing website data.
 
 **Show earlier AI sentences** retains read/flag access to older multilingual and
@@ -64,7 +68,7 @@ for the disposable PostgreSQL concurrency rehearsal.
 - `src/app.jsx` and `src/offline.jsx`: editable React source. `npm run build:app` compiles JSX and Tailwind, bundles pinned React/Supabase dependencies and local fonts, and emits `index.html`, hashed `assets/`, `release-manifest.json`, `sw.js` and retained `releases/` inventories. Commit generated output alongside source changes; Pages still publishes main at the root.
 - Supabase project `ulgrfumbwjovbjzjiems`, tables `catalyst_concepts`, `catalyst_entries`, `catalyst_examples`. Read-only from the browser.
 - Devanagari: Burmese and Chinese from pinned `vendor/language-utils/` sources (same owner as KG Chart), bundled locally; Japanese from the kana reading in `js/catalyst-scripts.js`.
-- Audio: `js/catalyst-audio.js` (copy of KG Chart's player). Clips in `vocabulary-assets/audio-grammar/<lang>/`. Until clips exist, the phone's own voice is used if it has one.
+- Audio: `js/catalyst-audio.js` prefers verified saved recordings, then online clips in `vocabulary-assets/audio-grammar/<lang>/`, then an available device voice. Normal and slow playback share one file. Device voices are never counted as downloaded recordings.
 - The page also carries a built-in copy of the content (`js/catalyst-data.js`). Choose **Study offline → Download app and lessons**, wait for verified readiness, and prepare the actual browser/Home Screen instance you will study in.
 
 ## Folders
@@ -82,11 +86,14 @@ releases/                  retained compatible release inventories/documents
 tools/build_app.cjs        app → reproducible static release
 js/catalyst-scripts.js      Devanagari (kana and bundled language-utils converters)
 js/catalyst-audio.js        audio player
+js/catalyst-media-core.js   verified public audio packs and byte-range playback
+js/catalyst-media.js        audio download UI controller
 js/catalyst-data.js         generated content (do not edit)
 js/catalyst-patterns.js     Burmese frames, compatible nouns and read-only KG progress
 data/grammar.yaml     THE CONTENT: edit this
 tools/build_data.mjs  YAML → js/catalyst-data.js + sql/catalyst-seed.sql, with checks
 tools/gen_catalyst_audio.py Azure clips → Supabase Storage (same keys as gen_kg_audio.py)
+tools/audio_inventory.py   read-only public clip verifier → local v2 inventory
 sql/catalyst-schema.sql     tables + RLS (run once)
 sql/catalyst-seed.sql       generated content for Supabase (safe to run twice)
 sql/catalyst-generated.sql  table for Claude's sentences (run once)
@@ -103,7 +110,7 @@ tests/sentence.test.ts     tests for core.ts
    first-install bundle before an approved backend installation. The first-install
    bundle refuses existing Catalyst objects; never use it for upgrades. Once the
    content tables are installed, ⚙︎ Settings shows "Content: Supabase".
-3. Audio: `python tools/gen_catalyst_audio.py --lang ja --dry-run`, then without `--dry-run`; repeat for `my`, `zh`, `mr`. About 2,600 characters in total.
+3. Optional audio: see [Phase 6E](docs/PHASE6E_OFFLINE_AUDIO.md). Existing recordings can be verified with `tools/audio_inventory.py` without an API key. `python tools/gen_catalyst_audio.py --lang my --dry-run` reports a generation estimate without credentials or network requests. Actual generation/upload remains a separate step requiring authorization and credentials.
 
 ## Changing content
 1. Edit `data/grammar.yaml`.

@@ -26,6 +26,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from xml.sax.saxutils import escape
+from audio_inventory import verified_manifest, LANGUAGES
 
 SUPABASE_URL = "https://ulgrfumbwjovbjzjiems.supabase.co"
 BUCKET = "vocabulary-assets"
@@ -141,12 +142,12 @@ def main() -> None:
     args = sys.argv[1:]
     force, dry = "--force" in args, "--dry-run" in args
     lang = args[args.index("--lang") + 1] if "--lang" in args else "ja"
-    if lang not in VOICES:
-        sys.exit(f"Unknown language '{lang}'. Known: {', '.join(VOICES)}")
+    if lang not in VOICES or lang not in LANGUAGES:
+        sys.exit(f"Unknown language '{lang}'. Known: {', '.join(l for l in LANGUAGES if l in VOICES)}")
     xml_lang, male, female = VOICES[lang]
 
     sb_key = os.environ.get("SUPABASE_SERVICE_KEY")
-    if not sb_key:
+    if not dry and not sb_key:
         sys.exit("Set SUPABASE_SERVICE_KEY first (Supabase > Project Settings > API > service_role).")
     az_key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
     if not dry and (not az_key or not region):
@@ -187,18 +188,13 @@ def main() -> None:
             in_storage = list_storage(prefix, sb_key)
         have[g] = sorted(n[:-4] for n in in_storage if n.endswith(".mp3"))
 
-    # clips.json = hashes that really exist in storage; the app only plays clips listed here.
-    manifest = {
-        "lang": lang,
-        "rate": RATE,
-        "voices": {"m": male, "f": female},
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "m": have["m"],
-        "f": have["f"],
-    }
+    # Publicly fetch and verify each eligible recording before publishing sizes,
+    # SHA-256 checksums and exact text fingerprints. Existing clients still use m/f.
+    # A failed verification leaves the previous manifest unchanged.
+    manifest = verified_manifest(lang, texts, {"m": male, "f": female}, have, RATE)
     upload(f"{FOLDER}/{lang}/clips.json", json.dumps(manifest, ensure_ascii=False).encode("utf-8"),
            "application/json", "max-age=60", sb_key)
-    print(f"\nclips.json: {len(have['m'])} male, {len(have['f'])} female (of {len(texts)} texts)")
+    print(f"\nclips.json: {len(manifest['m'])} male, {len(manifest['f'])} female (of {len(texts)} texts)")
     print("Done." if not failed else f"Done with {failed} failures - run again to retry them.")
 
 

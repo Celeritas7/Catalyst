@@ -64,6 +64,22 @@ extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
 
+## Phase 6E implementation checkpoint — 2026-11-25
+
+See [the 6E report](PHASE6E_OFFLINE_AUDIO.md) for inventory, storage and playback
+contracts. Release `6e993fd5a1ca723dd86f`; 118 automated tests pass.
+
+| Check | Status | Evidence and remaining boundary |
+| --- | --- | --- |
+| E1 | PARTIAL | Synthetic Chromium: explicit 6,572-byte tone download, 1/50 coverage, voice/size/progress, normal 1× and slow 0.7× decoded and ended; repeated after tab close, server stop and cached reopen. Production speech BLOCKED: zero published objects and all five manifests missing. Physical devices NOT RUN |
+| E2 | PASS (automated) | Missing manifest/file, wrong MIME/checksum, empty file, HTTP/auth/network error and quota failure never activate bad audio; app/text remain ready; active old audio retained |
+| E3 | PASS (automated), PARTIAL (Chromium) | Restarted manager reuses verified files; interrupted download/removal resumes; byte deduplication, eviction repair and selective removal verified. Chromium cold tab reopening passes; OS suspension/process termination NOT RUN |
+| E4 | PARTIAL | UI distinguishes saved recordings, online clips and device voices; normal/slow use the same saved bytes. Actual native device speech availability NOT RUN |
+| F1–F5 | NOT RUN | Physical iPad/Android/desktop acceptance remains next. Text-only checks can proceed while real recorded audio is unavailable |
+
+No production writes, paid generation, actual sign-in or learner records were
+used. The tone is a test fixture, not language pronunciation evidence.
+
 ## Phase 6D implementation checkpoint — 2026-11-25
 
 See [the 6D report](PHASE6D_ACCOUNT_SNAPSHOTS.md) for source contracts and limits.

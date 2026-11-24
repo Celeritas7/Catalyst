@@ -148,7 +148,7 @@
       const state = window.CatalystAudio.stateOf(text, lang, false);
       if (src === null) return null;
       return (
-        <button aria-label="Play" title={src === 'tts' ? 'Device voice (recorded clip not made yet)' : 'Play'}
+        <button aria-label="Play" title={src === 'saved'?'Downloaded recording':src === 'tts' ? 'Device voice — offline availability depends on this device' : 'Play recording online'}
           onClick={(e) => { e.stopPropagation(); window.CatalystAudio.play(text, lang); }}
           className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base transition ${state ? 'bg-sky-600 text-white' : 'bg-white border border-slate-200 text-slate-600 active:bg-slate-100'}`}>
           {state === 'loading' ? '…' : '🔊'}
@@ -161,7 +161,7 @@
       useAudio();
       useEffect(()=>()=>window.CatalystAudio.stop(),[text,lang]);
       const source=window.CatalystAudio.source(text,lang);
-      return <div className="sentence-audio"><span className="text-xs text-slate-500">{source==='loading'?'Checking audio…':source==='clip'?'Recorded audio':source==='tts'?'Device voice':'Audio unavailable for this sentence on this device'}</span>{source&&source!=='loading'&&<div className="flex gap-2 flex-wrap">{[false,true].map(slow=><button className="quiet-btn" key={String(slow)} aria-label={slow?'Play slowly':'Play sentence'} onClick={()=>window.CatalystAudio.play(text,lang,{slow})}>{window.CatalystAudio.stateOf(text,lang,slow)?'■ Stop':slow?'🔊 Slow':'🔊 Listen'}</button>)}</div>}</div>;
+      return <div className="sentence-audio"><span className="text-xs text-slate-500">{source==='loading'?'Checking audio…':source==='saved'?'Downloaded recording':source==='clip'?'Recorded audio · connection required':source==='tts'?'Device voice · offline availability depends on this device':'Audio unavailable for this sentence on this device'}</span>{source&&source!=='loading'&&<div className="flex gap-2 flex-wrap">{[false,true].map(slow=><button className="quiet-btn" key={String(slow)} aria-label={slow?'Play slowly':'Play sentence'} onClick={()=>window.CatalystAudio.play(text,lang,{slow})}>{window.CatalystAudio.stateOf(text,lang,slow)?'■ Stop':slow?'🔊 Slow':'🔊 Listen'}</button>)}</div>}</div>;
     }
     const VocabularyContext=React.createContext({status:'guest',words:[]});
     function VocabularyProvider({session,language,children}) {

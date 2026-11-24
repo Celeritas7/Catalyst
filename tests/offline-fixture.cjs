@@ -42,7 +42,7 @@ function worker(f,{clients=[{id:'one',clean:true},{id:'two',clean:true}],network
   }}));
   Object.assign(context,{location:{href:base+'sw.js'},indexedDB:f.indexedDB,caches:f.caches,fetch:network,clients:{matchAll:async()=>list,claim:async()=>{claims++;}},skipWaiting:async()=>{skips++;},addEventListener:(type,fn)=>{handlers[type]=fn;}});
   context.self=context;vm.createContext(context);
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/catalyst-offline-core.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../src/sw.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/catalyst-offline-core.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../js/catalyst-media-core.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../src/sw.js'),'utf8'),context);
   return {send,messages,clients:list,get skips(){return skips;},get claims(){return claims;},
     async lifecycle(type){let value;handlers[type]({waitUntil:p=>value=p});await value;},
     async fetch(request){let value;handlers.fetch({request,respondWith:p=>value=p});return value===undefined?undefined:await value;},
