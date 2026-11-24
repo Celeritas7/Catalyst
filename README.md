@@ -31,6 +31,12 @@ intact. The bank is bundled locally; reading KG progress still needs a connectio
 Reliable offline app startup and downloaded progress belong to Phase 6.
 See [Phase 5G](docs/PHASE5G_PATTERN_PRACTICE.md).
 
+**Offline work:** the [Phase 6A architecture and preservation review](docs/PHASE6A_OFFLINE_ARCHITECTURE.md)
+is complete. Next is a self-contained static build, followed by downloads and
+safe updates, account-scoped snapshots, available audio packs and physical iPad
+acceptance. There is no offline-ready claim yet. Existing data stays at the same
+app URL; updates must not require clearing website data.
+
 **Show earlier AI sentences** retains read/flag access to older multilingual and
 selected-language examples. New AI-generation controls have been removed from
 the page, and the deployed daily generation limit remains **zero**. The installed
