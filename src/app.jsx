@@ -34,16 +34,13 @@
     const SETTINGS_KEY = 'catalyst_settings';
     const DEFAULTS = window.CatalystPreferences.normalize({});
     function useSettings() {
-      const [s, setS] = useState(() => {
-        try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); return window.CatalystPreferences.normalize(v); }
-        catch (e) { return DEFAULTS; }
-      });
-      const update = (p) => setS(prev => {
-        const next = window.CatalystPreferences.normalize({ ...prev, ...(typeof p === 'function' ? p(prev) : p) });
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) {}
-        return next;
-      });
-      return [s, update];
+      const safety=window.CatalystSafety;
+      const read=()=>{try{return {data:window.CatalystPreferences.normalize(safety.settings(localStorage.getItem(SETTINGS_KEY))),error:''};}catch(error){return {data:DEFAULTS,error:'Settings or history could not be read. The original has not been overwritten. Open Study offline to export a recovery file.'};}};
+      const [state,setState]=useState(read);
+      const reload=()=>{const next=read();setState(previous=>next.error?{...previous,error:next.error}:next);};
+      useEffect(()=>{const sync=e=>{if(e.key===SETTINGS_KEY)reload();};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);},[]);
+      const update=patch=>{try{const data=safety.writeSettings(localStorage,patch);setState({data,error:''});return true;}catch(error){setState(previous=>({...previous,error:'Changes could not be saved. Existing history is preserved. '+error.message}));return false;}};
+      return [state.data,update,state.error,reload];
     }
 
     // ---- content: built-in copy first, then Supabase if its tables exist ----
@@ -422,7 +419,7 @@
       const [now,setNow]=useState(Date.now());
       useEffect(()=>{const tick=()=>setNow(Date.now()),sync=e=>{if(e.key===key)setState(read());};const timer=setInterval(tick,60000);window.addEventListener('focus',tick);window.addEventListener('storage',sync);return()=>{clearInterval(timer);window.removeEventListener('focus',tick);window.removeEventListener('storage',sync);};},[key]);
       const commit=change=>{
-        if(scope==='loading')return false;
+        if(scope==='loading'||window.CatalystSafety.isLocked())return false;
         try{const latest=engine.parse(localStorage.getItem(key)),data=change(latest);localStorage.setItem(key,JSON.stringify(data));setState({data,error:''});setNow(Date.now());return true;}
         catch(e){setState(s=>({...s,error:'Review progress could not be saved. Existing records are preserved; keep this page open and try again.'}));return false;}
       };
@@ -612,6 +609,7 @@
       const [notebookSaved,setNotebookSaved]=useState(null);
       const [checked,setChecked]=useState(false);
       const [saveStatus,setSaveStatus]=useState('');
+      const writing=useWritingDraft({scope:review.scope,language:settings.targetLanguage,type:'activity',context:pilot.id+':'+settings.meaningLanguage,fields:{draft,meaning:notebookMeaning},empty:{draft:'',meaning:''},restore:value=>{setDraft(value.draft||'');setNotebookMeaning(value.meaning||'');setStep(4);setNotebookSaved(null);}});
       const steps=['Situation','Notice','Build','Choose','Use'];
       const persist=patch=>update(s=>({activities:{...s.activities,[recordKey]:{...s.activities?.[recordKey],...patch,updatedAt:new Date().toISOString()}}}));
       const move=n=>{setStep(n);persist({step:n});};
@@ -626,20 +624,18 @@
               id:crypto.randomUUID(),original:draft,meaning:notebookMeaning,meaningLanguage:settings.meaningLanguage,createdAt:new Date().toISOString()});
             added=result.added;return result.data;
           });
+          writing.write({draft,meaning:notebookMeaning},false);
           setNotebookSaved({draft,meaning:notebookMeaning});
           setNotebookStatus(added?'Saved to My Learning → My sentence notebook on this device.':'This writing is already in your notebook. No duplicate was added.');
         }catch(e){setNotebookStatus('Could not save to the notebook. Your writing is still here; copy it before leaving and try again.');}
       };
       const saveDraft=()=>{
-        // Verify the synchronous local write before reporting success, including full storage.
-        const next={...settings,activities:{...settings.activities,[recordKey]:{...saved,draft,step,updatedAt:new Date().toISOString()}}};
-        try { localStorage.setItem(SETTINGS_KEY,JSON.stringify(next)); update({activities:next.activities}); setSaveStatus('Draft saved on this device.'); }
-        catch(e){setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');}
+        if(persist({draft,step})&&writing.write({draft,meaning:notebookMeaning},false))setSaveStatus('Draft saved on this device.');
+        else setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');
       };
       const finish=()=>{
-        const next={...settings,activities:{...settings.activities,[recordKey]:{...saved,draft,step:4,completed:true,updatedAt:new Date().toISOString()}}};
-        try {localStorage.setItem(SETTINGS_KEY,JSON.stringify(next));update({activities:next.activities});setSaveStatus('Activity completed and draft saved. This is self-reviewed practice, not a mastery score.');}
-        catch(e){setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');}
+        if(persist({draft,step:4,completed:true})&&writing.write({draft,meaning:notebookMeaning},false))setSaveStatus('Activity completed and draft saved. This is self-reviewed practice, not a mastery score.');
+        else setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');
       };
       return <section className="study-panel activity-panel"><div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(((draft!==(saved.draft||'')&&draft!==notebookSaved?.draft)||(notebookMeaning&&notebookMeaning!==notebookSaved?.meaning))&&!window.confirm('Leave without saving your writing?'))return;onClose();}}>Close activity</button></div>
         <p className="text-xs text-amber-800 mt-3">Draft content · examples and Marathi guidance await native-speaker review.</p>
@@ -650,12 +646,13 @@
         {step===1&&<><h3 className="text-xl font-bold mb-3">02 / Notice</h3>{say(pilot.notice)}<details className="activity-detail"><summary>Compare with Marathi · optional</summary>{say(pilot.comparison)}</details>{pilot.deeper&&<details className="activity-detail"><summary>Different pattern: verb-past + ところで</summary>{say(pilot.deeper)}</details>}</>}
         {step===2&&<><h3 className="text-xl font-bold mb-3">03 / Build</h3>{say(pilot.build.prompt)}<p className="text-sm text-slate-500 mt-3">Tap chunks in order. Tap a selected chunk to remove it.</p><div className="chunk-answer" aria-label="Your sentence">{!order.length&&<span className="text-slate-400">Your sentence appears here</span>}{order.map((id,i)=><button className={`chunk ${language.font}`} lang={pilot.language} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>{setOrder(order.filter((_,n)=>n!==i));setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="chunk-bank" aria-label="Available chunks">{bank.map(id=><button key={id} className={`chunk ${language.font}`} lang={pilot.language} disabled={order.includes(id)} onClick={()=>{setOrder([...order,id]);setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="flex flex-wrap gap-2 mt-4"><button className="primary-btn" disabled={order.length!==pilot.build.chunks.length} onClick={()=>{const correct=api.validOrder(pilot.build,order);if(track('build',0,correct,order.map(i=>pilot.build.chunks[i]).join(' ')))setBuildFeedback(correct?'correct':'retry');}}>Check order</button><button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);}}>Clear</button><button className="quiet-btn" aria-expanded={hint} onClick={()=>{activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setHint(!hint);}}>Hint</button><button className="quiet-btn" onClick={()=>{if(track('build',0,null,null,true)){activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setOrder([...pilot.build.orders[0]]);setBuildFeedback('revealed');}}}>Reveal one answer</button></div>{hint&&<div className="feedback">{say(pilot.build.hint)}</div>}{buildFeedback&&<div className="feedback" role="status"><strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>{say(pilot.build.explanation)}</div>}</>}
         {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{if(track('choice',i,api.choiceCorrect(q,j),option)){setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>{if(!revealed[i]){activityAssisted.current.add(activityTask(pilot,'choice',i,settings.meaningLanguage).id);if(!track('choice',i,null,null,true))return;}setRevealed({...revealed,[i]:!revealed[i]});}} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
-        {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} onChange={e=>{setDraft(e.target.value);setChecked(false);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div>
+        {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft:e.target.value,meaning:notebookMeaning});setDraft(e.target.value);setChecked(false);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div>
+          {writing.panel}
           <div className="notebook-transfer">
             <h4 className="font-bold">Keep this writing in your notebook</h4>
             <p className="mt-2">Save this attempt, then add correction notes later in My Learning. Saving does not grade or complete the activity.</p>
             <label className="block mt-3">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)
-              <textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows={2} maxLength={5000} value={notebookMeaning} onChange={e=>{setNotebookMeaning(e.target.value);setNotebookStatus('');}}/>
+              <textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows={2} maxLength={5000} value={notebookMeaning} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft,meaning:e.target.value});setNotebookMeaning(e.target.value);setNotebookStatus('');}}/>
             </label>
             <p className="mt-2">Destination: {language.name} · {review.scope==='loading'?'Checking account…':review.scope==='guest'?'Guest notebook':'Current account notebook'} · this device only.</p>
             <div className="notebook-actions mt-3"><button className="quiet-btn" disabled={review.scope==='loading'||!draft.trim()} onClick={saveToNotebook}>Save to notebook</button>
@@ -693,6 +690,7 @@
     function NotebookImport({scope,language,disabled,onImported}) {
       const api=window.CatalystNotebook,sequence=React.useRef(0);
       const [pending,setPending]=useState(null),[message,setMessage]=useState(''),[reading,setReading]=useState(false);
+      useUpdateGuard(!!pending||reading);
       useEffect(()=>()=>{sequence.current++;},[]);
       const cancel=()=>{sequence.current++;setPending(null);setReading(false);setMessage('Import cancelled. Your notebook was not changed.');};
       const choose=async e=>{
@@ -752,6 +750,9 @@
       const [data,setData]=useState({version:1,entries:[]}),[error,setError]=useState(''),[status,setStatus]=useState('');
       const [original,setOriginal]=useState(''),[meaning,setMeaning]=useState(''),[lesson,setLesson]=useState('');
       const [corrections,setCorrections]=useState({});
+      const draftFields={original,meaning,lesson,corrections};
+      const writing=useWritingDraft({scope,language:settings.targetLanguage,type:'notebook',context:settings.meaningLanguage,fields:draftFields,empty:{original:'',meaning:'',lesson:'',corrections:{}},restore:value=>{setOriginal(value.original||'');setMeaning(value.meaning||'');setLesson(value.lesson||'');setCorrections(value.corrections||{});}});
+      const edit=patch=>writing.write({...draftFields,...patch});
       const key=scope==='loading'?null:api.key(scope,settings.targetLanguage);
       const dirty=!!(original||meaning||Object.values(corrections).some(Boolean));
       useEffect(()=>{const warn=e=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
@@ -760,18 +761,19 @@
       const commit=change=>{if(!key)return false;try{const next=api.commit(localStorage,scope,settings.targetLanguage,change);setData(next);setError('');setStatus('Saved on this device.');return true;}catch(e){setError('Could not save. Copy your writing before leaving and try again. Existing records are preserved.');return false;}};
       const exportNotes=()=>{const blob=new Blob([JSON.stringify({language:settings.targetLanguage,...data},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='catalyst-notebook-'+settings.targetLanguage+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
       return <section className="study-panel w-full"><span className="eyebrow">WRITE · REFLECT · REVISIT</span><h2 className="study-title mt-2">My sentence notebook</h2><p className="mt-3">{LANG[settings.targetLanguage].name} · {scope==='guest'?'Guest notebook':'Account notebook'} · saved on this device only. Corrections are your notes, not automatic grading.</p>
-        <label className="block mt-4">Lesson (optional)<select className="search-input block w-full mt-2" value={lesson} onChange={e=>setLesson(e.target.value)}><option value="">Everyday writing</option>{concepts.map(c=><option key={c.id} value={c.id}>{quizLabel(c,settings.meaningLanguage)||c.id}</option>)}</select></label>
-        <label className="block mt-4">My original sentence<textarea className="search-input block w-full mt-2" lang={settings.targetLanguage} rows="3" maxLength={5000} value={original} onChange={e=>setOriginal(e.target.value)}/></label>
-        <label className="block mt-4">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)<textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows="2" maxLength={5000} value={meaning} onChange={e=>setMeaning(e.target.value)}/></label>
-        <button className="primary-btn mt-4" disabled={!key||!original.trim()||!!error} onClick={()=>{if(commit(d=>api.add(d,{id:crypto.randomUUID(),original,meaning,meaningLanguage:settings.meaningLanguage,lesson,createdAt:new Date().toISOString()}))){setOriginal('');setMeaning('');}}}>Save original sentence</button>
-        {error&&<p role="alert" className="review-notice">{error} <button className="quiet-btn" onClick={read}>Retry loading</button></p>}<p role="status" className="text-sm mt-3">{dirty?'Unsaved writing: save each entry before changing page or language.':status}</p>
+        <label className="block mt-4">Lesson (optional)<select className="search-input block w-full mt-2" value={lesson} disabled={scope==='loading'} onChange={e=>{edit({lesson:e.target.value});setLesson(e.target.value);}}><option value="">Everyday writing</option>{concepts.map(c=><option key={c.id} value={c.id}>{quizLabel(c,settings.meaningLanguage)||c.id}</option>)}</select></label>
+        <label className="block mt-4">My original sentence<textarea className="search-input block w-full mt-2" lang={settings.targetLanguage} rows="3" maxLength={5000} value={original} disabled={scope==='loading'} onChange={e=>{edit({original:e.target.value});setOriginal(e.target.value);}}/></label>
+        <label className="block mt-4">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)<textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows="2" maxLength={5000} value={meaning} disabled={scope==='loading'} onChange={e=>{edit({meaning:e.target.value});setMeaning(e.target.value);}}/></label>
+        <button className="primary-btn mt-4" disabled={!key||!original.trim()||!!error} onClick={()=>{if(commit(d=>api.add(d,{id:crypto.randomUUID(),original,meaning,meaningLanguage:settings.meaningLanguage,lesson,createdAt:new Date().toISOString()}))){edit({original:'',meaning:''});setOriginal('');setMeaning('');}}}>Save original sentence</button>
+        {error&&<p role="alert" className="review-notice">{error} <button className="quiet-btn" onClick={read}>Retry loading</button></p>}<p role="status" className="text-sm mt-3">{dirty?'Writing is not yet in the notebook. Save each entry or keep the draft for later.':status}</p>
+        {writing.panel}
         <div className="notebook-actions mt-6"><h3 className="font-bold">Saved sentences ({data.entries.length})</h3><button className="quiet-btn" disabled={!data.entries.length||!!error} onClick={exportNotes}>Export notebook</button></div>
         <NotebookImport scope={scope} language={settings.targetLanguage} disabled={!key||!!error} onImported={(next,message)=>{setData(next);setError('');setStatus(message);}}/>
         {!data.entries.length&&<p className="mt-3 text-slate-500">Write one sentence about your day. Your original stays here when you add a correction.</p>}
         {data.entries.map(entry=><details className="activity-detail" key={entry.id}><summary className="break-words" lang={settings.targetLanguage}>{entry.original}</summary><p className="text-xs text-slate-500 mt-3">{new Date(entry.createdAt).toLocaleString()} · {entry.corrections.length?'Has correction notes':'Not reviewed'}</p>
           {entry.activityId&&<p className="mt-3">{entry.activityId.startsWith('pattern-')?'From pattern practice: ':'From guided activity: '}{window.CatalystPatterns.pattern(entry.activityId)?.label[settings.meaningLanguage]||window.CatalystActivities.pilots.find(p=>p.id===entry.activityId&&p.language===settings.targetLanguage)?.title[settings.meaningLanguage]||entry.activityId}</p>}
           {window.CatalystPatterns.savedReading(entry)&&<><p className="text-sm mt-3">Approximate Devanagari reading</p><p lang="mr" className="dev-line mt-1">{window.CatalystPatterns.savedReading(entry)}</p></>}
-          {entry.lesson&&concepts.some(c=>c.id===entry.lesson)&&<button className="quiet-btn mt-2" onClick={()=>go(entry.lesson)}>Revisit lesson →</button>}{entry.meaning&&<p className="mt-3 whitespace-pre-wrap" lang={entry.meaningLanguage}>{entry.meaning}</p>}<h4 className="font-bold mt-4">{entry.activityId?.startsWith('pattern-')?'Saved pattern sentence':'Original attempt'}</h4><p className="whitespace-pre-wrap break-words" lang={settings.targetLanguage}>{entry.original}</p>{entry.corrections.map((c,i)=><div key={i} className="pattern-box"><strong>Correction note {i+1} · user-entered</strong><p lang={settings.targetLanguage} className="whitespace-pre-wrap break-words mt-2">{c.text}</p></div>)}<label className="block mt-4">Add a correction or explanation<textarea className="search-input block w-full mt-2" rows="3" maxLength={5000} value={corrections[entry.id]||''} onChange={e=>setCorrections({...corrections,[entry.id]:e.target.value})}/></label><button className="quiet-btn mt-3" disabled={!key||!!error||!corrections[entry.id]?.trim()} onClick={()=>{if(commit(d=>api.correct(d,entry.id,corrections[entry.id],new Date().toISOString())))setCorrections({...corrections,[entry.id]:''});}}>Save correction separately</button></details>)}
+          {entry.lesson&&concepts.some(c=>c.id===entry.lesson)&&<button className="quiet-btn mt-2" onClick={()=>go(entry.lesson)}>Revisit lesson →</button>}{entry.meaning&&<p className="mt-3 whitespace-pre-wrap" lang={entry.meaningLanguage}>{entry.meaning}</p>}<h4 className="font-bold mt-4">{entry.activityId?.startsWith('pattern-')?'Saved pattern sentence':'Original attempt'}</h4><p className="whitespace-pre-wrap break-words" lang={settings.targetLanguage}>{entry.original}</p>{entry.corrections.map((c,i)=><div key={i} className="pattern-box"><strong>Correction note {i+1} · user-entered</strong><p lang={settings.targetLanguage} className="whitespace-pre-wrap break-words mt-2">{c.text}</p></div>)}<label className="block mt-4">Add a correction or explanation<textarea className="search-input block w-full mt-2" rows="3" maxLength={5000} value={corrections[entry.id]||''} disabled={scope==='loading'} onChange={e=>{const next={...corrections,[entry.id]:e.target.value};edit({corrections:next});setCorrections(next);}}/></label><button className="quiet-btn mt-3" disabled={!key||!!error||!corrections[entry.id]?.trim()} onClick={()=>{if(commit(d=>api.correct(d,entry.id,corrections[entry.id],new Date().toISOString()))){const next={...corrections,[entry.id]:''};edit({corrections:next});setCorrections(next);}}}>Save correction separately</button></details>)}
       </section>;
     }
 
@@ -857,12 +859,15 @@
     }
 
     function App() {
-      const [settings, update] = useSettings();
+      const [settings, update, settingsError, reloadSettings] = useSettings();
       const { concepts, source } = useContent();
       const conv = useConverters();
       const id = useRoute();
-      const [sheet, setSheet] = useState(false);
+      const [sheet, setSheet] = useState(false),[offlinePanel,setOfflinePanel]=useState(false);
+      const offline=useSyncExternalStore(window.CatalystOffline.subscribe,window.CatalystOffline.getSnapshot);
+      useEffect(()=>window.CatalystOffline.init(),[]);
       const session = useSession();
+      const scope=session===undefined?'loading':session?.user?.id||'guest';
       const concept = concepts.find(c => c.id === id);
       useEffect(()=>()=>window.CatalystAudio.stop(),[id,settings.targetLanguage]);
       const screen = ['explore','practice','learning'].includes(id) ? id : 'today';
@@ -881,15 +886,19 @@
                 </div>
               </button>
               <span className="text-xs text-sky-200 tabular-nums">{settings.learned.filter(x => concepts.some(c => c.id === x)).length}/{concepts.length}</span>
+              <button className="offline-launch" onClick={()=>setOfflinePanel(true)}>{window.CatalystOffline.ready()?'Ready offline':'Study offline'}</button>
               <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
             </div>
           </header>
+          {settingsError&&<div className="settings-error" role="alert">{settingsError} <button className="quiet-btn" onClick={reloadSettings}>Retry settings</button></div>}
           <main id="main-content" className="max-w-6xl mx-auto px-4 py-6 app-content">
             {concept
               ? <ConceptPage key={`${concept.id}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
               : <Home key={`${screen}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concepts={concepts} settings={settings} update={update} screen={screen} />}
           </main>
           <nav className="app-navigation" aria-label="Main navigation">{[['today','Today','☀'],['explore','Explore','⌕'],['practice','Practice','✦'],['learning','My Learning','◷']].map(([key,label,icon])=><button key={key} aria-current={!concept && screen===key?'page':undefined} onClick={()=>go(key==='today'?null:key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
+          {offlinePanel&&<OfflinePanel key={scope} scope={scope} language={settings.targetLanguage} onClose={()=>setOfflinePanel(false)}/>}
+          {offline.locked&&ReactDOM.createPortal(<div className="update-lock" role="status">Checking open Catalyst tabs before updating…</div>,document.body)}
           {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} concepts={concepts} />}
         </div></ReviewProvider></VocabularyProvider>
       );

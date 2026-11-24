@@ -1,0 +1,15 @@
+.offline-launch{color:#fff;background:#ffffff15;border:1px solid #ffffff55;border-radius:12px;padding:.5rem .65rem;font-size:.8rem;font-weight:600;flex-shrink:0}
+.offline-backdrop{position:fixed;inset:0;z-index:70;background:#251c4880;display:flex;align-items:center;justify-content:center;padding:1rem}
+.offline-dialog{background:#fff;color:#251c48;border-radius:22px;width:min(100%,720px);max-height:92dvh;overflow:auto;padding:1.4rem;overscroll-behavior:contain}
+.offline-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
+.offline-heading h2{font-size:1.5rem;font-weight:700}.offline-dialog p{margin:.7rem 0;font-size:.95rem;line-height:1.6}
+.offline-readiness{background:#f0ebff;border:1px solid #d8cef4;border-radius:14px;padding:1rem;margin-top:1rem}
+.offline-readiness strong{font-size:1.1rem}.offline-actions{display:flex;gap:.65rem;flex-wrap:wrap;margin:1rem 0}
+.offline-dialog progress{width:100%;height:18px;accent-color:#7450ce}.offline-dialog .offline-meta{font-size:.8rem;overflow-wrap:anywhere;color:#625675}
+.offline-help{padding:1rem;border-left:4px solid #7450ce;background:#faf8ff}.recovery-panel{border-top:1px solid #ded5f2;margin-top:1.5rem;padding-top:1.25rem}
+.recovery-panel h3{font-size:1.2rem;font-weight:700}.recovery-panel label{display:block;margin:1rem 0;line-height:1.7}.recovery-panel input[type=checkbox]{margin-right:.45rem}
+.recovery-panel input[type=file]{display:block;max-width:100%;margin-top:.6rem}.recovery-panel details{margin-top:1rem}.recovery-panel summary,.draft-recovery summary{cursor:pointer;font-weight:600;padding:.7rem 0}
+.recovery-preview{padding:1rem;background:#f7f4ff;border-radius:12px;margin:1rem 0}.draft-recovery{font-size:.85rem;margin-top:.7rem}.draft-recovery p{margin:.6rem 0;color:#584a72}
+.recovery-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between;border-top:1px solid #eee;padding:.6rem 0}
+.settings-error{padding:1rem;background:#fff1df;color:#6a3b00}.update-lock{position:fixed;inset:0;background:#251c48e8;color:#fff;display:grid;place-items:center;padding:2rem;text-align:center;z-index:9999;font-size:1.2rem}
+@media(max-width:480px){.offline-backdrop{padding:.5rem}.offline-dialog{padding:1rem;max-height:95dvh}.offline-launch{font-size:.75rem;padding:.45rem}.offline-actions>button{flex-grow:1}}

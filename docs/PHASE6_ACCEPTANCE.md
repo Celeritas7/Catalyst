@@ -1,8 +1,9 @@
 # Phase 6 — offline acceptance and preservation matrix
 
-Created with Phase 6A on 2026-11-24 (Japan). **All offline product checks below
-are pending.** Source inspection and the previous Phase 5G tests do not count as
-offline device acceptance. This is the implementation checklist for the
+Created with Phase 6A on 2026-11-24 (Japan). Implementation evidence is recorded
+in the checkpoints below; physical device acceptance remains pending. Source
+inspection and the previous Phase 5G tests do not count as offline device
+acceptance. This is the implementation checklist for the
 [architecture](PHASE6A_OFFLINE_ARCHITECTURE.md).
 
 ## Baseline and evidence
@@ -62,6 +63,28 @@ Do not clear website data, uninstall the existing Home Screen app, disable RLS,
 extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
+
+## Phase 6C implementation checkpoint — 2026-11-25
+
+See [the 6C report](PHASE6C_OFFLINE_DOWNLOADS.md) for build IDs and exact fixtures.
+Final release: `5b8d25886cb7ce84fb0c`; 85 automated tests pass.
+
+| Check | Status | Evidence and remaining boundary |
+| --- | --- | --- |
+| C1 | PASS (automated + Chromium) | Explicit 252-file download, full verification and matching app/worker readiness |
+| C2 | PARTIAL | Closed all app tabs, stopped preview server, reopened cached app and public quiz; physical Airplane mode and full browser-profile restart still pending |
+| C3 | PASS (automated + Chromium) | Pause at 34 files, retained files reused on resume; simulated process restart resumes persisted download metadata |
+| C4 | PASS (automated) | Cache/metadata quota, wrong content, HTTP/network and atomic-publication failures retain old active release and sibling sentinel |
+| C5 | PASS (automated) | Exact-scope GET allowlist; query/auth/API/mutations/siblings excluded; unknown asset is not HTML |
+| C6 | PASS (automated + Chromium) | Second-tab draft blocks apply; saved drafts recover after accepted update; clean-tab freeze, no controllerchange reload; import-preview guards implemented |
+| C7 | PARTIAL | Invalid worker fixture preserves active shell; compatible forward recovery build and retained-asset promotion verified automatically; live device rollback rehearsal pending |
+| C8 | PASS (automated) | Raw settings/notebook/review preservation, visible settings/draft failures and recovery route |
+| C9 | PASS (automated) | Current/guest/device scope, merge conflicts, same-file idempotence, stale preview and partial-write journal; physical Files export/import pending |
+| C10 | PASS (automated) | Cache eviction withdraws readiness, requests repair and resumes missing file; browser/OS eviction not induced |
+| D1–F5 | NOT RUN | Account snapshots, recorded-audio packs and physical iPad/Android acceptance remain future phases |
+
+This checkpoint does not approve deployment, prove offline account identity, or
+claim physical iPad acceptance. No real learner records were used as fixtures.
 
 ## Phase 6B implementation checkpoint — 2026-11-24
 

@@ -103,6 +103,7 @@
   }
   // Read latest storage immediately before a single atomic setItem. Failures propagate to UI.
   function commit(storage,scope,targetLanguage,change){
+    if(root.CatalystSafety?.isLocked())throw Error('An update is being checked. Retry after it finishes.');
     const storageKey=key(scope,targetLanguage),current=parse(storage.getItem(storageKey));
     const next=change(current);
     const serialized=JSON.stringify(next);
