@@ -60,6 +60,17 @@ conditional on future paid activation.
 
 ## 6. Content expansion, accessibility and offline study
 
+Phase 6A architecture/preservation review is complete against merged PR #18.
+See the [offline design](PHASE6A_OFFLINE_ARCHITECTURE.md),
+[measured source inventory](phase6a-offline-inventory.json) and
+[acceptance matrix](PHASE6_ACCEPTANCE.md). This is an audit-only checkpoint;
+offline reopening has not been implemented or validated.
+
+Next is 6B: replace remote bootstrap dependencies with a reproducible static
+build at the existing URL. Then 6C adds explicit downloads, safe worker updates
+and recovery, 6D adds prepared account data, 6E adds available audio packs, and
+6F records physical iPad/Android/desktop acceptance.
+
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.

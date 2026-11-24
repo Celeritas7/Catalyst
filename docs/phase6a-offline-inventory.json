@@ -1,0 +1,193 @@
+{
+  "auditDateJapan": "2026-11-24",
+  "sourceCommit": "27318fa9a17f4b494d576d1784f8c6342ef822cd",
+  "scope": "Static source inventory and read-only public HTTP observations; not device storage or an offline acceptance test.",
+  "source": {
+    "externalScriptUrls": [
+      "https://cdn.tailwindcss.com",
+      "https://unpkg.com/react@18/umd/react.production.min.js",
+      "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
+      "https://unpkg.com/@babel/standalone@7/babel.min.js",
+      "https://unpkg.com/@supabase/supabase-js@2"
+    ],
+    "otherExternalDependencies": [
+      "Google Fonts stylesheet and WOFF2 files",
+      "language-utils/burmese.js",
+      "language-utils/chinese.js",
+      "Supabase public grammar and authenticated source APIs",
+      "Supabase audio-grammar manifests and clips"
+    ],
+    "localFiles": [
+      {
+        "path": "index.html",
+        "bytes": 107524,
+        "sha256": "74752d6228e3cacd8397540cf247877eead56a8a366f665ba1cdc335e5c546bd"
+      },
+      {
+        "path": "js/catalyst-scripts.js",
+        "bytes": 6000,
+        "sha256": "b17026045b0f5828590a66a90082b4264407d267de59e90fffe76a83a4c6de7b"
+      },
+      {
+        "path": "js/catalyst-audio.js",
+        "bytes": 8132,
+        "sha256": "79afa2eaf33994460b48f921e365e756525e546280464217ca1269fc6ca4a43c"
+      },
+      {
+        "path": "js/catalyst-data.js",
+        "bytes": 87458,
+        "sha256": "a29f2f57ef5d66852a945892c4379cfb9a54992a66d1e68794544b1be65f33e8"
+      },
+      {
+        "path": "js/catalyst-meanings.js",
+        "bytes": 7710,
+        "sha256": "98a89c71c2809d3d00acd3260748dcb2e0f7adb37fcf43a2fc83332a965f37e7"
+      },
+      {
+        "path": "js/catalyst-preferences.js",
+        "bytes": 2175,
+        "sha256": "f92ca3ea99ca322f64282b94c683742e35622715e9067bb1437d1a9978254df0"
+      },
+      {
+        "path": "js/catalyst-activities.js",
+        "bytes": 12885,
+        "sha256": "753a2d7968a05fc9ba914d61e934534cadf6b1bd504a0173af42a9a071092780"
+      },
+      {
+        "path": "js/catalyst-review.js",
+        "bytes": 4424,
+        "sha256": "5465422ce7d4c8a636f0d731c086431b99c7b5e5d33dcf4cd4be644d835c2011"
+      },
+      {
+        "path": "js/catalyst-notebook.js",
+        "bytes": 6947,
+        "sha256": "7122f3d2592dc7118006053317335622daf13dc39c6947fead7450ccd2e3c1f5"
+      },
+      {
+        "path": "js/catalyst-patterns.js",
+        "bytes": 8112,
+        "sha256": "cfa0789f373de0065b372e7af7dd06d37ff43e4ad9051903625117430802d12c"
+      },
+      {
+        "path": "js/catalyst-vocabulary.js",
+        "bytes": 5939,
+        "sha256": "7e8f247e109b92e396b20f18592633565f6f365b2a33b5a0801c0370461f0623"
+      },
+      {
+        "path": "js/catalyst-generation.js",
+        "bytes": 1750,
+        "sha256": "e8b66db8447dde0d09ba14d1336333af8de035b7473df2cd5d5c3fbe86ded5fe"
+      },
+      {
+        "path": "js/study.css",
+        "bytes": 12016,
+        "sha256": "54fd8fccf483834c13671a3a5ea013c2959b521a7fa6ffa11d4cc8ab291d4a63"
+      }
+    ],
+    "localBytes": 271072,
+    "excludedFromBytes": [
+      "CDN libraries",
+      "remote converters",
+      "fonts",
+      "audio",
+      "browser storage overhead",
+      "user records"
+    ],
+    "lockfileVersions": {
+      "react": "18.3.1",
+      "react-dom": "18.3.1",
+      "@babel/standalone": "7.29.15",
+      "@supabase/supabase-js": null,
+      "tailwindcss": null
+    },
+    "bundledContent": {
+      "concepts": 24,
+      "languages": {
+        "ja": {
+          "entries": 24,
+          "examples": 48,
+          "savedDevanagari": 48,
+          "reviewedEntries": 0
+        },
+        "my": {
+          "entries": 24,
+          "examples": 50,
+          "savedDevanagari": 50,
+          "reviewedEntries": 0
+        },
+        "zh": {
+          "entries": 24,
+          "examples": 48,
+          "savedDevanagari": 48,
+          "reviewedEntries": 0
+        },
+        "mr": {
+          "entries": 24,
+          "examples": 48,
+          "savedDevanagari": 0,
+          "reviewedEntries": 0
+        },
+        "en": {
+          "entries": 24,
+          "examples": 24,
+          "savedDevanagari": 0,
+          "reviewedEntries": 0
+        }
+      }
+    },
+    "serviceWorkerRegistered": false,
+    "webManifestLinked": false
+  },
+  "publicHttp": {
+    "app": {
+      "url": "https://celeritas7.github.io/Catalyst/",
+      "status": 200,
+      "responseBytes": 107524,
+      "patternScriptPresent": true,
+      "serviceWorkerRegistrationPresent": false,
+      "webManifestLinkPresent": false
+    },
+    "audioManifests": [
+      {
+        "language": "my",
+        "path": "audio-grammar/my/clips.json",
+        "httpStatus": 400,
+        "responseStatusCode": "404",
+        "error": "not_found",
+        "message": "Object not found",
+        "code": "NoSuchKey"
+      },
+      {
+        "language": "ja",
+        "path": "audio-grammar/ja/clips.json",
+        "httpStatus": 400,
+        "errorBody": "not inspected"
+      },
+      {
+        "language": "zh",
+        "path": "audio-grammar/zh/clips.json",
+        "httpStatus": 400,
+        "errorBody": "not inspected"
+      },
+      {
+        "language": "mr",
+        "path": "audio-grammar/mr/clips.json",
+        "httpStatus": 400,
+        "errorBody": "not inspected"
+      },
+      {
+        "language": "en",
+        "path": "audio-grammar/en/clips.json",
+        "httpStatus": 400,
+        "errorBody": "not inspected"
+      }
+    ]
+  },
+  "deviceEvidence": {
+    "desktopOfflineColdStart": "not run",
+    "physicalIPad": "not run",
+    "actualOwnerStorage": "not inspected",
+    "rootOriginServiceWorkers": "not inspected",
+    "pagesPublishingSettings": "not inspected"
+  }
+}
