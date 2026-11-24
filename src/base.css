@@ -1,0 +1,6 @@
+body { font-family: 'DM Sans', 'Noto Sans JP', 'Noto Sans Myanmar', 'Noto Sans Devanagari', 'Noto Sans SC', sans-serif; background: #f6f4ef; -webkit-tap-highlight-color: transparent; }
+    .font-burmese { line-height: 1.9; }
+    mark.gc { background: #fde68a; color: inherit; border-radius: 4px; padding: 0 2px; }
+    .dev-line { color: #1d4ed8; font-family: 'Noto Sans Devanagari', sans-serif; }
+    .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }

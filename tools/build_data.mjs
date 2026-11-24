@@ -1,5 +1,5 @@
 // Catalyst: build the app data from data/grammar.yaml.
-//   node tools/build_data.mjs                  (converters fetched from celeritas7.github.io/language-utils)
+//   node tools/build_data.mjs                  (pinned converters from vendor/language-utils)
 //   node tools/build_data.mjs --lu ../language-utils   (use a local clone instead)
 // Writes js/catalyst-data.js (the app's built-in copy) and sql/catalyst-seed.sql (paste into the Supabase SQL editor).
 // Stops with a list of problems if the content breaks a rule (missing pair level, highlight not in the text…).
@@ -30,7 +30,13 @@ const src = yaml.load(fs.readFileSync(path.join(ROOT, 'data/grammar.yaml'), 'utf
 const problems = [];
 const ids = new Set();
 
-await GC.loadAll(luDir ? async (file) => fs.readFileSync(path.join(luDir, `${file}.js`), 'utf8') : undefined);
+// Standalone ES modules from this repository by default. --lu remains an
+// explicit local-source override for reviewing a converter update.
+for (const [lang, file] of Object.entries(GC.FILES)) {
+  const code = fs.readFileSync(path.join(luDir || path.join(ROOT, 'vendor/language-utils'), `${file}.js`));
+  GC.converters[lang] = (await import(`data:text/javascript;base64,${code.toString('base64')}`)).toDev;
+}
+await GC.loadAll();
 for (const l of Object.keys(GC.FILES)) if (!GC.converters[l]) problems.push(`converter for ${l} did not load`);
 
 const concepts = src.map((c, ci) => {

@@ -63,13 +63,13 @@ conditional on future paid activation.
 Phase 6A architecture/preservation review is complete against merged PR #18.
 See the [offline design](PHASE6A_OFFLINE_ARCHITECTURE.md),
 [measured source inventory](phase6a-offline-inventory.json) and
-[acceptance matrix](PHASE6_ACCEPTANCE.md). This is an audit-only checkpoint;
-offline reopening has not been implemented or validated.
+[acceptance matrix](PHASE6_ACCEPTANCE.md). Phase 6B now implements the
+[self-contained static build](PHASE6B_STATIC_BUILD.md) at the existing URL.
+Cold offline reopening has not been implemented or validated.
 
-Next is 6B: replace remote bootstrap dependencies with a reproducible static
-build at the existing URL. Then 6C adds explicit downloads, safe worker updates
-and recovery, 6D adds prepared account data, 6E adds available audio packs, and
-6F records physical iPad/Android/desktop acceptance.
+Next is 6C: explicit downloads, safe worker updates and recovery. Then 6D adds
+prepared account data, 6E adds available audio packs, and 6F records physical
+iPad/Android/desktop acceptance.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
@@ -205,3 +205,16 @@ See [Phase 5G](PHASE5G_PATTERN_PRACTICE.md) for verification and post-merge chec
 Next: Phase 6A offline architecture and preservation review, then app/dependency
 caching and account-scoped learned-word downloads, followed by physical iPad
 Airplane-mode acceptance. Current KG progress loading still requires a connection.
+
+### Phase 6A–6B — offline architecture and local app dependencies
+
+The preservation architecture and acceptance matrix are in
+[Phase 6A](PHASE6A_OFFLINE_ARCHITECTURE.md) and [Phase 6 acceptance](PHASE6_ACCEPTANCE.md).
+[Phase 6B](PHASE6B_STATIC_BUILD.md) extracts the unchanged JSX, compiles the app
+and styles, packages exact runtime dependencies/fonts/converters, and inventories
+the static release with hashes and sizes. GitHub Pages continues to publish the
+main branch at its root, keeping the existing URL and storage keys.
+
+Next is 6C for explicit downloads, safe updates and recovery, then 6D account
+snapshots, 6E available audio and 6F physical iPad/Android acceptance. No offline
+readiness or completed live OAuth acceptance is claimed by the static build.

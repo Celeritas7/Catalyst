@@ -32,10 +32,10 @@ Reliable offline app startup and downloaded progress belong to Phase 6.
 See [Phase 5G](docs/PHASE5G_PATTERN_PRACTICE.md).
 
 **Offline work:** the [Phase 6A architecture and preservation review](docs/PHASE6A_OFFLINE_ARCHITECTURE.md)
-is complete. Next is a self-contained static build, followed by downloads and
-safe updates, account-scoped snapshots, available audio packs and physical iPad
-acceptance. There is no offline-ready claim yet. Existing data stays at the same
-app URL; updates must not require clearing website data.
+is complete. [Phase 6B](docs/PHASE6B_STATIC_BUILD.md) packages the compiled app,
+libraries, fonts and converters locally. Next are downloads and safe updates,
+account-scoped snapshots, available audio packs and physical iPad acceptance. There is no offline-ready claim yet. Existing data stays at the
+same app URL; updates must not require clearing website data.
 
 **Show earlier AI sentences** retains read/flag access to older multilingual and
 selected-language examples. New AI-generation controls have been removed from
@@ -44,24 +44,30 @@ backend and saved rows are retained. Historical generation/deployment details ar
 in [Phase 5D](docs/PHASE5D_GENERATION.md) and
 [Phase 5F](docs/PHASE5F_PAUSED_DEPLOYMENT.md); paid activation is deferred.
 
-Tests: `npm ci`, `npm test`, `npm run check:app` (Node 22.18+). No production
+Checks: `npm ci --ignore-scripts`, `npm run check:app`, `npm run check:build`,
+`npm test` (Node 22.18+). Rebuild app sources with `npm run build:app`. No production
 credentials or paid model calls are needed for these checks.
 
 The [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md) first-install package is for empty
 installations only. Use `npm run check:backend` to check it and `npm run test:postgres`
 for the disposable PostgreSQL concurrency rehearsal.
 
-## Stack (same as KG Chart)
-- `index.html`: React + Tailwind + Babel in the page. No build step for the page. Babel is pinned to `@7` (see note below).
+## Static app build
+
+- `src/app.jsx`: editable React source. `npm run build:app` compiles JSX and Tailwind, bundles pinned React/Supabase dependencies and local fonts, and emits `index.html`, hashed `assets/` and `release-manifest.json`. Commit generated output alongside source changes; Pages still publishes main at the root.
 - Supabase project `ulgrfumbwjovbjzjiems`, tables `catalyst_concepts`, `catalyst_entries`, `catalyst_examples`. Read-only from the browser.
-- Devanagari: Burmese and Chinese from `celeritas7.github.io/language-utils` (same converters as KG Chart); Japanese from the kana reading in `js/catalyst-scripts.js`.
+- Devanagari: Burmese and Chinese from pinned `vendor/language-utils/` sources (same owner as KG Chart), bundled locally; Japanese from the kana reading in `js/catalyst-scripts.js`.
 - Audio: `js/catalyst-audio.js` (copy of KG Chart's player). Clips in `vocabulary-assets/audio-grammar/<lang>/`. Until clips exist, the phone's own voice is used if it has one.
 - The page also carries a built-in copy of the content (`js/catalyst-data.js`), so lessons can load before the tables exist. Reliable offline reopening still requires Phase 6 app/dependency caching.
 
 ## Folders
 ```
-index.html            the app
-js/catalyst-scripts.js      Devanagari (kana → Devanagari; loads language-utils converters)
+src/app.jsx          editable app UI
+index.html           generated entry point; do not edit
+assets/              generated scripts, styles, fonts and license notices
+release-manifest.json      generated release inventory
+tools/build_app.cjs        app → reproducible static release
+js/catalyst-scripts.js      Devanagari (kana and bundled language-utils converters)
 js/catalyst-audio.js        audio player
 js/catalyst-data.js         generated content (do not edit)
 js/catalyst-patterns.js     Burmese frames, compatible nouns and read-only KG progress
@@ -88,8 +94,8 @@ tests/sentence.test.ts     tests for core.ts
 
 ## Changing content
 1. Edit `data/grammar.yaml`.
-2. `npm install` (once), then `node tools/build_data.mjs`. It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
-3. Run `npm run prepare:backend` and commit the generated data/SQL. Before an
+2. `npm ci --ignore-scripts` (once), then `node tools/build_data.mjs`. It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
+3. Run `npm run prepare:backend` and `npm run build:app`; commit the generated data/SQL and static release. Before an
    approved database content update, review `sql/catalyst-seed.sql`: it deletes
    removed concepts and can cascade to saved sentences. Prepare a preservation
    plan for any removals. Rerun the audio script only for approved changed content.

@@ -20,6 +20,4 @@ assert.equal(api.pilots.find(p=>p.language==='ja').build.orders.length,2);
 assert(api.pilots.find(p=>p.language==='ja').deeper.en.includes('verb-past'));
 console.log('Validated pilot coverage, every chunk permutation, multiple accepted orders, choice grading and target isolation.');
 
-const html=fs.readFileSync('index.html','utf8');
-assert(html.includes('<script src="./js/catalyst-activities.js"></script>'));
-assert(html.indexOf('src="./js/catalyst-activities.js"')<html.indexOf('function ActivityLibrary'));
+assert(require('../tools/app_sources.cjs').includes('js/catalyst-activities.js'));

@@ -7,18 +7,29 @@
     "check:app": "node tools/check_app.cjs",
     "prepare:backend": "node tools/build_backend_install.cjs",
     "check:backend": "node tools/build_backend_install.cjs --check",
-    "test:postgres": "node tools/validate_backend_postgres.mjs"
+    "test:postgres": "node tools/validate_backend_postgres.mjs",
+    "build:app": "node tools/build_app.cjs",
+    "check:build": "node tools/build_app.cjs --check"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@babel/standalone": "^7.29.15",
+    "@babel/standalone": "7.29.15",
     "@electric-sql/pglite": "^0.5.17",
+    "@fontsource-variable/dm-sans": "5.3.0",
+    "@fontsource-variable/noto-sans-devanagari": "5.3.0",
+    "@fontsource-variable/noto-sans-jp": "5.3.1",
+    "@fontsource-variable/noto-sans-sc": "5.3.1",
+    "@fontsource-variable/playfair-display": "5.3.0",
+    "@fontsource/noto-sans-myanmar": "5.3.0",
+    "@supabase/supabase-js": "2.119.2",
     "embedded-postgres": "17.6.0-beta.15",
     "jsdom": "^31.0.1",
     "pg": "8.23.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "postcss": "8.5.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "3.4.19"
   }
 }

@@ -1,6 +1,6 @@
-// Mounted production React/JSX in JSDOM. No real account or network requests.
+// Mount the checked-in compiled release. No real account or network requests.
 const fs=require('node:fs'),path=require('node:path');
-const {JSDOM,VirtualConsole}=require('jsdom'),babel=require('@babel/standalone');
+const {JSDOM,VirtualConsole}=require('jsdom');
 const root=path.resolve(__dirname,'..');
 function initialize(){
   window.__qa={user:'u1',rows:[{id:'legacy',user_id:'u1',concept_id:'verb_final',flagged:false,sentences:{en:'Old English meaning',my:{t:'ကျွန်တော် ပန်းသီး စားတယ်။'},ja:{t:'りんごを食べます。',r:'りんご お たべます'},mr:{t:'जुना अर्थ'}}}],flagError:false,readError:false,progressError:false,allowed:true,requests:[]};
@@ -32,12 +32,14 @@ async function mount({storage={},setup}={}){
   const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://catalyst.test/#verb-final',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});
   const w=dom.window;w.scrollTo=()=>{};w.structuredClone=structuredClone;w.TextEncoder=TextEncoder;w.HTMLMediaElement.prototype.pause=()=>{};
   w.localStorage.setItem('catalyst_settings',JSON.stringify({targetLanguage:'my',anchor:'mr',meaningLanguage:'mr',showEnglish:false,comparisonLanguages:[]}));for(const [k,v] of Object.entries(storage))w.localStorage.setItem(k,v);
-  w.eval('('+initialize.toString()+')()');w.supabase={createClient:()=>w.__mockDb};
+  w.eval('('+initialize.toString()+')()');
   w.fetch=async(url,options={})=>{w.__qa.requests.push({url:String(url),method:options.method||'GET'});return new Response('{}',{status:404});};
-  for(const pkg of ['react','react-dom'])w.eval(fs.readFileSync(path.join(path.dirname(require.resolve(pkg+'/package.json')),'umd',pkg+'.production.min.js'),'utf8'));
-  for(const match of html.matchAll(/<script src="\.\/(js\/[^"]+)"/g))w.eval(fs.readFileSync(path.join(root,match[1]),'utf8'));
+  const scripts=[...html.matchAll(/<script defer src="\.\/([^"]+)"/g)].map(match=>match[1]);
+  if(scripts.length!==2)throw new Error('Expected compiled runtime and app scripts');
+  w.eval(fs.readFileSync(path.join(root,scripts[0]),'utf8'));
+  w.supabase={createClient:()=>w.__mockDb};
   if(setup)setup(w);
-  w.eval(babel.transform(html.match(/<script type="text\/babel"[^>]*>([\s\S]*?)<\/script>/)[1],{presets:['react'],filename:'app.jsx'}).code);
+  w.eval(fs.readFileSync(path.join(root,scripts[1]),'utf8'));
   const has=text=>w.document.body.textContent.includes(text),buttons=label=>[...w.document.querySelectorAll('button')].filter(el=>el.textContent===label);
   const button=label=>{const found=buttons(label);if(found.length!==1)throw new Error('Expected one button: '+label+', got '+found.length);return found[0];};
   const wait=async(predicate)=>{for(let i=0;i<200;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,10));}throw new Error('UI condition timed out: '+w.document.body.textContent.slice(-2500));};

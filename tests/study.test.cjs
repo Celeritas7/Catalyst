@@ -3,7 +3,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'src/app.jsx'), 'utf8');
 const context = {window:{}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(root,'js/catalyst-preferences.js'),'utf8'), context);
