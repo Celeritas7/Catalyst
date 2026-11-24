@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/Celeritas7/language-utils",
+  "commit": "d476d2ae76d25823044375ca5e1a6478824bfbcf",
+  "files": {
+    "burmese.js": "2bc493c38f2f5fb6810e07937c4ce253e356d573f990f98f659c13010b9c9955",
+    "chinese.js": "7444ff556c73e1362f930ff38ffab6e9e41485fdb27ca698cac7e63836fd7908"
+  },
+  "license": "No license file supplied by upstream at this revision; original code retained from the same project owner."
+}

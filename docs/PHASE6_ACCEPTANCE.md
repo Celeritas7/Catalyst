@@ -62,3 +62,18 @@ Do not clear website data, uninstall the existing Home Screen app, disable RLS,
 extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
+
+## Phase 6B implementation checkpoint — 2026-11-24
+
+See [the 6B report](PHASE6B_STATIC_BUILD.md) for the exact build and test boundaries.
+
+| Check | Status | Evidence |
+| --- | --- | --- |
+| B1 | PASS (automated + Chromium) | Compiled app loads under `/Catalyst/` with external connections blocked; all bootstrap assets are local; desktop/390px language rendering checked |
+| B2 | PASS | Deterministic rebuild, full hashes/sizes/graph, deliberate stale-output refusal, existing tests run against compiled app |
+| B3 | PARTIAL | Synthetic hash/query callback reaches SDK initialization intact; actual SDK guest startup, deep link and Back pass; real Google round trip not run |
+| B4 | PASS (synthetic fixtures) | Original, corrections, due dates, legacy practice/drafts and account isolation retained across compiled-app reloads; browser notebook/correction reload checked |
+| C1–F5 | NOT RUN | No service worker/download/account snapshot/audio pack or physical device offline acceptance in 6B |
+
+These are build-foundation results, not a claim that the application can reopen
+offline. Production records and real device storage were not used as test fixtures.

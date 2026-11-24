@@ -1,0 +1,13 @@
+# Build inputs use stable line endings on Windows and Unix checkouts.
+*.js text eol=lf
+*.jsx text eol=lf
+*.cjs text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+# Hashed artifacts and pinned upstream sources must retain their exact bytes.
+assets/** -text -whitespace linguist-generated=true
+vendor/language-utils/** -text
+index.html linguist-generated=true
+release-manifest.json linguist-generated=true

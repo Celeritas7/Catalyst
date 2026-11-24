@@ -1,9 +1,8 @@
 // Catalyst: Devanagari lines for every example.
-// Burmese and Chinese use the same converters as KG Chart (celeritas7.github.io/language-utils).
+// Burmese and Chinese use the pinned language-utils sources bundled at build time.
 // Japanese has no converter there, so this file turns the kana reading into Devanagari.
 // Works in the browser (window.CatalystScripts) and in Node (module.exports) for tools/build_data.mjs.
 (function (root) {
-  const LANG_UTILS_BASE = 'https://celeritas7.github.io/language-utils';
   const FILES = { my: 'burmese', zh: 'chinese' };
 
   // ---- Japanese kana → Devanagari ----
@@ -82,29 +81,11 @@
     return out;
   }
 
-  // ---- language-utils converters (same loading as KG Chart) ----
-  const converters = {};
-  function compile(code) {
-    code = code.replace(/export\s+function\s+/g, 'function ')
-      .replace(/export\s+\{[^}]*\};?/g, '')
-      .replace(/export\s+const\s+/g, 'const ');
-    const mod = new Function(`${code}\nreturn { toDev: typeof toDev === 'function' ? toDev : null };`)();
-    return mod.toDev;
-  }
-  async function loadConverter(lang, fetchText) {
-    if (converters[lang]) return converters[lang];
-    const file = FILES[lang];
-    if (!file) return null;
-    try {
-      const code = fetchText ? await fetchText(file) : await fetch(`${LANG_UTILS_BASE}/${file}.js`).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
-      converters[lang] = compile(code);
-      return converters[lang];
-    } catch (e) {
-      if (typeof console !== 'undefined') console.warn(`Catalyst: ${file}.js not loaded (${e.message}); using the saved Devanagari.`);
-      return null;
-    }
-  }
-  const loadAll = (fetchText) => Promise.all(Object.keys(FILES).map(l => loadConverter(l, fetchText)));
+  // The browser release installs these before this helper. The content build
+  // registers the same pinned modules; no converter code is downloaded/evaluated.
+  const converters = root.CatalystConverters || {};
+  const loadConverter = async (lang) => converters[lang] || null;
+  const loadAll = () => Promise.all(Object.keys(FILES).map(loadConverter));
 
   // Devanagari for one example: the override, else the live converter, else the saved line
   function devanagari(ex, lang) {
@@ -117,7 +98,7 @@
     return ex.dev || '';
   }
 
-  const api = { kanaToDev, loadConverter, loadAll, devanagari, converters, LANG_UTILS_BASE, FILES };
+  const api = { kanaToDev, loadConverter, loadAll, devanagari, converters, FILES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CatalystScripts = api;
 })(typeof window !== 'undefined' ? window : globalThis);

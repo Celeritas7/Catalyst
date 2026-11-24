@@ -43,7 +43,7 @@ assert.equal(early.items.q.dueAt,schedule.items.q.dueAt);
 assert.equal(data.items.q.lastMistake.expected,'No');
 // Verify the actual task catalog used by practice and review has stable, matching IDs.
 for(const file of ['catalyst-preferences','catalyst-meanings','catalyst-activities','catalyst-data'])vm.runInContext(fs.readFileSync(`js/${file}.js`,'utf8'),c);
-const html=fs.readFileSync('index.html','utf8');
+const html=fs.readFileSync('src/app.jsx','utf8');
 vm.runInContext(html.slice(html.indexOf('    const LANG ='),html.indexOf('    // ---- settings'))+html.slice(html.indexOf('    const GROUP_ICON'),html.indexOf('    function Practice('))+'\nthis.catalog=reviewTasks;this.quiz=makeQuestions;this.wrap=quizTask;',c);
 const settings=c.window.CatalystPreferences.normalize({targetLanguage:'my',anchor:'mr',meaningLanguage:'mr',comparisonLanguages:[]});
 const tasks=c.catalog(c.window.CATALYST_DATA.concepts,settings);
@@ -51,5 +51,5 @@ assert.equal(new Set(tasks.map(t=>t.id)).size,tasks.length);
 assert(tasks.every(t=>!t.lang||t.lang==='my'));
 assert(tasks.some(t=>t.type==='build'));
 for(const q of c.quiz(c.window.CATALYST_DATA.concepts,['my','mr'],'meaning','mr',['my']))assert(tasks.some(t=>t.id===c.wrap(q,'meaning').id));
-assert(html.includes('<script src="./js/catalyst-review.js"></script>'));
+assert(require('../tools/app_sources.cjs').includes('js/catalyst-review.js'));
 console.log('Validated stable review/practice IDs, target-language scope and activity coverage.');
