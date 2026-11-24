@@ -7,6 +7,7 @@ const babel = require('@babel/standalone');
 const postcss = require('postcss');
 const tailwind = require('tailwindcss');
 const sources = require('./app_sources.cjs');
+const mediaCore = require('../js/catalyst-media-core.js');
 const ROOT = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(ROOT, file));
 const text = file => read(file).toString('utf8');
@@ -22,7 +23,7 @@ function packageRoot(name) {
 }
 
 async function build(config = JSON.parse(text('release-config.json'))) {
-  const workerSource = text('js/catalyst-offline-core.js') + '\n' + text('src/sw.js');
+  const workerSource = text('js/catalyst-offline-core.js') + '\n' + text('js/catalyst-media-core.js') + '\n' + text('src/sw.js');
   if (config.mode === 'recovery') return recovery(config, workerSource);
   if (config.mode !== 'normal' || typeof config.revision !== 'string') throw new Error('Invalid release configuration');
   const files = new Map();
@@ -81,6 +82,17 @@ async function build(config = JSON.parse(text('release-config.json'))) {
     .process('@tailwind base;\n@tailwind components;\n@tailwind utilities;', {from: undefined});
   const styles = asset('styles.css', fontCSS + '\n' + result.css + '\n' + text('src/base.css') + '\n' + text('js/study.css') + '\n' + text('src/offline.css'), 'style');
 
+  const dataContext={window:{}};require('node:vm').runInNewContext(text('js/catalyst-data.js'),dataContext);
+  const audio={version:1,languages:{}};
+  for(const language of mediaCore.LANGS){
+    const entries={};
+    for(const concept of dataContext.window.CATALYST_DATA.concepts)for(const example of concept.entries[language]?.ex||[]){
+      const normalized=mediaCore.norm(example.t),id=mediaCore.hash(normalized),sha=hash(normalized);
+      if(entries[id]&&entries[id]!==sha)throw Error('Audio text hash collision: '+language);
+      entries[id]=sha;
+    }
+    audio.languages[language]=Object.fromEntries(Object.entries(entries).sort());
+  }
   const runtime = [];
   for (const [pkg, file] of [
     ['react', 'umd/react.production.min.js'],
@@ -99,6 +111,7 @@ async function build(config = JSON.parse(text('release-config.json'))) {
     converters.push(JSON.stringify(lang) + ': (function(){\nconst module = {exports:{}}; const exports = module.exports;\n' + compiled + '\nreturn module.exports.toDev;\n})()');
   }
   runtime.push('window.CatalystConverters = {\n' + converters.join(',\n') + '\n};');
+  runtime.push('window.CatalystMediaCatalog = '+JSON.stringify(audio)+';');
   for (const file of sources) runtime.push(text(file));
   const runtimeURL = asset('runtime.js', runtime.join('\n;\n'), 'script');
   const app = asset('app.js', babel.transform(text('src/offline.jsx') + '\n' + text('src/app.jsx'), {presets: ['react'], filename: 'app.jsx', compact: true}).code, 'script');
@@ -115,6 +128,7 @@ async function build(config = JSON.parse(text('release-config.json'))) {
     schemaVersion: 1,
     buildId,
     contentVersion,
+    audio,
     converterRevision: provenance.commit,
     worker: {url:'./sw.js',protocol:1,buildId},
     packages: Object.fromEntries(Object.entries(versions).sort(([a], [b]) => a < b ? -1 : 1)),

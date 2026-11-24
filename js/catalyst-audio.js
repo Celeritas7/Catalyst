@@ -1,4 +1,4 @@
-// Catalyst: audio player. Copied from KG Chart's js/kg-audio.js (same hash, manifest and voices).
+// Catalyst: recorded audio with verified offline packs and separately labelled device voices.
 // Clips come from tools/gen_catalyst_audio.py, in their own folder audio-grammar/<lang>/.
 // Until a language has clips, it falls back to the phone's own text-to-speech voice, if it has one.
 // Voice + mute are kept on this device only (no login in this app). Exposes window.CatalystAudio.
@@ -32,7 +32,7 @@
     if (data) setPrefsLocal({ voice: data.audio_voice === 'm' ? 'm' : 'f', muted: !!data.audio_muted });
   }
   function setPrefsLocal(p) {
-    prefs = { ...prefs, ...p };
+    stop();prefs = { ...prefs, ...p,voice:p.voice===undefined?prefs.voice:p.voice==='m'?'m':'f' };
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
     emit();
   }
@@ -48,6 +48,7 @@
   // ---- manifests: audio/<lang>/clips.json -> { m: [hash], f: [hash] } ----
   const manifests = {};   // lang -> { m:Set, f:Set } | null (no audio) | 'loading'
   function loadManifest(lang) {
+    window.CatalystMedia?.refresh(lang);
     if (!lang || manifests[lang] !== undefined) return;
     manifests[lang] = 'loading';
     fetch(`${BASE}/${lang}/clips.json`, { cache: 'no-cache' })
@@ -58,6 +59,9 @@
 
   // Which clip to play: the asked-for voice (conversations: A and B), else the preferred voice, else the other one, else none.
   function resolve(text, lang, voice) {
+    const offline=window.CatalystMedia?.lookup(text,lang,voice||prefs.voice);
+    if(offline)return offline.url;
+    if(typeof navigator!=='undefined'&&navigator.onLine===false)return null;
     const m = manifests[lang];
     if (!m || m === 'loading' || !norm(text)) return null;
     const h = hash(text);
@@ -76,6 +80,7 @@
   // ---- playback: one shared <audio>, so a new tap stops the previous clip ----
   const audio = new Audio();
   audio.preload = 'auto';
+  let playGeneration=0;
   let current = null;     // { key, state: 'loading' | 'playing' }
   const keyOf = (text, lang, slow) => `${lang}|${norm(text)}|${slow ? 's' : 'n'}`;
   const setCurrent = (c) => { current = c; emit(); };
@@ -102,8 +107,9 @@
     audio.playbackRate = slow ? SLOW_RATE : 1;
     audio.defaultPlaybackRate = audio.playbackRate;
     if ('preservesPitch' in audio) audio.preservesPitch = true;
+    const generation=playGeneration;
     const p = audio.play();
-    if (p && p.catch) p.catch(err => { if (err && err.name !== 'AbortError') { setCurrent(null); toast("Couldn't play audio"); } });
+    if (p && p.catch) p.catch(err => { if (generation===playGeneration && err && err.name !== 'AbortError') { setCurrent(null); toast("Couldn't play audio"); } });
     return true;
   }
   // ---- fallback: the device's own voice (Japanese, Chinese and Marathi usually have one; Burmese rarely) ----
@@ -130,6 +136,7 @@
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = () => emit();
   // 'clip' (recorded), 'tts' (device voice), 'loading', or null (nothing to play)
   function source(text, lang) {
+    if(window.CatalystMedia?.lookup(text,lang,prefs.voice))return 'saved';
     const m = manifests[lang];
     if (m === undefined || m === 'loading') return 'loading';
     if (resolve(text, lang)) return 'clip';
@@ -138,7 +145,7 @@
 
   // Used after answering: respects mute, never shows a toast
   function autoPlay(text, lang, voice) { if (!prefs.muted) play(text, lang, { silent: true, voice }); }
-  function stop() { audio.pause(); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); setCurrent(null); }
+  function stop() { playGeneration++; audio.pause(); if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); setCurrent(null); }
   function stateOf(text, lang, slow) { return current && current.key === keyOf(text, lang, slow) ? current.state : null; }
 
   // ---- tiny toast ----
@@ -156,7 +163,7 @@
   }
 
   window.CatalystAudio = {
-    hash, norm, loadManifest, has, source, play, autoPlay, stop, stateOf, initPrefs, setPrefs, toast,
+    hash, norm, loadManifest, has, source, play, autoPlay, stop, stateOf, initPrefs, setPrefs, toast, refreshSources:emit,
     get prefs() { return prefs; },
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     getVersion() { return version; },

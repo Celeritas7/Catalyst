@@ -65,11 +65,13 @@ See the [offline design](PHASE6A_OFFLINE_ARCHITECTURE.md),
 [measured source inventory](phase6a-offline-inventory.json) and
 [acceptance matrix](PHASE6_ACCEPTANCE.md). Phase 6B now implements the
 [self-contained static build](PHASE6B_STATIC_BUILD.md) at the existing URL.
-Cold offline reopening has not been implemented or validated.
-
-Next is 6C: explicit downloads, safe worker updates and recovery. Then 6D adds
-prepared account data, 6E adds available audio packs, and 6F records physical
-iPad/Android/desktop acceptance.
+[Phase 6C](PHASE6C_OFFLINE_DOWNLOADS.md) implements explicit downloads, safe
+worker updates and recovery; synthetic Chromium cold reopening is verified.
+[Phase 6D](PHASE6D_ACCOUNT_SNAPSHOTS.md) adds prepared account data.
+[Phase 6E](PHASE6E_OFFLINE_AUDIO.md) adds optional verified audio packs. Production
+audio is unavailable until recordings are published. Next is 6F: physical
+iPad/Android/desktop acceptance. Synthetic browser results do not prove iPad
+Home Screen behavior, actual speech quality or real sign-in round trips.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 

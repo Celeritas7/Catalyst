@@ -107,6 +107,26 @@
         <p role="status">{message}</p>
       </section>;
     }
+    function OfflineAudioPanel({language}) {
+      const api=window.CatalystMedia,state=useSyncExternalStore(api.subscribe,api.getSnapshot);
+      const [voice,setVoice]=useState(window.CatalystAudio.prefs.voice==='m'?'m':'f'),[confirm,setConfirm]=useState(false);
+      const value=state.packs[language+':'+voice],pack=value?.candidate,progress=value?.progress;
+      const size=n=>((n||0)/1024/1024).toFixed(2)+' MB',busy=!!state.busy;
+      useEffect(()=>{api.refresh(language,voice);setConfirm(false);return()=>{if(api.getSnapshot().busy===language+':'+voice)api.pause(language,voice);};},[language,voice]);
+      return <section className="recovery-panel"><h3>Recorded lesson audio</h3>
+        <p>{LANG[language].name} · optional. Public lesson recordings are separate from word snapshots. Normal and slow playback reuse the same downloaded file.</p>
+        <label>Audio voice<select className="search-input block mt-2" value={voice} disabled={busy} onChange={e=>{setVoice(e.target.value);window.CatalystAudio.setPrefs({voice:e.target.value});}}><option value="f">Female voice</option><option value="m">Male voice</option></select></label>
+        <p><strong>{value?.activeHealthy?'Saved recordings ready offline':value?.active?'Saved audio needs repair':'Recorded audio not downloaded'}</strong>{value?.activeHealthy&&` · ${value.active.files.length} clips · ${value.active.voiceName}`}</p>
+        {value?.verifiedAt&&<p className="offline-meta">Last audio verification: {new Date(value.verifiedAt).toLocaleString()}</p>}
+        {pack&&<><p>{pack.files.length} available clips for {pack.lessonCount} bundled example texts · {pack.voiceName}. {pack.lessonCount-pack.files.length} example texts have no verified recording for this voice.</p><p>{size(progress?.bytes)} of {size(pack.totalBytes)} saved · {size(Math.max(0,pack.totalBytes-(progress?.bytes||0)))} remaining · {progress?.files||0}/{new Set(pack.files.map(f=>f.sha256)).size} files</p>{pack.totalBytes>0&&<progress aria-label="Audio download progress" max={pack.totalBytes} value={Math.min(progress?.bytes||0,pack.totalBytes)}/>}</>}
+        <p role="status">{value?.state==='checking'?'Checking available recordings…':value?.state==='downloading'?'Downloading and verifying audio…':value?.state==='paused'?'Audio paused. Verified files will be reused.':value?.state==='interrupted'?'Audio download interrupted. Resume to reuse saved files.':value?.state==='removal-paused'?'Audio removal was interrupted. Retry removal below.':value?.state==='removing'?'Removing this voice’s saved audio…':''}</p>
+        {(value?.error||state.message)&&<p role="alert">{state.message||value.error}</p>}
+        {!api.supported()&&<p>Download and activate the current app files first to prepare audio.</p>}
+        <div className="offline-actions"><button className="quiet-btn" disabled={!api.supported()||busy} onClick={()=>api.check(language,voice)}>Check available recordings</button>{!!pack?.files.length&&<button className="primary-btn" disabled={!api.supported()||busy} onClick={()=>api.download(language,voice)}>{progress?.bytes?'Resume / repair audio':'Download audio'}</button>}{busy&&<button className="quiet-btn" onClick={()=>api.pause(...state.busy.split(':'))}>Pause audio</button>}{value?.active&&<button className="quiet-btn" disabled={busy} onClick={()=>api.refresh(language,voice)}>Verify saved audio</button>}{(value?.active||pack||value?.removing?.length>0)&&<button className="quiet-btn" disabled={busy} onClick={()=>setConfirm(true)}>Remove this voice’s audio</button>}</div>
+        {confirm&&<div className="recovery-preview"><p>Remove downloaded {LANG[language].name} {voice==='m'?'male':'female'} recordings from this device? Shared files still used by another audio pack are kept. Notebooks, reviews, word snapshots and app files are retained.</p><div className="offline-actions"><button className="quiet-btn" disabled={busy} onClick={()=>{setConfirm(false);window.CatalystAudio.stop();api.remove(language,voice);}}>Remove selected audio</button><button className="quiet-btn" onClick={()=>setConfirm(false)}>Keep audio</button></div></div>}
+        <p>Device voices are provided by your browser or operating system. They are not downloaded by this button and may require internet. Test playback in the actual iPad Home Screen app before relying on it offline.</p>
+      </section>;
+    }
     function OfflinePanel({scope,language,onClose}) {
       const api=window.CatalystOffline,state=useSyncExternalStore(api.subscribe,api.getSnapshot),close=React.useRef(null);
       useEffect(()=>{
@@ -114,7 +134,7 @@
         const keyboard=e=>{
           if(e.key==='Escape')onClose();
           if(e.key==='Tab'){
-            const nodes=[...close.current.closest('[role="dialog"]').querySelectorAll('button:not(:disabled),input:not(:disabled),summary,a[href]')].filter(node=>node.getClientRects().length);
+            const nodes=[...close.current.closest('[role="dialog"]').querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,a[href]')].filter(node=>node.getClientRects().length);
             const first=nodes[0],last=nodes[nodes.length-1];
             if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
             else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
@@ -129,7 +149,7 @@
       const newCandidate=progress?.candidateBuild&&progress.candidateBuild!==state.active?.activeBuild;
       return <div className="offline-backdrop"><section className="offline-dialog" role="dialog" aria-modal="true" aria-labelledby="offline-title"><div className="offline-heading"><h2 id="offline-title">Study offline</h2><button ref={close} className="quiet-btn" aria-label="Close offline settings" onClick={onClose}>Close</button></div>
         <p>{LANG[language].name} · {scope==='loading'?'Checking account':scope==='guest'?'Guest study':'Current study account'}</p>
-        <div className="offline-readiness"><strong>{api.ready()?'App and text ready offline':state.phase==='repair-needed'?'App files need repair':'App and text not ready offline'}</strong><p>Public lessons, quizzes, fonts and converters for all five languages. Prepare your account and word sources separately below. Audio has not been downloaded.</p></div>
+        <div className="offline-readiness"><strong>{api.ready()?'App and text ready offline':state.phase==='repair-needed'?'App files need repair':'App and text not ready offline'}</strong><p>Public lessons, quizzes, fonts and converters for all five languages. Account, word-source and recorded-audio readiness are shown separately below.</p></div>
         {!state.supported?<p role="alert">This browser cannot save the offline app. Use HTTPS in a supported browser or Home Screen web app. Recovery export still works below.</p>:<>
           <p>{total?`${size(done)} of ${size(total)} saved · ${size(Math.max(0,total-done))} remaining`:'Connect to check the download size.'}{progress?` · ${progress.files||0}/${progress.totalFiles||0} files`:''}</p>
           {total>0&&<progress max={total} value={Math.min(done,total)} aria-label="App download progress"/>}
@@ -148,6 +168,7 @@
         </>}
         <p className="offline-help">On iPad, open the actual Home Screen app and download here before leaving Wi-Fi. Keep this window visible during the download. If it stops, reopen and resume. Updates do not require clearing website data.</p>
         <OfflineAccountPanel key={scope+':'+language} language={language}/>
+        <OfflineAudioPanel key={'audio:'+language} language={language}/>
         <RecoveryPanel key={scope} scope={scope}/>
       </section></div>;
     }

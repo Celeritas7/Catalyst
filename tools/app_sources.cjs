@@ -1,6 +1,7 @@
 // Order is part of the browser contract: helpers must exist before the app mounts.
 module.exports = [
   'js/catalyst-scripts.js',
+  'js/catalyst-media-core.js',
   'js/catalyst-audio.js',
   'js/catalyst-data.js',
   'js/catalyst-meanings.js',
@@ -13,6 +14,7 @@ module.exports = [
   'js/catalyst-generation.js',
   'js/catalyst-safety.js',
   'js/catalyst-offline.js',
+  'js/catalyst-media.js',
   'js/catalyst-account.js',
   'js/catalyst-snapshots.js',
 ];
