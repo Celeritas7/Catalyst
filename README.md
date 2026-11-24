@@ -28,14 +28,18 @@ It shows an unavailable state rather than substituting an unrelated word.
 My Learning. Repeated saves avoid duplicates. Existing original writing,
 correction notes, notebook export/import and account/language separation remain
 intact. The bank is bundled locally; reading KG progress still needs a connection.
-Reliable offline app startup and downloaded progress belong to Phase 6.
+Public app/text downloads are available in Phase 6C; downloaded KG progress follows in 6D.
 See [Phase 5G](docs/PHASE5G_PATTERN_PRACTICE.md).
 
 **Offline work:** the [Phase 6A architecture and preservation review](docs/PHASE6A_OFFLINE_ARCHITECTURE.md)
 is complete. [Phase 6B](docs/PHASE6B_STATIC_BUILD.md) packages the compiled app,
-libraries, fonts and converters locally. Next are downloads and safe updates,
-account-scoped snapshots, available audio packs and physical iPad acceptance. There is no offline-ready claim yet. Existing data stays at the
-same app URL; updates must not require clearing website data.
+libraries, fonts and converters locally. [Phase 6C](docs/PHASE6C_OFFLINE_DOWNLOADS.md)
+adds **Study offline**, verified/resumable public app and text downloads, guarded
+updates, writing-draft recovery and recovery export/restore. **Ready offline**
+requires all required files plus matching app/worker versions. Account access and
+learned words still need a connection; audio is not downloaded. Next are 6D
+account-scoped snapshots, 6E audio, and 6F physical iPad acceptance. Existing data
+stays at the same app URL; updates never require clearing website data.
 
 **Show earlier AI sentences** retains read/flag access to older multilingual and
 selected-language examples. New AI-generation controls have been removed from
@@ -54,11 +58,11 @@ for the disposable PostgreSQL concurrency rehearsal.
 
 ## Static app build
 
-- `src/app.jsx`: editable React source. `npm run build:app` compiles JSX and Tailwind, bundles pinned React/Supabase dependencies and local fonts, and emits `index.html`, hashed `assets/` and `release-manifest.json`. Commit generated output alongside source changes; Pages still publishes main at the root.
+- `src/app.jsx` and `src/offline.jsx`: editable React source. `npm run build:app` compiles JSX and Tailwind, bundles pinned React/Supabase dependencies and local fonts, and emits `index.html`, hashed `assets/`, `release-manifest.json`, `sw.js` and retained `releases/` inventories. Commit generated output alongside source changes; Pages still publishes main at the root.
 - Supabase project `ulgrfumbwjovbjzjiems`, tables `catalyst_concepts`, `catalyst_entries`, `catalyst_examples`. Read-only from the browser.
 - Devanagari: Burmese and Chinese from pinned `vendor/language-utils/` sources (same owner as KG Chart), bundled locally; Japanese from the kana reading in `js/catalyst-scripts.js`.
 - Audio: `js/catalyst-audio.js` (copy of KG Chart's player). Clips in `vocabulary-assets/audio-grammar/<lang>/`. Until clips exist, the phone's own voice is used if it has one.
-- The page also carries a built-in copy of the content (`js/catalyst-data.js`), so lessons can load before the tables exist. Reliable offline reopening still requires Phase 6 app/dependency caching.
+- The page also carries a built-in copy of the content (`js/catalyst-data.js`). Choose **Study offline → Download app and lessons**, wait for verified readiness, and prepare the actual browser/Home Screen instance you will study in.
 
 ## Folders
 ```
@@ -66,6 +70,12 @@ src/app.jsx          editable app UI
 index.html           generated entry point; do not edit
 assets/              generated scripts, styles, fonts and license notices
 release-manifest.json      generated release inventory
+release-config.json        normal build or forward recovery selection
+src/sw.js                  scoped public-file worker source
+js/catalyst-offline-core.js verified downloads and active-release metadata
+js/catalyst-safety.js       writing drafts, settings safeguards and recovery
+sw.js                      generated stable worker entry point
+releases/                  retained compatible release inventories/documents
 tools/build_app.cjs        app → reproducible static release
 js/catalyst-scripts.js      Devanagari (kana and bundled language-utils converters)
 js/catalyst-audio.js        audio player

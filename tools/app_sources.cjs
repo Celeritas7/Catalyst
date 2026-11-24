@@ -11,4 +11,6 @@ module.exports = [
   'js/catalyst-patterns.js',
   'js/catalyst-vocabulary.js',
   'js/catalyst-generation.js',
+  'js/catalyst-safety.js',
+  'js/catalyst-offline.js',
 ];

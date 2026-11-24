@@ -21,7 +21,10 @@ function packageRoot(name) {
   throw new Error('Cannot locate package: ' + name);
 }
 
-async function build() {
+async function build(config = JSON.parse(text('release-config.json'))) {
+  const workerSource = text('js/catalyst-offline-core.js') + '\n' + text('src/sw.js');
+  if (config.mode === 'recovery') return recovery(config, workerSource);
+  if (config.mode !== 'normal' || typeof config.revision !== 'string') throw new Error('Invalid release configuration');
   const files = new Map();
   const assets = [];
   function asset(name, bytes, kind) {
@@ -73,10 +76,10 @@ async function build() {
     }
   }
   license('tailwindcss');
-  const config = require('../tailwind.config.cjs');
-  const result = await postcss([tailwind({...config, content: config.content.map(file => path.join(ROOT, file))})])
+  const tailwindConfig = require('../tailwind.config.cjs');
+  const result = await postcss([tailwind({...tailwindConfig, content: tailwindConfig.content.map(file => path.join(ROOT, file))})])
     .process('@tailwind base;\n@tailwind components;\n@tailwind utilities;', {from: undefined});
-  const styles = asset('styles.css', fontCSS + '\n' + result.css + '\n' + text('src/base.css') + '\n' + text('js/study.css'), 'style');
+  const styles = asset('styles.css', fontCSS + '\n' + result.css + '\n' + text('src/base.css') + '\n' + text('js/study.css') + '\n' + text('src/offline.css'), 'style');
 
   const runtime = [];
   for (const [pkg, file] of [
@@ -98,26 +101,56 @@ async function build() {
   runtime.push('window.CatalystConverters = {\n' + converters.join(',\n') + '\n};');
   for (const file of sources) runtime.push(text(file));
   const runtimeURL = asset('runtime.js', runtime.join('\n;\n'), 'script');
-  const app = asset('app.js', babel.transform(text('src/app.jsx'), {presets: ['react'], filename: 'app.jsx', compact: true}).code, 'script');
+  const app = asset('app.js', babel.transform(text('src/offline.jsx') + '\n' + text('src/app.jsx'), {presets: ['react'], filename: 'app.jsx', compact: true}).code, 'script');
   asset('THIRD-PARTY-LICENSES.txt', [...licenses.entries()].sort(([a], [b]) => a < b ? -1 : 1).map(([, value]) => value).join('\n\n---\n\n') + '\n\n' + text('vendor/language-utils/provenance.json'), 'license');
+  const icons = [180, 192, 512].map(size => ({size, url:asset('catalyst-' + size + '.png', read('src/icons/catalyst-' + size + '.png'), 'icon')}));
+  const webmanifest = asset('catalyst.webmanifest', JSON.stringify({name:'Catalyst',short_name:'Catalyst',id:'../',start_url:'../',scope:'../',display:'standalone',background_color:'#f7f5fc',theme_color:'#251c48',icons:icons.filter(icon => icon.size !== 180).map(icon => ({src:'./'+path.basename(icon.url),sizes:icon.size+'x'+icon.size,type:'image/png',purpose:'any maskable'}))}, null, 2), 'manifest');
 
   const template = text('src/index.template.html');
   const contentVersion = hash(read('js/catalyst-data.js'));
-  const buildId = hash(template + JSON.stringify(assets) + contentVersion).slice(0, 20);
-  const html = template.replace('{{BUILD_ID}}', buildId).replace('{{STYLES}}', styles).replace('{{RUNTIME}}', runtimeURL).replace('{{APP}}', app);
+  const buildId = hash(template + JSON.stringify(assets) + contentVersion + workerSource + JSON.stringify(config)).slice(0, 20);
+  const html = template.replace('{{BUILD_ID}}', buildId).replace('{{STYLES}}', styles).replace('{{RUNTIME}}', runtimeURL).replace('{{APP}}', app).replace('{{MANIFEST}}',webmanifest).replace('{{ICON}}',icons[0].url);
   files.set('index.html', Buffer.from(html));
   const manifest = {
     schemaVersion: 1,
     buildId,
     contentVersion,
     converterRevision: provenance.commit,
+    worker: {url:'./sw.js',protocol:1,buildId},
     packages: Object.fromEntries(Object.entries(versions).sort(([a], [b]) => a < b ? -1 : 1)),
-    // A release inventory, not a claim of downloaded/ready-offline state.
+    // Readiness requires full file verification and the matching worker in control.
     assets: [{url: './index.html', kind: 'document', bytes: Buffer.byteLength(html), sha256: hash(html)}, ...assets],
   };
   manifest.totalBytes = manifest.assets.reduce((sum, file) => sum + file.bytes, 0);
-  files.set('release-manifest.json', Buffer.from(JSON.stringify(manifest, null, 2) + '\n'));
+  finish(files,manifest,html,workerSource);
   return {files, manifest};
+}
+
+function finish(files,manifest,html,workerSource){
+  const json=JSON.stringify(manifest,null,2)+'\n';
+  files.set('release-manifest.json',Buffer.from(json));
+  files.set('releases/'+manifest.buildId+'.json',Buffer.from(json));
+  files.set('releases/'+manifest.buildId+'.html',Buffer.from(html));
+  files.set('sw.js',Buffer.from('const RELEASE = '+JSON.stringify(manifest)+';\n'+workerSource));
+}
+function recovery(config,workerSource){
+  if(!/^[a-f0-9]{20}$/.test(config.from||'')||typeof config.revision!=='string'||!config.revision)throw Error('Recovery requires a retained release ID and a new revision.');
+  const previous=JSON.parse(text('releases/'+config.from+'.json'));
+  if(previous.worker?.protocol!==1)throw Error('Recovery target must support the offline protocol.');
+  const previousHTML=text('releases/'+config.from+'.html');
+  const document=previous.assets.find(file=>file.url==='./index.html');
+  if(!document||hash(previousHTML)!==document.sha256)throw Error('Retained recovery document is damaged.');
+  const buildId=hash(JSON.stringify(previous)+workerSource+JSON.stringify(config)).slice(0,20);
+  const html=previousHTML.replace('name="catalyst-build" content="'+previous.buildId+'"','name="catalyst-build" content="'+buildId+'"');
+  if(html===previousHTML)throw Error('Recovery document has no matching build ID.');
+  const files=new Map([['index.html',Buffer.from(html)]]);
+  const assets=previous.assets.map(file=>{
+    if(file.kind==='document')return {...file,bytes:Buffer.byteLength(html),sha256:hash(html)};
+    const bytes=read(file.url);if(hash(bytes)!==file.sha256||bytes.length!==file.bytes)throw Error('Retained recovery asset is damaged: '+file.url);
+    files.set(file.url.slice(2),bytes);return file;
+  });
+  const manifest={...previous,buildId,recoveryOf:previous.buildId,worker:{url:'./sw.js',protocol:1,buildId},assets,totalBytes:assets.reduce((sum,file)=>sum+file.bytes,0)};
+  finish(files,manifest,html,workerSource);return {files,manifest};
 }
 
 async function main() {

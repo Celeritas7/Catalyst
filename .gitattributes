@@ -11,3 +11,5 @@ assets/** -text -whitespace linguist-generated=true
 vendor/language-utils/** -text
 index.html linguist-generated=true
 release-manifest.json linguist-generated=true
+releases/** linguist-generated=true
+sw.js linguist-generated=true

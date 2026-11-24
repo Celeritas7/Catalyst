@@ -132,3 +132,17 @@ test('compiled bootstrap hands both synthetic OAuth callback formats intact to t
     } finally {dom.window.close();}
   }
 });
+
+test('forward recovery uses a new worker and build ID with retained compatible assets; source rebuild stays deterministic', async () => {
+  const current=JSON.parse(read('release-manifest.json'));
+  const config={mode:'recovery',from:current.buildId,revision:'synthetic-recovery-1'};
+  const restored=await build(config),again=await build(config);
+  assert.notEqual(restored.manifest.buildId,current.buildId);assert.equal(restored.manifest.recoveryOf,current.buildId);
+  assert.equal(restored.manifest.worker.url,'./sw.js');assert.equal(restored.manifest.worker.buildId,restored.manifest.buildId);
+  const document=restored.files.get('index.html').toString();assert.ok(document.includes(restored.manifest.buildId));assert.ok(!document.includes(current.buildId));
+  for(const file of current.assets.filter(file=>file.kind!=='document'))assert.deepEqual(restored.files.get(file.url.slice(2)),read(file.url));
+  for(const [file,bytes] of restored.files)assert.deepEqual(bytes,again.files.get(file));
+  const newer=await build({...config,revision:'synthetic-recovery-2'});assert.notEqual(newer.manifest.buildId,restored.manifest.buildId);
+  assert.match(restored.files.get('sw.js').toString(),/UPDATE_VOTE/);assert.equal(restored.manifest.assets.length,current.assets.length);
+  await assert.rejects(build({mode:'recovery',from:'../../outside',revision:'no'}),/retained release ID/);
+});
