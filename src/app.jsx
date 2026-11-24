@@ -7,15 +7,26 @@
     const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     // ---- login: same Supabase account as KG Chart. On celeritas7.github.io both apps share the saved session. ----
-    function useSession() {
-      const [session, setSession] = useState(sb ? undefined : null);
-      useEffect(() => {
-        if (!sb) return;
-        sb.auth.getSession().then(({ data }) => setSession(data.session || null)).catch(() => setSession(null));
-        const { data: { subscription } } = sb.auth.onAuthStateChange((_e, sess) => setSession(sess || null));
-        return () => subscription.unsubscribe();
-      }, []);
-      return session;
+    const accountApi=window.CatalystAccount.create({client:sb,storage:localStorage,authKey:'sb-'+new URL(SUPABASE_URL).hostname.split('.')[0]+'-auth-token'});
+    const snapshotApi=window.CatalystSnapshots.create({client:sb,storage:localStorage,indexedDB:window.indexedDB,account:accountApi});
+    const StudyAccountContext=React.createContext(null);
+    function useStudySource(language,source,kind='ratings',enabled=true) {
+      const identity=React.useContext(StudyAccountContext);
+      const [data,setData]=useState({status:'loading',words:[]}),[reload,setReload]=useState(0);
+      useEffect(()=>{
+        let cancelled=false;
+        if(!enabled||!source){setData({status:'unsupported',words:[]});return;}
+        if(!identity.owner){setData({status:identity.scope==='loading'?'error':'guest',words:[],error:identity.message});return;}
+        const d=window.CatalystSnapshots.descriptor(identity.owner.id,language,source,kind),current=()=>!cancelled;
+        setData({status:'loading',words:[]});
+        snapshotApi.load(d,{current}).then(result=>{if(current())setData({...result,status:'ready'});}).catch(error=>{if(current())setData({status:'error',words:[],error:error.message});});
+        const unsubscribe=snapshotApi.subscribe(()=>{snapshotApi.read(d).then(record=>{if(current()&&record)setData({...record.data,status:'ready',savedAt:record.savedAt,stale:!accountApi.getSnapshot().online,message:!accountApi.getSnapshot().online?'Offline · saved words; refresh pending.':''});}).catch(error=>{if(current())setData({status:'error',words:[],error:error.message});});});
+        return()=>{cancelled=true;unsubscribe();};
+      },[identity.scope,identity.online,identity.prepared,identity.epoch,language,source,kind,enabled,reload]);
+      return {...data,reload:()=>setReload(v=>v+1)};
+    }
+    function SnapshotNotice({data}) {
+      return <>{data.message&&<p className="review-notice" role="status">{data.message}</p>}{data.savedAt&&<p className="text-xs mt-2">Words saved: {new Date(data.savedAt).toLocaleString()}</p>}</>;
     }
 
     const LANG = window.CatalystPreferences.registry;
@@ -155,23 +166,17 @@
     const VocabularyContext=React.createContext({status:'guest',words:[]});
     function VocabularyProvider({session,language,children}) {
       const sources=window.CatalystVocabulary.sources(language);
-      const [source,setSource]=useState(sources[0]?.id||''),[data,setData]=useState({status:'loading',words:[]}),[version,setVersion]=useState(0);
-      useEffect(()=>{
-        let cancelled=false;
-        if(!source){setData({status:'unsupported',words:[]});return;}
-        if(!session){setData({status:session===undefined?'loading':'guest',words:[]});return;}
-        setData({status:'loading',words:[]});
-        window.CatalystVocabulary.loadSource(sb,session.user.id,language,source).then(result=>{if(!cancelled)setData({...result,status:'ready'});}).catch(()=>{if(!cancelled)setData({status:'error',words:[]});});
-        return ()=>{cancelled=true;};
-      },[session?.user?.id,language,source,version]);
-      const changeSource=value=>{setData({status:'loading',words:[]});setSource(value);};
-      return <VocabularyContext.Provider value={{...data,source,sources,changeSource,account:session?.user?.email,reload:()=>setVersion(v=>v+1)}}>{children}</VocabularyContext.Provider>;
+      const identity=React.useContext(StudyAccountContext),[source,setSource]=useState(sources[0]?.id||'');
+      const loaded=useStudySource(language,source);
+      const data=loaded.source&&loaded.source!==source?{...loaded,status:'loading',words:[]}:loaded;
+      return <VocabularyContext.Provider value={{...data,source,sources,changeSource:setSource,account:identity.owner?.label}}>{children}</VocabularyContext.Provider>;
     }
+
     function WordProgress({text,lang}) {
       const data=React.useContext(VocabularyContext);
       if(!data.source)return null;
       const found=data.status==='ready'?window.CatalystVocabulary.matches(text,data.words):[];
-      return <details className="word-progress"><summary>Linked word ratings</summary><p className="text-xs mt-2">Source: {window.CatalystVocabulary.providers[data.source].name}. Change source in My Learning.</p>{data.status==='ready'?<><p className="text-xs mt-2">Exact dictionary matches only; other text is unclassified. These are word ratings, not grammar mastery.</p>{data.source==='burmese'&&!data.linked&&<p className="review-notice">No account-linked progress found. Legacy Study ratings cannot yet be attributed to your account.</p>}<div className="flex flex-wrap gap-2 mt-3">{found.map(w=><span className={'word-badge '+w.status} key={w.id}><span lang={lang}>{w.text}</span> · {w.label}</span>)}</div>{!found.length&&<p className="text-sm mt-2">No dictionary matches. This does not mean you do not know the sentence.</p>}</>:<p className="text-sm mt-2">{data.status==='guest'?'Sign in through Settings to see your own ratings.':data.status==='error'?'Could not load ratings. Retry in My Learning.':'Loading word ratings…'}</p>}</details>;
+      return <details className="word-progress"><summary>Linked word ratings</summary><p className="text-xs mt-2">Source: {window.CatalystVocabulary.providers[data.source].name}. Change source in My Learning.</p><SnapshotNotice data={data}/>{data.status==='ready'?<><p className="text-xs mt-2">Exact dictionary matches only; other text is unclassified. These are word ratings, not grammar mastery.</p>{data.source==='burmese'&&!data.linked&&<p className="review-notice">No account-linked progress found. Legacy Study ratings cannot yet be attributed to your account.</p>}<div className="flex flex-wrap gap-2 mt-3">{found.map(w=><span className={'word-badge '+w.status} key={w.id}><span lang={lang}>{w.text}</span> · {w.label}</span>)}</div>{!found.length&&<p className="text-sm mt-2">No dictionary matches. This does not mean you do not know the sentence.</p>}</>:<p className="text-sm mt-2">{data.status==='guest'?'Sign in through Settings to see your own ratings.':data.status==='error'?'Could not load ratings. Retry in My Learning.':'Loading word ratings…'}</p>}</details>;
     }
     function VocabularyPanel({settings}) {
       const data=React.useContext(VocabularyContext),[query,setQuery]=useState(''),[filter,setFilter]=useState('all');
@@ -179,8 +184,8 @@
       const provider=window.CatalystVocabulary.providers[data.source];
       const rows=data.words.filter(w=>(filter==='all'||w.label===filter)&&w.text.toLowerCase().includes(query.trim().toLowerCase()));
       const categories=[...new Set(data.words.map(w=>w.label))];
-      return <section className="study-panel"><div className="eyebrow">CONNECTED LEARNING APPS</div><h2 className="text-2xl font-bold mt-2">Your {LANG[settings.targetLanguage].name} words</h2><p className="text-sm mt-3">Read-only connections. Each source keeps its own ratings; identical words from different apps are not merged.</p>{data.account&&<p className="text-xs mt-3">Reading account: {data.account}</p>}{data.sources.length>0&&<label className="review-state">Ratings source<select aria-label="Ratings source" value={data.source} onChange={e=>data.changeSource(e.target.value)}>{data.sources.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}{provider&&<p className="text-sm mt-3">{provider.note}</p>}
-      {data.status==='unsupported'?<p className="review-notice">No vocabulary provider is connected for this learning language yet.</p>:data.status==='guest'?<p className="review-notice">Sign in through Settings with the same account as the source app.</p>:data.status==='loading'?<p role="status" className="mt-3">Loading your ratings…</p>:data.status==='error'?<p role="alert" className="review-notice">Could not load vocabulary or rating labels. Ratings are unavailable, not zero.</p>:<>{!data.linked&&<p className="review-notice">No account-linked ratings found in this source. {data.source==='burmese'?'This does not mean all these words are unrated: legacy Study records use random IDs rather than your sign-in ID.':'Check that the same account and source app were used to rate these words.'}</p>}<div className="flex gap-2 flex-wrap my-4"><button className={'language-pill '+(filter==='all'?'selected':'')} onClick={()=>setFilter('all')}>All words ({data.words.length})</button>{categories.map(k=><button className={'language-pill '+(filter===k?'selected':'')} aria-pressed={filter===k} key={k} onClick={()=>setFilter(k)}>{k} ({data.words.filter(w=>w.label===k).length})</button>)}</div><input className="search-input w-full" aria-label="Search linked words" placeholder="Search in the learning language…" value={query} onChange={e=>setQuery(e.target.value)}/>{rows.slice(0,30).map(w=><div className="review-row" key={w.id}><strong lang={settings.targetLanguage}>{w.text}</strong><span>{w.label}</span>{(settings.meaningLanguage==='en'||settings.showEnglish)&&w.english&&<small lang="en">{w.english}</small>}</div>)}<p className="text-xs mt-3">Showing {Math.min(rows.length,30)} of {rows.length}. Search or filter to narrow the list. English glosses, when available, follow your Show English preference.</p></>}{!['guest','unsupported'].includes(data.status)&&<button className="quiet-btn mt-4" disabled={data.status==='loading'} onClick={data.reload}>Refresh ratings</button>}<details className="activity-detail"><summary>Other app connections</summary><p>Japanese Study: word markings. KG Chart: ratings in supported learning languages. Burmese Study: account-linked practice levels only; legacy ownership migration pending. Kata Kita: reviews currently stay on its device; cloud connection pending. Changing the learning language in Settings changes the available sources.</p></details></section>;
+      return <section className="study-panel"><div className="eyebrow">CONNECTED LEARNING APPS</div><h2 className="text-2xl font-bold mt-2">Your {LANG[settings.targetLanguage].name} words</h2><p className="text-sm mt-3">Read-only connections. Each source keeps its own ratings; identical words from different apps are not merged.</p>{data.account&&<p className="text-xs mt-3">Reading account: {data.account}</p>}{data.sources.length>0&&<label className="review-state">Ratings source<select aria-label="Ratings source" value={data.source} onChange={e=>data.changeSource(e.target.value)}>{data.sources.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}{provider&&<p className="text-sm mt-3">{provider.note}</p>}<SnapshotNotice data={data}/>
+      {data.status==='unsupported'?<p className="review-notice">No vocabulary provider is connected for this learning language yet.</p>:data.status==='guest'?<p className="review-notice">Sign in through Settings with the same account as the source app.</p>:data.status==='loading'?<p role="status" className="mt-3">Loading your ratings…</p>:data.status==='error'?<p role="alert" className="review-notice">Could not load vocabulary or rating labels. Ratings are unavailable, not zero. {data.error}</p>:<>{!data.linked&&<p className="review-notice">No account-linked ratings found in this source. {data.source==='burmese'?'This does not mean all these words are unrated: legacy Study records use random IDs rather than your sign-in ID.':'Check that the same account and source app were used to rate these words.'}</p>}<div className="flex gap-2 flex-wrap my-4"><button className={'language-pill '+(filter==='all'?'selected':'')} onClick={()=>setFilter('all')}>All words ({data.words.length})</button>{categories.map(k=><button className={'language-pill '+(filter===k?'selected':'')} aria-pressed={filter===k} key={k} onClick={()=>setFilter(k)}>{k} ({data.words.filter(w=>w.label===k).length})</button>)}</div><input className="search-input w-full" aria-label="Search linked words" placeholder="Search in the learning language…" value={query} onChange={e=>setQuery(e.target.value)}/>{rows.slice(0,30).map(w=><div className="review-row" key={w.id}><strong lang={settings.targetLanguage}>{w.text}</strong><span>{w.label}</span>{(settings.meaningLanguage==='en'||settings.showEnglish)&&w.english&&<small lang="en">{w.english}</small>}</div>)}<p className="text-xs mt-3">Showing {Math.min(rows.length,30)} of {rows.length}. Search or filter to narrow the list. English glosses, when available, follow your Show English preference.</p></>}{!['guest','unsupported'].includes(data.status)&&<button className="quiet-btn mt-4" disabled={data.status==='loading'} onClick={data.reload}>Refresh ratings</button>}<details className="activity-detail"><summary>Other app connections</summary><p>Japanese Study: word markings. KG Chart: ratings in supported learning languages. Burmese Study: account-linked practice levels only; legacy ownership migration pending. Kata Kita: reviews currently stay on its device; cloud connection pending. Changing the learning language in Settings changes the available sources.</p></details></section>;
     }
 
     function Meaning({text,settings}) {
@@ -308,22 +313,16 @@
     // Account/target/meaning/concept changes remount this whole practice view.
     function PatternPractice({concept,settings,session,openSettings}) {
       const api=window.CatalystPatterns,{scope}=React.useContext(ReviewContext);
-      const [state,setState]=useState({status:'loading',words:[],error:''}),[reload,setReload]=useState(0);
+      const identity=React.useContext(StudyAccountContext);
+      const enabled=settings.targetLanguage==='my'&&concept.id==='verb_final';
+      const state=useStudySource('my','kg','patterns',enabled);
       const [patternId,setPatternId]=useState(api.patterns[0].id),[speaker,setSpeaker]=useState('masculine'),[wordKey,setWordKey]=useState('');
       const [result,setResult]=useState(null),[notice,setNotice]=useState(''),[saved,setSaved]=useState(false);
-      const uid=session?.user?.id,enabled=settings.targetLanguage==='my'&&concept.id==='verb_final';
-      useEffect(()=>{
-        if(!enabled||!uid)return;
-        let cancelled=false;
-        setState({status:'loading',words:[],error:''});setResult(null);setNotice('');setSaved(false);
-        api.load(sb,uid).then(words=>{if(!cancelled)setState({status:'ready',words,error:''});})
-          .catch(error=>{if(!cancelled)setState({status:'error',words:[],error:error.message});});
-        return()=>{cancelled=true;};
-      },[uid,enabled,reload]);
+      const uid=identity.owner?.id;
       const clear=()=>{setResult(null);setNotice('');setSaved(false);};
       if(settings.targetLanguage!=='my')return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Pattern practice currently supports Burmese in the “Verb at the end” lesson. Your lessons and notebook are available in {LANG[settings.targetLanguage].name}.</p></section>;
       if(!enabled)return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Start with three Burmese patterns in “Verb at the end”: eating, drinking and going to a place.</p><button className="primary-btn mt-3" onClick={()=>go('verb_final')}>Open word-order lesson</button></section>;
-      if(session===undefined)return <p role="status">Checking sign-in…</p>;
+      if(identity.scope==='loading')return <p role="status">{identity.message||'Checking sign-in…'}</p>;
       if(!uid)return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Sign in with your KG Chart account to use your learned Burmese words. No AI key is needed.</p><button className="primary-btn mt-3" onClick={openSettings}>Sign in</button></section>;
       const p=api.pattern(patternId),options=api.choices(state.words,patternId),selected=options.find(w=>w.key===wordKey)||options[0];
       const make=key=>{try{setResult(api.build(patternId,key,speaker,state.words));setNotice('');setSaved(false);}catch(error){setResult(null);setNotice(error.message);}};
@@ -343,7 +342,7 @@
         <span className="eyebrow">BURMESE · WORD ORDER</span><h2 id="pattern-practice-title" className="text-2xl font-bold mt-2">Practice with my words</h2>
         <p className="mt-3">Build a sentence from a fixed pattern and a noun you have learned in KG Chart. No AI key or generation charge.</p>
         <p className="mt-2">A noun qualifies through a completed Burmese topic or two correct quiz answers. The pattern supplies “I”, the verb and the ending; these are lesson words, not a claim that you already know them.</p>
-        {state.status==='loading'&&<p role="status" className="review-notice">Loading your learned Burmese words…</p>}
+        <SnapshotNotice data={state}/>{state.status==='loading'&&<p role="status" className="review-notice">Loading your learned Burmese words…</p>}
         {state.status==='error'&&<p role="alert" className="review-notice">{state.error}</p>}
         {state.status==='ready'&&<>
           <div className="pattern-controls">
@@ -352,7 +351,7 @@
           </div>
           {options.length?<><label className="block mt-4">Learned word<select className="search-input block w-full mt-2" value={selected.key} onChange={e=>{setWordKey(e.target.value);clear();}}>{options.map(w=><option key={w.key} value={w.key}>{w.native} · {settings.meaningLanguage==='mr'?w.mr:w.en}</option>)}</select></label><p className="mt-2">{options.length} compatible learned {options.length===1?'word':'words'}. One is enough to practise this pattern.</p><button className="primary-btn mt-4" onClick={()=>make(selected.key)}>Make practice sentence</button></>:<p className="review-notice" role="status">{p.kind==='place'?'No matching learned place word yet. This pattern needs a standalone KG Chart word such as school, home, market or park. Try the food or drink pattern for now.':'No compatible learned '+(p.kind==='food'?'food':'drink')+' word yet. Complete a matching Burmese topic or answer the word correctly twice in KG Chart, then refresh your words here.'}</p>}
         </>}
-        <button className="quiet-btn mt-4" disabled={state.status==='loading'} onClick={()=>setReload(n=>n+1)}>Refresh learned words</button>
+        <button className="quiet-btn mt-4" disabled={state.status==='loading'} onClick={state.reload}>Refresh learned words</button>
         {result&&<div className="pattern-result mt-5" aria-live="polite">
           <p className="font-bold">Pattern example · {p.label[settings.meaningLanguage]}</p>
           <p lang="my" className="font-burmese text-2xl mt-3 break-words">{result.t}</p>
@@ -733,7 +732,7 @@
         {reading&&<p role="status" className="mt-3">Reading notebook export…</p>}
         {pending&&<div className="notebook-transfer">
           <h3 className="font-bold">Import preview</h3><p className="mt-2 break-words">{pending.name}</p>
-          <p className="mt-2">Destination: {LANG[language].name} · {scope==='guest'?'Guest notebook':'Current signed-in account notebook'} · this device only.</p>
+          <p className="mt-2">Destination: {LANG[language].name} · {scope==='guest'?'Guest notebook':'Current study account notebook'} · this device only.</p>
           <ul className="list-disc pl-5 mt-3"><li>{pending.summary.added} new sentences (including {pending.summary.conflictCopies} separate copies of conflicting versions)</li><li>{pending.summary.notesAdded} missing correction notes across {pending.summary.updated} saved sentences</li><li>{pending.summary.unchanged} sentences already present</li></ul>
           {!!pending.summary.conflictCopies&&<p className="mt-3">Some saved IDs refer to different writing. Both versions will be kept as separate sentences.</p>}
           {!!pending.backup.entries.length&&<details className="mt-3"><summary>Preview first {Math.min(3,pending.backup.entries.length)} sentences</summary>{pending.backup.entries.slice(0,3).map(entry=><div className="mt-3" key={entry.id}><p className="whitespace-pre-wrap break-words" lang={language}>{entry.original}</p>{entry.meaning&&<p className="mt-2 whitespace-pre-wrap break-words" lang={entry.meaningLanguage}>{entry.meaning}</p>}<p className="mt-2">{entry.corrections.length} correction notes</p></div>)}</details>}
@@ -789,15 +788,16 @@
     }
 
     function Account({ session }) {
+      const identity=React.useContext(StudyAccountContext);
       const [email, setEmail] = useState('');
       const [pw, setPw] = useState('');
       const [err, setErr] = useState('');
       const [busy, setBusy] = useState(false);
       if (!sb) return null;
-      if (session) return (
+      if (identity.owner) return (
         <div className="flex items-center justify-between gap-2 py-2">
-          <span className="text-sm text-slate-700 truncate">Signed in as <b>{session.user.email}</b></span>
-          <button onClick={() => sb.auth.signOut()} className="text-sm text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">Sign out</button>
+          <span className="text-sm text-slate-700 truncate">{identity.online?'Signed in as':'Offline study account:'} <b>{identity.owner.label}</b></span>
+          <button onClick={() => accountApi.signOut()} className="text-sm text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">Sign out</button>
         </div>
       );
       const signIn = async (e) => {
@@ -809,6 +809,7 @@
       const google = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } });
       return (
         <form onSubmit={signIn} className="space-y-2 py-2">
+          {identity.message&&<p role="status">{identity.message}</p>}<button type="button" className="quiet-btn" onClick={()=>accountApi.verify()}>Retry sign-in check</button>{identity.scope==='loading'&&<button type="button" className="quiet-btn" onClick={()=>accountApi.signOut()}>Sign out on this device and use guest study</button>}
           <p className="text-xs text-slate-500">Same account as KG Chart. Needed for ✨ sentences from your words.</p>
           <button type="button" onClick={google} className="w-full py-2 rounded-xl border border-slate-300 text-sm font-medium">Sign in with Google</button>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
@@ -866,14 +867,15 @@
       const [sheet, setSheet] = useState(false),[offlinePanel,setOfflinePanel]=useState(false);
       const offline=useSyncExternalStore(window.CatalystOffline.subscribe,window.CatalystOffline.getSnapshot);
       useEffect(()=>window.CatalystOffline.init(),[]);
-      const session = useSession();
-      const scope=session===undefined?'loading':session?.user?.id||'guest';
+      const identity=useSyncExternalStore(accountApi.subscribe,accountApi.getSnapshot);
+      useEffect(()=>{accountApi.start();return()=>accountApi.stop();},[]);
+      const session=identity.session,scope=identity.scope;
       const concept = concepts.find(c => c.id === id);
       useEffect(()=>()=>window.CatalystAudio.stop(),[id,settings.targetLanguage]);
       const screen = ['explore','practice','learning'].includes(id) ? id : 'today';
       useEffect(() => { if (concept && settings.lastConcept !== concept.id) update({lastConcept:concept.id}); }, [concept?.id]);
       return (
-        <VocabularyProvider key={`${session===undefined?'loading':session?.user?.id||'guest'}-${settings.targetLanguage}`} session={session} language={settings.targetLanguage}><ReviewProvider key={`${session===undefined?'loading':session?.user?.id||'guest'}-${settings.targetLanguage}`} scope={session===undefined?'loading':session?.user?.id||'guest'} language={settings.targetLanguage}><div className="min-h-screen">
+        <StudyAccountContext.Provider value={identity}><VocabularyProvider key={`${scope}-${settings.targetLanguage}`} session={session} language={settings.targetLanguage}><ReviewProvider key={`${scope}-${settings.targetLanguage}`} scope={scope} language={settings.targetLanguage}><div className="min-h-screen">
           <header className="sticky top-0 z-40 bg-[#251c48] text-white">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
               {concept
@@ -890,6 +892,7 @@
               <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
             </div>
           </header>
+          {(identity.message||!identity.online&&identity.owner)&&<div className="settings-error" role="status">{identity.owner&&!identity.online?`Offline study: ${identity.owner.label}. `:""}{identity.message} <button className="quiet-btn" onClick={()=>accountApi.verify()}>Check connection</button></div>}
           {settingsError&&<div className="settings-error" role="alert">{settingsError} <button className="quiet-btn" onClick={reloadSettings}>Retry settings</button></div>}
           <main id="main-content" className="max-w-6xl mx-auto px-4 py-6 app-content">
             {concept
@@ -900,7 +903,7 @@
           {offlinePanel&&<OfflinePanel key={scope} scope={scope} language={settings.targetLanguage} onClose={()=>setOfflinePanel(false)}/>}
           {offline.locked&&ReactDOM.createPortal(<div className="update-lock" role="status">Checking open Catalyst tabs before updating…</div>,document.body)}
           {sheet && <SettingsSheet settings={settings} update={update} onClose={() => setSheet(false)} source={source} session={session} concepts={concepts} />}
-        </div></ReviewProvider></VocabularyProvider>
+        </div></ReviewProvider></VocabularyProvider></StudyAccountContext.Provider>
       );
     }
 

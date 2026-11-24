@@ -57,7 +57,7 @@
           setPending(null);setSnapshot(null);setMessage('Recovery merged. Existing originals, notes and schedules were retained. Conflicting snapshots remain in recovery copies.');
         }catch(error){setMessage('Restore paused: '+error.message+' Export a recovery file to keep the journal, then preview again.');}
       }
-      return <section className="recovery-panel"><h3>Protect your saved work</h3><p>Destination: {scope==='loading'?'Checking account…':scope==='guest'?'Guest records':'Current signed-in account'} · all five learning languages on this device. Recovery files include writing and may contain personal notes. They stay on your device.</p>
+      return <section className="recovery-panel"><h3>Protect your saved work</h3><p>Destination: {scope==='loading'?'Checking account…':scope==='guest'?'Guest records':'Current study account'} · all five learning languages on this device. Recovery files include writing and may contain personal notes. They stay on your device.</p>
         {scope!=='guest'&&<label><input type="checkbox" checked={guest} disabled={scope==='loading'} onChange={e=>{setGuest(e.target.checked);setSnapshot(null);}}/> Include guest notebooks, reviews and drafts</label>}
         <label><input type="checkbox" checked={device} onChange={e=>{setDevice(e.target.checked);setSnapshot(null);}}/> Include device-wide settings, legacy practice, guided drafts and audio preferences</label>
         <button className="quiet-btn" disabled={scope==='loading'} onClick={exportPreview}>Preview recovery export</button>
@@ -65,6 +65,46 @@
         <details><summary>Restore a recovery file</summary><p>A preview comes first. Current records win conflicting review schedules, draft versions and settings; the incoming history is kept separately in recovery copies. Existing notebook-only JSON files still use My Learning → Import / restore notebook.</p><label>Choose recovery file<input type="file" accept="application/json,.json" disabled={scope==='loading'||reading} onChange={choose}/></label>
           {reading&&<p role="status">Reading recovery file…</p>}{pending&&<div className="recovery-preview"><p>Destination: {scope==='guest'?'guest':'current account and any guest/device scopes included in this file'}.</p><p>{pending.plan.summary.changed} records to merge · {pending.plan.summary.sentences} sentences and {pending.plan.summary.notes} correction notes to add · {pending.plan.summary.copies} recovery copies · {pending.plan.summary.damaged} unreadable records retained as copies.</p><div className="offline-actions"><button className="primary-btn" onClick={commit}>Merge recovery</button><button className="quiet-btn" onClick={()=>{sequence.current++;setPending(null);setReading(false);}}>Cancel restore</button></div></div>}
         </details><p role="status">{message}</p>
+      </section>;
+    }
+    function OfflineAccountPanel({language}) {
+      const identity=React.useContext(StudyAccountContext),version=useSyncExternalStore(snapshotApi.subscribe,snapshotApi.getVersion);
+      const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[records,setRecords]=useState({});
+      const sequence=React.useRef(0);
+      const sources=[...window.CatalystVocabulary.sources(language).map(p=>({source:p.id,kind:'ratings',label:p.name})),...(language==='my'?[{source:'kg',kind:'patterns',label:'KG Chart · learned nouns for patterns'}]:[])];
+      useUpdateGuard(busy);
+      useEffect(()=>{return()=>{sequence.current++;};},[identity.scope,language]);
+      useEffect(()=>{
+        let cancelled=false;
+        if(!identity.prepared||!identity.owner)return;
+        for(const source of sources){const id=source.source+':'+source.kind,d=window.CatalystSnapshots.descriptor(identity.owner.id,language,source.source,source.kind);
+          snapshotApi.read(d).then(record=>{if(!cancelled&&record)setRecords(old=>({...old,[id]:`${record.data.words.length} words · saved ${new Date(record.savedAt).toLocaleString()}`}));}).catch(error=>{if(!cancelled)setRecords(old=>({...old,[id]:error.message}));});}
+        return()=>{cancelled=true;};
+      },[identity.scope,identity.prepared,language,version]);
+      async function prepare(){
+        const run=++sequence.current,current=()=>sequence.current===run;setBusy(true);setMessage('Checking this account…');
+        try{
+          const ticket=await accountApi.prepare();if(!current())return;
+          setMessage('Notebook and reviews prepared. Saving complete word sources…');
+          let complete=0;
+          for(const source of sources){
+            if(!current()||!accountApi.valid(ticket))break;
+            const id=source.source+':'+source.kind,d=window.CatalystSnapshots.descriptor(ticket.owner,language,source.source,source.kind);
+            setRecords(old=>({...old,[id]:'Downloading…'}));
+            try{const record=await snapshotApi.refresh(d,{persist:true,current});if(!current())return;complete++;setRecords(old=>({...old,[id]:`${record.data.words.length} words · saved ${new Date(record.savedAt).toLocaleString()}`}));}
+            catch(error){if(!current())return;setRecords(old=>({...old,[id]:error.message||'Download failed. Previous complete snapshot retained.'}));}
+          }
+          if(current())setMessage(accountApi.valid(ticket)?`Notebook and reviews ready for this account. ${complete}/${sources.length} word sources refreshed. Sources marked unavailable need an online retry.`:'Account changed during preparation. Reconnect and try again.');
+        }catch(error){if(current())setMessage(error.message);}finally{if(current())setBusy(false);}
+      }
+      return <section className="recovery-panel"><h3>Your account and words</h3>
+        <p>{identity.owner?`Account: ${identity.owner.label}`:'Sign in through Settings to prepare your account.'} · {LANG[language].name}</p>
+        <p>{identity.prepared?'Notebook and reviews: ready for this account on this device.':'Notebook and reviews: account not prepared for offline access.'} Word sources are saved separately for each account and learning language. Saving words does not sync your writing to the cloud.</p>
+        <p>Prepare in the actual iPad Home Screen app before leaving Wi-Fi. After signing out here or in another app sharing this sign-in, reconnect and prepare again. Source permissions cannot be checked while disconnected.</p>
+        <div className="offline-actions"><button className="primary-btn" disabled={!identity.online||busy} onClick={prepare}>{identity.prepared?'Refresh offline account and words':'Prepare this account for offline study'}</button>{busy&&<button className="quiet-btn" onClick={()=>{sequence.current++;setBusy(false);setMessage('Download cancelled. Completed snapshots and existing writing are retained.');}}>Cancel word download</button>}{!identity.online&&<button className="quiet-btn" onClick={()=>accountApi.verify()}>Check account online</button>}</div>
+        {sources.map(source=><div className="recovery-row" key={source.source+source.kind}><strong>{source.label}</strong><span>{records[source.source+':'+source.kind]||'Not saved for offline study'}</span></div>)}
+        {!sources.length&&<p>No connected vocabulary source for this language. Lessons, notebooks and reviews can still be used offline.</p>}
+        <p role="status">{message}</p>
       </section>;
     }
     function OfflinePanel({scope,language,onClose}) {
@@ -88,8 +128,8 @@
       const update=progress?.complete&&(progress.candidateBuild!==state.appBuild||progress.candidateBuild!==state.active?.activeBuild||progress.candidateBuild!==state.active?.workerBuild);
       const newCandidate=progress?.candidateBuild&&progress.candidateBuild!==state.active?.activeBuild;
       return <div className="offline-backdrop"><section className="offline-dialog" role="dialog" aria-modal="true" aria-labelledby="offline-title"><div className="offline-heading"><h2 id="offline-title">Study offline</h2><button ref={close} className="quiet-btn" aria-label="Close offline settings" onClick={onClose}>Close</button></div>
-        <p>{LANG[language].name} · {scope==='loading'?'Checking account':scope==='guest'?'Guest study':'Signed-in account'}</p>
-        <div className="offline-readiness"><strong>{api.ready()?'App and text ready offline':state.phase==='repair-needed'?'App files need repair':'App and text not ready offline'}</strong><p>Public lessons, quizzes, fonts and converters for all five languages. Your learned words and account access still need an internet connection. Audio has not been downloaded.</p></div>
+        <p>{LANG[language].name} · {scope==='loading'?'Checking account':scope==='guest'?'Guest study':'Current study account'}</p>
+        <div className="offline-readiness"><strong>{api.ready()?'App and text ready offline':state.phase==='repair-needed'?'App files need repair':'App and text not ready offline'}</strong><p>Public lessons, quizzes, fonts and converters for all five languages. Prepare your account and word sources separately below. Audio has not been downloaded.</p></div>
         {!state.supported?<p role="alert">This browser cannot save the offline app. Use HTTPS in a supported browser or Home Screen web app. Recovery export still works below.</p>:<>
           <p>{total?`${size(done)} of ${size(total)} saved · ${size(Math.max(0,total-done))} remaining`:'Connect to check the download size.'}{progress?` · ${progress.files||0}/${progress.totalFiles||0} files`:''}</p>
           {total>0&&<progress max={total} value={Math.min(done,total)} aria-label="App download progress"/>}
@@ -107,6 +147,7 @@
           <p className="offline-meta">Storage protection: {state.persisted?'persistent storage granted':'best effort; keep a recovery file'}. Available storage estimates are not a reservation.</p>
         </>}
         <p className="offline-help">On iPad, open the actual Home Screen app and download here before leaving Wi-Fi. Keep this window visible during the download. If it stops, reopen and resume. Updates do not require clearing website data.</p>
+        <OfflineAccountPanel key={scope+':'+language} language={language}/>
         <RecoveryPanel key={scope} scope={scope}/>
       </section></div>;
     }

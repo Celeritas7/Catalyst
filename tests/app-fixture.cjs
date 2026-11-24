@@ -7,14 +7,15 @@ function initialize(){
   const datasets={
     kg_chart_topic_completions:[{user_id:'u1',language_code:'my',topic_id:'food'},{user_id:'u1',language_code:'my',topic_id:'drink'}],
     kg_chart_vocabulary:[{id:'apple',topic_id:'food'},{id:'rice',topic_id:'food'},{id:'water',topic_id:'drink'}],
-    kg_chart_vocabulary_translations:[{vocabulary_id:'apple',language_code:'my',native_text:'ပန်းသီး',vocabulary:{english_text:'Apple'}},{vocabulary_id:'rice',language_code:'my',native_text:'ထမင်း',vocabulary:{english_text:'cooked rice'}},{vocabulary_id:'water',language_code:'my',native_text:'ရေ',vocabulary:{english_text:'Water'}}],
+    kg_chart_vocabulary_translations:[{vocabulary_id:'apple',language_code:'my',native_text:'ပန်းသီး',vocabulary:{english_text:'Apple',topic_id:'food'}},{vocabulary_id:'rice',language_code:'my',native_text:'ထမင်း',vocabulary:{english_text:'cooked rice',topic_id:'food'}},{vocabulary_id:'water',language_code:'my',native_text:'ရေ',vocabulary:{english_text:'Water',topic_id:'drink'}}],
   };
   let listener;
   const session=()=>window.__qa.user?{user:{id:window.__qa.user,email:'test@example.invalid'},access_token:'FAKE_TEST_TOKEN'}:null;
-  window.__changeUser=user=>{window.__qa.user=user;listener?.('SIGNED_IN',session());};
+  const persist=()=>{const key='sb-ulgrfumbwjovbjzjiems-auth-token';if(session())localStorage.setItem(key,JSON.stringify(session()));else localStorage.removeItem(key);};persist();
+  window.__changeUser=user=>{window.__qa.user=user;persist();listener?.(user?'SIGNED_IN':'SIGNED_OUT',session());};
   window.__mockDb={
-    auth:{getSession:async()=>({data:{session:session()}}),onAuthStateChange:fn=>{listener=fn;return {data:{subscription:{unsubscribe(){}}}};},signOut:async()=>window.__changeUser(null)},
-    rpc:async()=>({data:window.__qa.allowed,error:null}),
+    auth:{getUser:async()=>({data:{user:session()?.user}}),getSession:async()=>({data:{session:session()}}),onAuthStateChange:fn=>{listener=fn;return {data:{subscription:{unsubscribe(){}}}};},signOut:async()=>window.__changeUser(null)},
+    rpc:async(name)=>({data:name==='kg_chart_u3_my_access_snapshot'?{contract:1,mode:'legacy',revision:0,languages:null,topics:null,features:null,server_enforced:false}:name==='kg_chart_my_private_lesson_visibility'?{contract:1,topics:[],groups:[]}:window.__qa.allowed,error:null}),
     from(table){
       const filters=[];let update,start=0,end=Infinity;
       const result=()=>{
@@ -27,7 +28,7 @@ function initialize(){
     },
   };
 }
-async function mount({storage={},setup}={}){
+async function mount({storage={},setup,offline=false,indexedDB}={}){
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),errors=[],console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e.message));
   const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'https://catalyst.test/#verb-final',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});
   const w=dom.window;w.scrollTo=()=>{};w.structuredClone=structuredClone;w.TextEncoder=TextEncoder;w.HTMLMediaElement.prototype.pause=()=>{};
@@ -38,6 +39,8 @@ async function mount({storage={},setup}={}){
   if(scripts.length!==2)throw new Error('Expected compiled runtime and app scripts');
   w.eval(fs.readFileSync(path.join(root,scripts[0]),'utf8'));
   w.supabase={createClient:()=>w.__mockDb};
+  if(indexedDB)w.indexedDB=indexedDB;
+  if(offline)Object.defineProperty(w.navigator,'onLine',{get:()=>false});
   if(setup)setup(w);
   w.eval(fs.readFileSync(path.join(root,scripts[1]),'utf8'));
   const has=text=>w.document.body.textContent.includes(text),buttons=label=>[...w.document.querySelectorAll('button')].filter(el=>el.textContent===label);
@@ -46,7 +49,7 @@ async function mount({storage={},setup}={}){
   const select=(label,value)=>{const el=[...w.document.querySelectorAll('label')].find(el=>el.textContent.startsWith(label))?.querySelector('select');if(!el)throw new Error('No select '+label);el.value=value;el.dispatchEvent(new w.Event('change',{bubbles:true}));};
   const snapshot=()=>Object.fromEntries(Array.from({length:w.localStorage.length},(_,i)=>{const k=w.localStorage.key(i);return [k,w.localStorage.getItem(k)];}));
   await wait(()=>buttons('✨ Your words').length===1);
-  w.document.querySelector('[aria-label="Settings"]').click();await wait(()=>has('Signed in as'));
+  w.document.querySelector('[aria-label="Settings"]').click();await wait(()=>has(offline?'Offline study account:':'Signed in as'));
   w.document.querySelector('[aria-label="Close settings"]').click();await wait(()=>!w.document.querySelector('[aria-label="Close settings"]'));
   return {w,dom,errors,has,buttons,button,wait,select,snapshot,click:label=>button(label).click()};
 }

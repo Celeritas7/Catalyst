@@ -27,8 +27,8 @@ It shows an unavailable state rather than substituting an unrelated word.
 **Save pattern to notebook** keeps a separately labelled pattern example in
 My Learning. Repeated saves avoid duplicates. Existing original writing,
 correction notes, notebook export/import and account/language separation remain
-intact. The bank is bundled locally; reading KG progress still needs a connection.
-Public app/text downloads are available in Phase 6C; downloaded KG progress follows in 6D.
+intact. The bank is bundled locally. Online KG progress works as before; offline
+KG snapshots require separately deployed permission endpoints (see Phase 6D).
 See [Phase 5G](docs/PHASE5G_PATTERN_PRACTICE.md).
 
 **Offline work:** the [Phase 6A architecture and preservation review](docs/PHASE6A_OFFLINE_ARCHITECTURE.md)
@@ -36,9 +36,12 @@ is complete. [Phase 6B](docs/PHASE6B_STATIC_BUILD.md) packages the compiled app,
 libraries, fonts and converters locally. [Phase 6C](docs/PHASE6C_OFFLINE_DOWNLOADS.md)
 adds **Study offline**, verified/resumable public app and text downloads, guarded
 updates, writing-draft recovery and recovery export/restore. **Ready offline**
-requires all required files plus matching app/worker versions. Account access and
-learned words still need a connection; audio is not downloaded. Next are 6D
-account-scoped snapshots, 6E audio, and 6F physical iPad acceptance. Existing data
+requires all required files plus matching app/worker versions. [Phase 6D](docs/PHASE6D_ACCOUNT_SNAPSHOTS.md)
+adds explicit account preparation, offline notebook ownership and complete source
+snapshots with dates, refresh and permission checks. KG snapshots currently show
+unavailable because the required permission endpoints are not deployed; Burmese
+Study and Japanese Study sources can be prepared independently. Audio is not
+downloaded. Next are 6E audio and 6F physical iPad acceptance. Existing data
 stays at the same app URL; updates never require clearing website data.
 
 **Show earlier AI sentences** retains read/flag access to older multilingual and

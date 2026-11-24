@@ -64,6 +64,24 @@ extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
 
+## Phase 6D implementation checkpoint — 2026-11-25
+
+See [the 6D report](PHASE6D_ACCOUNT_SNAPSHOTS.md) for source contracts and limits.
+Release `65b6ac072f218d5d9153`; 104 automated tests pass.
+
+| Check | Status | Evidence and remaining boundary |
+| --- | --- | --- |
+| D1 | PASS (synthetic automated + Chromium) | Prepared owner survives offline reload; pattern and original writing save to the same notebook; cached shell reopens after preview server stops |
+| D2 | PASS (automated) | No owner preparation means no private offline access; sign-out and sibling session removal hide snapshots; server sign-out failure cannot re-enable preparation |
+| D3 | PASS (automated + Chromium) | Late A verification/download ignored after B; B has no A notebook; A’s originals remain on switching back |
+| D4 | PASS (automated) | Network/partial reads keep dated complete snapshots; denial locks the source persistently; concurrent locks defeat stale fallback |
+| D5 | PARTIAL | Auth and permission changes tested with fixtures; real KG downloads blocked because access/visibility endpoints are missing; restricted profiles unsupported |
+| D6 | PASS (automated) | Cancellation and account/target tickets discard incomplete jobs; completed sources retained, interrupted source restarts |
+| D7 | PASS (automated) | 1,001-row complete reads; duplicate answer IDs cannot create eligibility; empty and failed sources are distinct |
+| E1–F5 | NOT RUN | Audio packs and physical iPad/Android acceptance remain future phases |
+
+No production writes, real login or real user data were used for acceptance.
+
 ## Phase 6C implementation checkpoint — 2026-11-25
 
 See [the 6C report](PHASE6C_OFFLINE_DOWNLOADS.md) for build IDs and exact fixtures.
