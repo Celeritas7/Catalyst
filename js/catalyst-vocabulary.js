@@ -39,8 +39,9 @@
     for(let offset=0;offset<100000;offset+=500){
       let q=client.from(table).select(columns).order(order,{ascending:true}).range(offset,offset+499);
       for(const [k,v] of Object.entries(filters))q=q.eq(k,v);
-      const {data,error}=await q;
-      if(error)throw new Error('Vocabulary connection unavailable. Please retry.');
+      const {data,error,status:responseStatus}=await q;
+      if(error)throw Object.assign(new Error('Vocabulary connection unavailable. Please retry.'),{code:error.code,status:error.status||responseStatus});
+      if(!Array.isArray(data))throw new Error('Vocabulary response was incomplete. Previous snapshot retained.');
       rows.push(...(data||[]));
       if(!data||data.length<500)return rows;
     }
@@ -54,7 +55,7 @@
       return {id:source+':'+language+':'+id,text,english:w.meaning_en||'',status:value?'rated':'unrated',rating:value,label:custom[value]||labels[value]||'Unrecognised rating',source,language};
     }).filter(w=>w.text);
   }
-  async function loadSource(client,uid,language,source){
+  async function loadSource(client,uid,language,source,access){
     if(!uid)throw new Error('Sign in to read your word progress.');
     if(!providers[source]?.languages.includes(language))throw new Error('Source unavailable for this language.');
     let words;
@@ -66,17 +67,18 @@
       words=join(dictionary,states,uid).map(w=>({...w,label:w.level===null?'No account-linked rating':`Practice level ${w.level}/5`,source,language}));
     }else if(source==='kg'){
       const [dictionary,ratings]=await Promise.all([
-        pages(client,'kg_chart_vocabulary_translations','vocabulary_id,language_code,native_text',{language_code:language},'vocabulary_id'),
+        pages(client,'kg_chart_vocabulary_translations','vocabulary_id,language_code,native_text'+(access?',vocabulary:kg_chart_vocabulary(topic_id)':''),{language_code:language},'vocabulary_id'),
         pages(client,'kg_chart_user_ratings','id,user_id,vocabulary_id,language_code,rating',{user_id:uid,language_code:language})
-      ]);words=rated(dictionary,ratings,uid,language,source);
+      ]);words=rated(access?dictionary.filter(w=>access.allows(w.vocabulary?.topic_id)):dictionary,ratings,uid,language,source);
     }else{
       const [dictionary,ratings,categories]=await Promise.all([
         pages(client,'japanese_unified_words','id,kanji,hiragana,meaning_en'),
         pages(client,'japanese_user_markings','id,user_id,kanji,marking',{user_id:uid}),
-        client.from('japanese_marking_categories').select('category_id,label').eq('user_id',uid)
+        pages(client,'japanese_marking_categories','category_id,label',{user_id:uid},'category_id').then(data=>({data})).catch(error=>({error}))
       ]);
       // The source app permits this optional table to be absent; other failures must remain errors.
-      if(categories.error&&!['PGRST205','42P01'].includes(categories.error.code))throw new Error('Category labels unavailable.');
+      if(categories.error&&!['PGRST205','42P01'].includes(categories.error.code))throw Object.assign(new Error('Category labels unavailable.'),{code:categories.error.code,status:categories.error.status});
+      if(!categories.error&&!Array.isArray(categories.data))throw new Error('Category labels were incomplete.');
       words=rated(dictionary,ratings,uid,language,source,Object.fromEntries((categories.data||[]).map(c=>[c.category_id,c.label])));
     }
     return {words,linked:words.filter(w=>w.status!=='unrated').length,source,language};

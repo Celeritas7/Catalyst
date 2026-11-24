@@ -13,4 +13,6 @@ module.exports = [
   'js/catalyst-generation.js',
   'js/catalyst-safety.js',
   'js/catalyst-offline.js',
+  'js/catalyst-account.js',
+  'js/catalyst-snapshots.js',
 ];

@@ -64,18 +64,18 @@
   async function pages(makeQuery){
     const rows=[];
     for(let start=0;start<100000;start+=500){
-      const {data,error}=await makeQuery().range(start,start+499);
-      if(error||!Array.isArray(data))throw new Error('Could not read your KG Chart progress. Try again when connected.');
+      const {data,error,status:responseStatus}=await makeQuery().range(start,start+499);
+      if(error||!Array.isArray(data))throw Object.assign(new Error('Could not read your KG Chart progress. Try again when connected.'),{code:error?.code,status:error?.status||responseStatus});
       rows.push(...data);
       if(data.length<500)return rows;
     }
     throw new Error('Your KG Chart progress could not be loaded completely. Please retry.');
   }
-  async function load(client,userId){
+  async function load(client,userId,permissions){
     if(!client||!normalize(userId))throw new Error('Sign in with your KG Chart account.');
     const access=await client.rpc('kg_chart_is_allowed');
-    if(access.error)throw new Error('Could not check KG Chart account access. Please retry.');
-    if(access.data!==true)throw new Error('This account does not have KG Chart access.');
+    if(access.error)throw Object.assign(new Error('Could not check KG Chart account access. Please retry.'),{code:access.error.code,status:access.error.status||access.status});
+    if(access.data!==true)throw Object.assign(new Error('This account does not have KG Chart access.'),{code:'ACCESS_DENIED'});
     const completed=await pages(()=>client.from('kg_chart_topic_completions')
       .select('user_id,language_code,topic_id').eq('user_id',userId).eq('language_code','my').order('topic_id'));
     const topics=[...new Set(completed.filter(r=>r.user_id===userId&&r.language_code==='my'&&r.topic_id).map(r=>r.topic_id))];
@@ -102,10 +102,10 @@
     const list=[...learned].sort(),out=[];
     for(let i=0;i<list.length;i+=300){
       const batch=list.slice(i,i+300),rows=await pages(()=>client.from('kg_chart_vocabulary_translations')
-        .select('vocabulary_id,language_code,native_text,vocabulary:kg_chart_vocabulary(english_text)')
+        .select('vocabulary_id,language_code,native_text,vocabulary:kg_chart_vocabulary(english_text,topic_id)')
         .eq('language_code','my').in('vocabulary_id',batch).order('vocabulary_id'));
       for(const r of rows){
-        if(r.language_code==='my'&&batch.includes(r.vocabulary_id)&&normalize(r.native_text))
+        if(r.language_code==='my'&&batch.includes(r.vocabulary_id)&&normalize(r.native_text)&&(!permissions||permissions.allows(r.vocabulary?.topic_id)))
           out.push({id:r.vocabulary_id,language:'my',native:normalize(r.native_text),english:normalize(r.vocabulary?.english_text)});
       }
     }
