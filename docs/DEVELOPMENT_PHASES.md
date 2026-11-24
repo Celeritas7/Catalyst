@@ -46,13 +46,21 @@ Acceptance: mistakes affect the relevant skill; delayed reviews become due predi
 
 ## 5. Personal sentences and KG Chart integration
 
+Current direction: Phase 5G provides Burmese pattern practice without paid AI.
+The earlier selected-language AI backend is installed but paused; its activation
+is deferred. Existing AI history and the personal notebook remain available.
+
 Use known target-language vocabulary with clear support for necessary new words. Remove the multi-language word minimum in the sentence-generation backend as part of this phase, not just in the UI. Store original attempts, corrections and explanations separately. Add a central personal-sentence view and explicit generated/reviewed status. Validate authorization, ownership, quotas and failure handling.
 
-Acceptance: a Japanese-only learner can generate a Japanese lesson example without Burmese/Chinese progress; existing saved sentences remain readable; failed requests do not discard work.
+Current acceptance: a Burmese learner can use a compatible learned noun with an
+explicit fixed frame, save it to the notebook, reopen it and add separate notes
+without a model call. Existing saved sentences remain readable and failures do
+not discard writing. The earlier Japanese-only AI acceptance criterion remains
+conditional on future paid activation.
 
 ## 6. Content expansion, accessibility and offline study
 
-Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. New AI generation remains online.
+Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.
 
@@ -162,7 +170,27 @@ missing/invalid-token rejection and unsupported-method checks passed. GET report
 API v2 and incomplete model configuration. Zero generated rows and quota ledger
 rows remained after testing; no paid model call was made.
 
-See [Phase 5F](PHASE5F_PAUSED_DEPLOYMENT.md). Remaining work: model/key configuration,
-positive-account and multi-user acceptance, an approved live-model test, and
-physical browser/iPad checks. This checkpoint does not complete live activation,
-notebook sync, central saved-sentence navigation or offline startup.
+See [Phase 5F](PHASE5F_PAUSED_DEPLOYMENT.md) for the historical deployment and the
+later configuration checkpoint. Paid activation and its remaining acceptance are
+deferred in favour of Phase 5G. This does not complete notebook sync or offline startup.
+
+### Phase 5G — Burmese practice without a paid API
+
+Implemented a bundled, versioned bank for eating, drinking and going to a place.
+Only exact native/English noun pairs from the signed-in learner's Burmese KG
+progress are offered. Food and drinks have compatible current dictionary entries;
+the place pattern waits for a compatible standalone place word to exist and be
+learned. One matching noun is sufficient. Pronouns and verbs are labelled lesson
+support, with masculine/feminine forms, Marathi/English meanings and approximate
+Devanagari readings. Content still awaits native-speaker review.
+
+Pattern saves reuse the existing notebook format with distinct source labels;
+original writing, corrections, export/import and duplicate protection are retained.
+Earlier AI history remains readable and flaggable, while new AI controls and their
+capability requests have been removed from the page. No production data, SQL,
+Edge Function or quota changes are part of this phase.
+
+See [Phase 5G](PHASE5G_PATTERN_PRACTICE.md) for verification and post-merge checks.
+Next: Phase 6A offline architecture and preservation review, then app/dependency
+caching and account-scoped learned-word downloads, followed by physical iPad
+Airplane-mode acceptance. Current KG progress loading still requires a connection.

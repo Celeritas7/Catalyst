@@ -32,3 +32,9 @@ select:focus-visible{outline:3px solid #a995f5;outline-offset:3px}
 .notebook-transfer textarea,.notebook-import input{font-size:16px}
 .notebook-import{font-size:14px;line-height:1.65}
 .notebook-import input[type=file]{max-width:100%}
+.pattern-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.pattern-controls label { display: grid; gap: .5rem; min-width: 0; }
+.pattern-controls select { width: 100%; min-width: 0; }
+.pattern-result { padding: 1.25rem; border: 1px solid #d7cafa; border-radius: 1rem; background: #faf8ff; }
+.pattern-practice .quiet-btn { margin-right: .5rem; }
+@media (max-width: 640px) { .pattern-controls { grid-template-columns: 1fr; } }
