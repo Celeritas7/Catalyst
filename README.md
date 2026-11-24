@@ -9,37 +9,38 @@ You learn one grammar point by seeing how Japanese, Burmese and Chinese handle i
 - **Closeness for every language pair:** ≈ close, ~ partial, ✕ no equivalent, with a note on the tricky pairs (は vs Chinese topic, ကို covering を and に, 了 is not た…). "No equivalent" entries are shown with a dashed border and still have examples showing what is used instead.
 - **Example n is the same sentence in every language**, so *By sentence* view lines them up.
 
-## ✨ Sentences from your words (Claude)
+## ✨ Practice with my words
 
-Phase 5D prepares **New sentence from my words** to use only the selected learning
-language's KG Chart progress. Japanese, Burmese, Chinese and Marathi each require
-at least eight eligible words in that language; no progress in other languages is
-required. A meaning is generated in the selected meaning language (Marathi or
-English). Examples are AI generated and not reviewed.
+Phase 5G adds Burmese pattern practice without an AI key or generation charge.
+Choose **Burmese → Verb at the end → Your words**. A compatible noun from a
+completed Burmese KG Chart topic or two correct quiz answers is enough; word
+ratings remain separate. The app supplies the pronoun, verb and ending explicitly
+as lesson words, and shows the sentence, an approximate Devanagari reading and
+the selected Marathi/English meaning. Masculine and feminine speaker forms are
+available. Patterns and readings await native-speaker review.
 
-Eligible words come from completed KG Chart topics or at least two correct quiz
-answers. Word ratings are separate. Older multilingual saved sentences remain
-readable; the device-local learner notebook keeps originals and corrections intact.
+The initial bank covers four food nouns and four drinks. The “I go to [place]”
+frame is included, but needs a compatible learned place noun: none of its four
+standalone place words existed in the KG dictionary checked on 2026-11-24.
+It shows an unavailable state rather than substituting an unrelated word.
 
-Generation requires an approved backend setup. The frontend checks the API version
-and configuration before enabling generation. The additive database migration,
-explicit model configuration, permissions, atomic daily request limits, failure
-behavior, validation and deployment/rollback steps are documented in
-[Phase 5D](docs/PHASE5D_GENERATION.md). Merging code does not deploy the backend.
-`ANTHROPIC_API_KEY` and `CATALYST_MODEL` are both required; no default model is assumed.
+**Save pattern to notebook** keeps a separately labelled pattern example in
+My Learning. Repeated saves avoid duplicates. Existing original writing,
+correction notes, notebook export/import and account/language separation remain
+intact. The bank is bundled locally; reading KG progress still needs a connection.
+Reliable offline app startup and downloaded progress belong to Phase 6.
+See [Phase 5G](docs/PHASE5G_PATTERN_PRACTICE.md).
 
-Daily limits count generation requests, including attempts that reach the model
-but later fail. The default is 30 per user per UTC day across languages. Generated
-examples are saved in `catalyst_generated`; 🚩 Wrong hides a sentence after its flag
-is successfully saved. New generation requires an internet connection.
+**Show earlier AI sentences** retains read/flag access to older multilingual and
+selected-language examples. New AI-generation controls have been removed from
+the page, and the deployed daily generation limit remains **zero**. The installed
+backend and saved rows are retained. Historical generation/deployment details are
+in [Phase 5D](docs/PHASE5D_GENERATION.md) and
+[Phase 5F](docs/PHASE5F_PAUSED_DEPLOYMENT.md); paid activation is deferred.
 
 Tests: `npm ci`, `npm test`, `npm run check:app` (Node 22.18+). No production
 credentials or paid model calls are needed for these checks.
 
-The database and v2 sentence function were installed on 2026-11-24 (Japan), with
-**generation paused at zero requests/day**. Connectivity, CORS and missing/invalid
-authentication checks passed. Model configuration remains incomplete; valid-account
-and live-model acceptance are pending. See the [Phase 5F checkpoint](docs/PHASE5F_PAUSED_DEPLOYMENT.md).
 The [Phase 5E](docs/PHASE5E_BACKEND_READINESS.md) first-install package is for empty
 installations only. Use `npm run check:backend` to check it and `npm run test:postgres`
 for the disposable PostgreSQL concurrency rehearsal.
@@ -57,6 +58,7 @@ index.html            the app
 js/catalyst-scripts.js      Devanagari (kana → Devanagari; loads language-utils converters)
 js/catalyst-audio.js        audio player
 js/catalyst-data.js         generated content (do not edit)
+js/catalyst-patterns.js     Burmese frames, compatible nouns and read-only KG progress
 data/grammar.yaml     THE CONTENT: edit this
 tools/build_data.mjs  YAML → js/catalyst-data.js + sql/catalyst-seed.sql, with checks
 tools/gen_catalyst_audio.py Azure clips → Supabase Storage (same keys as gen_kg_audio.py)

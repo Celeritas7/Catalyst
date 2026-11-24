@@ -1,5 +1,14 @@
 # Phase 5F — paused deployment checkpoint
 
+**Later checkpoint, 2026-11-24:** the owner completed model configuration privately;
+the capability response subsequently reported `configured:true`, and the owner's
+signed-in attempt reached the expected zero-limit response. A read-only check for
+Phase 5G confirmed limit 0, zero quota ledger rows and zero generated rows. No paid
+model acceptance was performed. The owner chose pattern practice without paid AI;
+see [Phase 5G](PHASE5G_PATTERN_PRACTICE.md). The deployment observations below retain
+their original point-in-time results. The activation list is deferred, not a
+requirement for pattern practice or Phase 6.
+
 Verified on **2026-11-24 (Japan)**. The Technical database installation is complete
 and `catalyst-sentence` is deployed. **AI generation is still paused**; model
 configuration and live-model acceptance are not complete.

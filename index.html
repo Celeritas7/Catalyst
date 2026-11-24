@@ -19,6 +19,7 @@
   <script src="./js/catalyst-activities.js"></script>
   <script src="./js/catalyst-review.js"></script>
   <script src="./js/catalyst-notebook.js"></script>
+  <script src="./js/catalyst-patterns.js"></script>
   <script src="./js/catalyst-vocabulary.js"></script>
   <script src="./js/catalyst-generation.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,7 +72,6 @@
       }, []);
       return session;
     }
-    const FN_URL = `${SUPABASE_URL}/functions/v1/catalyst-sentence`;
 
     const LANG = window.CatalystPreferences.registry;
     const ORDER = ['ja', 'my', 'zh', 'mr', 'en'];
@@ -363,80 +363,109 @@
       );
     }
 
-    // Account/target/meaning/concept changes remount this component. Aborted or
-    // late requests may finish on the server, but cannot populate a different view.
-    function YourSentences({ concept, settings, conv, session, openSettings }) {
-      const api=window.CatalystGeneration,target=settings.targetLanguage,meaningLanguage=settings.meaningLanguage;
-      const [rows,setRows]=useState(null),[busy,setBusy]=useState(''),[msg,setMsg]=useState(null);
-      const [known,setKnown]=useState(null),[capability,setCapability]=useState(null),[reload,setReload]=useState(0);
-      const active=React.useRef(false),locked=React.useRef(false),pending=React.useRef(null);
-      useEffect(()=>{active.current=true;return()=>{active.current=false;pending.current?.abort();};},[]);
+    // Account/target/meaning/concept changes remount this whole practice view.
+    function PatternPractice({concept,settings,session,openSettings}) {
+      const api=window.CatalystPatterns,{scope}=React.useContext(ReviewContext);
+      const [state,setState]=useState({status:'loading',words:[],error:''}),[reload,setReload]=useState(0);
+      const [patternId,setPatternId]=useState(api.patterns[0].id),[speaker,setSpeaker]=useState('masculine'),[wordKey,setWordKey]=useState('');
+      const [result,setResult]=useState(null),[notice,setNotice]=useState(''),[saved,setSaved]=useState(false);
+      const uid=session?.user?.id,enabled=settings.targetLanguage==='my'&&concept.id==='verb_final';
       useEffect(()=>{
+        if(!enabled||!uid)return;
         let cancelled=false;
-        setRows(null);setMsg(null);
-        if(!sb||!session?.user?.id||!api.targets.includes(target)){setRows([]);return;}
+        setState({status:'loading',words:[],error:''});setResult(null);setNotice('');setSaved(false);
+        api.load(sb,uid).then(words=>{if(!cancelled)setState({status:'ready',words,error:''});})
+          .catch(error=>{if(!cancelled)setState({status:'error',words:[],error:error.message});});
+        return()=>{cancelled=true;};
+      },[uid,enabled,reload]);
+      const clear=()=>{setResult(null);setNotice('');setSaved(false);};
+      if(settings.targetLanguage!=='my')return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Pattern practice currently supports Burmese in the “Verb at the end” lesson. Your lessons and notebook are available in {LANG[settings.targetLanguage].name}.</p></section>;
+      if(!enabled)return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Start with three Burmese patterns in “Verb at the end”: eating, drinking and going to a place.</p><button className="primary-btn mt-3" onClick={()=>go('verb_final')}>Open word-order lesson</button></section>;
+      if(session===undefined)return <p role="status">Checking sign-in…</p>;
+      if(!uid)return <section className="pattern-box"><h2 className="text-xl font-bold">Practice with my words</h2><p className="mt-3">Sign in with your KG Chart account to use your learned Burmese words. No AI key is needed.</p><button className="primary-btn mt-3" onClick={openSettings}>Sign in</button></section>;
+      const p=api.pattern(patternId),options=api.choices(state.words,patternId),selected=options.find(w=>w.key===wordKey)||options[0];
+      const make=key=>{try{setResult(api.build(patternId,key,speaker,state.words));setNotice('');setSaved(false);}catch(error){setResult(null);setNotice(error.message);}};
+      const save=()=>{
+        if(!result||scope!==uid)return;
+        try{
+          let added=false;
+          window.CatalystNotebook.commit(localStorage,scope,'my',data=>{
+            const next=window.CatalystNotebook.addFromActivity(data,{pilot:{id:result.patternId,language:'my',concept:'verb_final'},targetLanguage:'my',
+              id:crypto.randomUUID(),original:result.t,meaning:result.meanings[settings.meaningLanguage],meaningLanguage:settings.meaningLanguage,createdAt:new Date().toISOString()});
+            added=next.added;return next.data;
+          });
+          setSaved(true);setNotice(added?'Saved to My Learning → My sentence notebook on this device.':'This pattern sentence is already in your notebook. No duplicate was added.');
+        }catch(error){setSaved(false);setNotice('Could not save to the notebook. The sentence is still here; copy it and try again.');}
+      };
+      return <section className="pattern-practice study-panel" aria-labelledby="pattern-practice-title">
+        <span className="eyebrow">BURMESE · WORD ORDER</span><h2 id="pattern-practice-title" className="text-2xl font-bold mt-2">Practice with my words</h2>
+        <p className="mt-3">Build a sentence from a fixed pattern and a noun you have learned in KG Chart. No AI key or generation charge.</p>
+        <p className="mt-2">A noun qualifies through a completed Burmese topic or two correct quiz answers. The pattern supplies “I”, the verb and the ending; these are lesson words, not a claim that you already know them.</p>
+        {state.status==='loading'&&<p role="status" className="review-notice">Loading your learned Burmese words…</p>}
+        {state.status==='error'&&<p role="alert" className="review-notice">{state.error}</p>}
+        {state.status==='ready'&&<>
+          <div className="pattern-controls">
+            <label>Sentence pattern<select className="search-input" value={patternId} onChange={e=>{setPatternId(e.target.value);setWordKey('');clear();}}>{api.patterns.map(item=><option key={item.id} value={item.id}>{item.label[settings.meaningLanguage]}</option>)}</select></label>
+            <label>Speaker form<select className="search-input" value={speaker} onChange={e=>{setSpeaker(e.target.value);clear();}}><option value="masculine">Masculine · ကျွန်တော်</option><option value="feminine">Feminine · ကျွန်မ</option></select></label>
+          </div>
+          {options.length?<><label className="block mt-4">Learned word<select className="search-input block w-full mt-2" value={selected.key} onChange={e=>{setWordKey(e.target.value);clear();}}>{options.map(w=><option key={w.key} value={w.key}>{w.native} · {settings.meaningLanguage==='mr'?w.mr:w.en}</option>)}</select></label><p className="mt-2">{options.length} compatible learned {options.length===1?'word':'words'}. One is enough to practise this pattern.</p><button className="primary-btn mt-4" onClick={()=>make(selected.key)}>Make practice sentence</button></>:<p className="review-notice" role="status">{p.kind==='place'?'No matching learned place word yet. This pattern needs a standalone KG Chart word such as school, home, market or park. Try the food or drink pattern for now.':'No compatible learned '+(p.kind==='food'?'food':'drink')+' word yet. Complete a matching Burmese topic or answer the word correctly twice in KG Chart, then refresh your words here.'}</p>}
+        </>}
+        <button className="quiet-btn mt-4" disabled={state.status==='loading'} onClick={()=>setReload(n=>n+1)}>Refresh learned words</button>
+        {result&&<div className="pattern-result mt-5" aria-live="polite">
+          <p className="font-bold">Pattern example · {p.label[settings.meaningLanguage]}</p>
+          <p lang="my" className="font-burmese text-2xl mt-3 break-words">{result.t}</p>
+          <p className="text-sm mt-3">Approximate Devanagari reading</p><p lang="mr" className="dev-line text-lg mt-1 break-words">{result.dev}</p>
+          <p lang={settings.meaningLanguage} className="text-lg mt-3">{result.meanings[settings.meaningLanguage]}</p>
+          {settings.meaningLanguage!=='en'&&settings.showEnglish&&<p lang="en" className="mt-2">{result.meanings.en}</p>}
+          <p className="mt-3">Your learned noun: <span lang="my">{result.word}</span>. Patterns and readings await native-speaker review.</p>
+          <div className="notebook-actions mt-4"><button className="primary-btn" disabled={scope!==uid} onClick={save}>Save pattern to notebook</button>{options.length>1&&<button className="quiet-btn" onClick={()=>{const next=options[(options.findIndex(w=>w.key===selected.key)+1)%options.length];setWordKey(next.key);make(next.key);}}>Next word</button>}{saved&&<button className="quiet-btn" onClick={()=>go('learning')}>Open notebook</button>}</div>
+        </div>}
+        <p role="status" className="mt-3">{notice}</p>
+      </section>;
+    }
+
+    // Read existing AI examples without contacting the generation function.
+    function SavedAiSentences({concept,settings,conv,session}) {
+      const api=window.CatalystGeneration,target=settings.targetLanguage,meaningLanguage=settings.meaningLanguage;
+      const [rows,setRows]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[reload,setReload]=useState(0);
+      const active=React.useRef(false),locked=React.useRef(false);
+      useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
+      useEffect(()=>{
+        let cancelled=false;setRows(null);setMsg('');
         api.load(sb,session.user.id,concept.id,target).then(data=>{if(!cancelled)setRows(data);})
-          .catch(error=>{if(!cancelled){setRows([]);setMsg({kind:'error',text:error.message});}});
+          .catch(error=>{if(!cancelled){setRows([]);setMsg(error.message);}});
         return()=>{cancelled=true;};
       },[reload]);
-      useEffect(()=>{
-        const controller=new AbortController();
-        if(!session?.user?.id||!api.targets.includes(target))return;
-        fetch(FN_URL+'?check=1',{signal:controller.signal,headers:{apikey:SUPABASE_ANON_KEY}})
-          .then(r=>r.ok?r.json():null).then(info=>{if(!controller.signal.aborted)setCapability(api.compatible(info,target));})
-          .catch(()=>{if(!controller.signal.aborted)setCapability(false);});
-        return()=>controller.abort();
-      },[reload]);
-      const box='bg-gradient-to-br from-violet-50 to-sky-50 border border-violet-200 rounded-2xl p-3.5';
-      if(!sb)return <div className={box}>Sentence generation is unavailable. Please reload when connected.</div>;
-      if(session===undefined)return <div className={box} role="status">Checking sign-in…</div>;
-      if(!session)return <div className={box}><div className="font-semibold text-violet-900">✨ Sentences from your words</div><p className="text-sm mt-2">Sign in with your KG Chart account to make examples in your selected learning language.</p><button onClick={openSettings} className="primary-btn mt-3">Sign in</button></div>;
-      if(!api.targets.includes(target))return <div className={box}>Sentence generation has no vocabulary source for {LANG[target].name} yet. Existing lessons and your notebook are available.</div>;
-      const make=async()=>{
-        if(locked.current||!capability)return;
-        locked.current=true;setBusy('generate');setMsg(null);
-        const controller=new AbortController();pending.current=controller;
-        try {
-          const response=await fetch(FN_URL,{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(api.request(concept.id,target,meaningLanguage))});
-          const result=await response.json();
-          if(!active.current)return;
-          if(result.known)setKnown(result.known[target]);
-          if(!response.ok||!result.ok)setMsg({kind:'error',text:result.message||'Generation failed. Your saved work is unchanged.'});
-          else if(!api.visible(result.row,session.user.id,target))setMsg({kind:'error',text:'The saved response did not match this account and language. Reload saved sentences.'});
-          else {setRows(prev=>[result.row,...(prev||[]).filter(row=>row.id!==result.row.id)]);setMsg({kind:'info',text:`${result.used}/${result.limit} generation requests today · resets at midnight UTC`});}
-        }catch(error){if(active.current)setMsg({kind:'error',text:'Could not confirm the result. Reload saved sentences before making another request; it may already have been saved.'});}
-        finally{if(active.current){locked.current=false;setBusy('');}pending.current=null;}
-      };
       const flag=async(row)=>{
         if(locked.current)return;
-        locked.current=true;setBusy('flag');setMsg(null);
+        locked.current=true;setBusy(true);setMsg('');
         try{
           const {data,error}=await sb.from('catalyst_generated').update({flagged:true}).eq('id',row.id).eq('user_id',session.user.id).select('id');
           if(!active.current)return;
-          if(error||!data?.some(item=>item.id===row.id))setMsg({kind:'error',text:'Could not save the flag. The sentence remains visible; try again.'});
-          else{setRows(prev=>prev.filter(item=>item.id!==row.id));setMsg({kind:'info',text:'Sentence hidden and kept for review.'});}
-        }catch{if(active.current)setMsg({kind:'error',text:'Could not save the flag. Please try again.'});}
-        finally{if(active.current){locked.current=false;setBusy('');}}
+          if(error||!data?.some(item=>item.id===row.id))setMsg('Could not save the flag. The sentence remains visible; try again.');
+          else{setRows(prev=>prev.filter(item=>item.id!==row.id));setMsg('Sentence hidden and kept for review.');}
+        }catch(error){if(active.current)setMsg('Could not save the flag. Please try again.');}
+        finally{if(active.current){locked.current=false;setBusy(false);}}
       };
-      return <div className={box}>
-        <div className="font-semibold text-violet-900">✨ Sentences from your {LANG[target].name} words</div>
-        <p className="text-sm mt-2">Uses completed KG Chart topics and words answered correctly at least twice in {LANG[target].name}. You need at least 8 words in this language. Word ratings are separate.</p>
-        <p className="text-xs text-slate-500 mt-2">AI generated · not reviewed. Meanings: {LANG[meaningLanguage].name}. Failed attempts after generation begins also count toward the daily request limit.</p>
-        {known!==null&&<p className="text-xs mt-2">Available {LANG[target].name} words: {known}</p>}
-        {capability===false&&<p className="review-notice">Sentence generation is not available yet. Your saved sentences and notebook remain available. Try again after the service is set up.</p>}
-        {capability===null&&<p role="status" className="text-sm mt-2">Checking sentence service…</p>}
-        <button disabled={busy||!capability||rows===null} onClick={make} className="primary-btn w-full mt-3">{busy==='generate'?'Creating sentence…':busy==='flag'?'Saving flag…':`✨ New ${LANG[target].name} sentence`}</button>
-        <button disabled={busy} className="quiet-btn w-full mt-2" onClick={()=>{setCapability(null);setReload(v=>v+1);}}>Reload saved sentences</button>
-        {msg&&<p role={msg.kind==='error'?'alert':'status'} className={`text-sm mt-2 ${msg.kind==='error'?'text-rose-700':'text-slate-600'}`}>{msg.text}</p>}
-        {rows===null&&<p className="text-sm mt-2" role="status">Loading saved sentences…</p>}
-        {rows?.length===0&&<p className="text-sm mt-3">No saved examples loaded for this lesson and learning language.</p>}
-        <div className="space-y-3 mt-3">{(rows||[]).map(row=><div key={row.id} className="bg-white rounded-xl border border-slate-200 p-3">
-          <div className="flex justify-between gap-2"><span className="text-xs text-slate-500">AI generated · not reviewed{!row.target_language?' · earlier multilingual example':''}</span><button disabled={busy} className="quiet-btn" onClick={()=>flag(row)}>🚩 Wrong</button></div>
+      return <div className="mt-3"><p>Previously saved AI examples are unreviewed. New AI generation is paused.</p>
+        <button disabled={busy} className="quiet-btn mt-3" onClick={()=>setReload(n=>n+1)}>Reload saved sentences</button>
+        {msg&&<p role="status" className="review-notice">{msg}</p>}{rows===null&&<p role="status">Loading saved sentences…</p>}
+        {rows?.length===0&&<p className="mt-3">No saved examples loaded for this lesson and learning language.</p>}
+        <div className="space-y-3 mt-3">{(rows||[]).map(row=><div key={row.id} className="pattern-box">
+          <div className="flex justify-between gap-2"><span>AI generated · not reviewed{!row.target_language?' · earlier multilingual example':''}</span><button disabled={busy} className="quiet-btn" onClick={()=>flag(row)}>🚩 Wrong</button></div>
           <LangTag lang={target} small/><Example ex={row.sentences[target]} lang={target} settings={settings} conv={conv}/>
-          <p className="text-sm mt-2" lang={meaningLanguage}>{api.meaning(row,meaningLanguage)||'Meaning unavailable in this language for this saved example.'}</p>
-          {meaningLanguage!=='en'&&settings.showEnglish&&<p className="text-sm text-slate-500 mt-1" lang="en">{api.meaning(row,'en')}</p>}
-          {row.sentences[target].words?.length>0&&<p className="text-xs text-slate-500 mt-2">From your words: <span lang={target}>{row.sentences[target].words.join(' · ')}</span></p>}
+          <p className="mt-2" lang={meaningLanguage}>{api.meaning(row,meaningLanguage)||'Meaning unavailable in this language for this saved example.'}</p>
+          {meaningLanguage!=='en'&&settings.showEnglish&&<p className="mt-1" lang="en">{api.meaning(row,'en')}</p>}
         </div>)}</div>
+      </div>;
+    }
+    function YourSentences(props) {
+      const [showSaved,setShowSaved]=useState(false);
+      return <div className="space-y-4"><PatternPractice {...props}/>
+        {sb&&props.session?.user?.id&&window.CatalystGeneration.targets.includes(props.settings.targetLanguage)&&<section className="pattern-box">
+          <button className="quiet-btn" aria-expanded={showSaved} onClick={()=>setShowSaved(value=>!value)}>{showSaved?'Hide earlier AI sentences':'Show earlier AI sentences'}</button>
+          {showSaved&&<SavedAiSentences {...props}/>}
+        </section>}
       </div>;
     }
 
@@ -795,8 +824,9 @@
         <NotebookImport scope={scope} language={settings.targetLanguage} disabled={!key||!!error} onImported={(next,message)=>{setData(next);setError('');setStatus(message);}}/>
         {!data.entries.length&&<p className="mt-3 text-slate-500">Write one sentence about your day. Your original stays here when you add a correction.</p>}
         {data.entries.map(entry=><details className="activity-detail" key={entry.id}><summary className="break-words" lang={settings.targetLanguage}>{entry.original}</summary><p className="text-xs text-slate-500 mt-3">{new Date(entry.createdAt).toLocaleString()} · {entry.corrections.length?'Has correction notes':'Not reviewed'}</p>
-          {entry.activityId&&<p className="mt-3">From guided activity: {window.CatalystActivities.pilots.find(p=>p.id===entry.activityId&&p.language===settings.targetLanguage)?.title[settings.meaningLanguage]||entry.activityId}</p>}
-          {entry.lesson&&concepts.some(c=>c.id===entry.lesson)&&<button className="quiet-btn mt-2" onClick={()=>go(entry.lesson)}>Revisit lesson →</button>}{entry.meaning&&<p className="mt-3 whitespace-pre-wrap" lang={entry.meaningLanguage}>{entry.meaning}</p>}<h4 className="font-bold mt-4">Original attempt</h4><p className="whitespace-pre-wrap break-words" lang={settings.targetLanguage}>{entry.original}</p>{entry.corrections.map((c,i)=><div key={i} className="pattern-box"><strong>Correction note {i+1} · user-entered</strong><p lang={settings.targetLanguage} className="whitespace-pre-wrap break-words mt-2">{c.text}</p></div>)}<label className="block mt-4">Add a correction or explanation<textarea className="search-input block w-full mt-2" rows="3" maxLength={5000} value={corrections[entry.id]||''} onChange={e=>setCorrections({...corrections,[entry.id]:e.target.value})}/></label><button className="quiet-btn mt-3" disabled={!key||!!error||!corrections[entry.id]?.trim()} onClick={()=>{if(commit(d=>api.correct(d,entry.id,corrections[entry.id],new Date().toISOString())))setCorrections({...corrections,[entry.id]:''});}}>Save correction separately</button></details>)}
+          {entry.activityId&&<p className="mt-3">{entry.activityId.startsWith('pattern-')?'From pattern practice: ':'From guided activity: '}{window.CatalystPatterns.pattern(entry.activityId)?.label[settings.meaningLanguage]||window.CatalystActivities.pilots.find(p=>p.id===entry.activityId&&p.language===settings.targetLanguage)?.title[settings.meaningLanguage]||entry.activityId}</p>}
+          {window.CatalystPatterns.savedReading(entry)&&<><p className="text-sm mt-3">Approximate Devanagari reading</p><p lang="mr" className="dev-line mt-1">{window.CatalystPatterns.savedReading(entry)}</p></>}
+          {entry.lesson&&concepts.some(c=>c.id===entry.lesson)&&<button className="quiet-btn mt-2" onClick={()=>go(entry.lesson)}>Revisit lesson →</button>}{entry.meaning&&<p className="mt-3 whitespace-pre-wrap" lang={entry.meaningLanguage}>{entry.meaning}</p>}<h4 className="font-bold mt-4">{entry.activityId?.startsWith('pattern-')?'Saved pattern sentence':'Original attempt'}</h4><p className="whitespace-pre-wrap break-words" lang={settings.targetLanguage}>{entry.original}</p>{entry.corrections.map((c,i)=><div key={i} className="pattern-box"><strong>Correction note {i+1} · user-entered</strong><p lang={settings.targetLanguage} className="whitespace-pre-wrap break-words mt-2">{c.text}</p></div>)}<label className="block mt-4">Add a correction or explanation<textarea className="search-input block w-full mt-2" rows="3" maxLength={5000} value={corrections[entry.id]||''} onChange={e=>setCorrections({...corrections,[entry.id]:e.target.value})}/></label><button className="quiet-btn mt-3" disabled={!key||!!error||!corrections[entry.id]?.trim()} onClick={()=>{if(commit(d=>api.correct(d,entry.id,corrections[entry.id],new Date().toISOString())))setCorrections({...corrections,[entry.id]:''});}}>Save correction separately</button></details>)}
       </section>;
     }
 
