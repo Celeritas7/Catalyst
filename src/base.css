@@ -4,3 +4,9 @@ body { font-family: 'DM Sans', 'Noto Sans JP', 'Noto Sans Myanmar', 'Noto Sans D
     .dev-line { color: #1d4ed8; font-family: 'Noto Sans Devanagari', sans-serif; }
     .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
+/* Header groups wrap before enlarged text can overlap the study controls. */
+.app-header{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem 1rem;padding-top:max(.75rem,env(safe-area-inset-top));padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
+.app-header-brand{display:flex;align-items:center;gap:.5rem;flex:1 1 12rem;min-width:0}
+.app-brand{flex:1;min-width:0;min-height:44px;overflow-wrap:anywhere}
+.app-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-left:auto;max-width:100%}
+.app-icon-button{display:grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px}

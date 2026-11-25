@@ -877,19 +877,23 @@
       return (
         <StudyAccountContext.Provider value={identity}><VocabularyProvider key={`${scope}-${settings.targetLanguage}`} session={session} language={settings.targetLanguage}><ReviewProvider key={`${scope}-${settings.targetLanguage}`} scope={scope} language={settings.targetLanguage}><div className="min-h-screen">
           <header className="sticky top-0 z-40 bg-[#251c48] text-white">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <div className="app-header max-w-6xl mx-auto px-4 py-3">
+              <div className="app-header-brand">
               {concept
-                ? <button onClick={() => go(null)} className="text-2xl leading-none -ml-1 pr-1" aria-label="Back">‹</button>
+                ? <button onClick={() => go(null)} className="app-icon-button text-2xl leading-none" aria-label="Back">‹</button>
                 : null}
-              <button onClick={() => go(null)} className="flex-1 min-w-0 text-left">
+              <button onClick={() => go(null)} className="app-brand text-left">
                 <div className="font-body font-bold text-xl leading-tight">Catalyst</div>
                 <div className="text-[11px] text-sky-200 truncate">
                   Learning {LANG[settings.targetLanguage].name} · {settings.anchor==='none'?'no reference':`reference ${LANG[settings.anchor].name}`}
                 </div>
               </button>
+              </div>
+              <div className="app-header-actions">
               <span className="text-xs text-sky-200 tabular-nums">{settings.learned.filter(x => concepts.some(c => c.id === x)).length}/{concepts.length}</span>
               <button className="offline-launch" onClick={()=>setOfflinePanel(true)}>{window.CatalystOffline.ready()?'Ready offline':'Study offline'}</button>
-              <button onClick={() => setSheet(true)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center" aria-label="Settings">⚙︎</button>
+              <button onClick={() => setSheet(true)} className="app-icon-button rounded-full bg-white/10" aria-label="Settings">⚙︎</button>
+              </div>
             </div>
           </header>
           {(identity.message||!identity.online&&identity.owner)&&<div className="settings-error" role="status">{identity.owner&&!identity.online?`Offline study: ${identity.owner.label}. `:""}{identity.message} <button className="quiet-btn" onClick={()=>accountApi.verify()}>Check connection</button></div>}
