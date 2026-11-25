@@ -69,8 +69,10 @@ See the [offline design](PHASE6A_OFFLINE_ARCHITECTURE.md),
 worker updates and recovery; synthetic Chromium cold reopening is verified.
 [Phase 6D](PHASE6D_ACCOUNT_SNAPSHOTS.md) adds prepared account data.
 [Phase 6E](PHASE6E_OFFLINE_AUDIO.md) adds optional verified audio packs. Production
-audio is unavailable until recordings are published. Next is 6F: physical
-iPad/Android/desktop acceptance. Synthetic browser results do not prove iPad
+audio is unavailable until recordings are published. [Phase 6F](PHASE6F_DEVICE_ACCEPTANCE.md)
+has started: verified live release files, corrected header overlap at enlarged
+text sizes, and prepared backup-first physical iPad/Android/desktop checks.
+Physical acceptance remains pending. Synthetic browser results do not prove iPad
 Home Screen behavior, actual speech quality or real sign-in round trips.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.

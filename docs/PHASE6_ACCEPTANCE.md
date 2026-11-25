@@ -64,6 +64,23 @@ extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
 
+## Phase 6F preparation checkpoint — 2026-11-25
+
+See [the device guide and result form](PHASE6F_DEVICE_ACCEPTANCE.md). Live
+baseline `6e993fd5a1ca723dd86f`: 252/252 public files match sizes/checksums.
+Proposed header correction `e890e4d32c01fdb2a434`: 118 automated tests pass.
+
+| Check | Status | Evidence and remaining boundary |
+| --- | --- | --- |
+| F1 | NOT RUN on iPad | Separate Safari/Home Screen baseline and Files export/restore steps prepared; real device results required |
+| F2 | NOT RUN on iPad | Backup-first cold-reopen, lesson/practice, original/correction save and reconnect sequence prepared |
+| F3 | NOT RUN on iPad | Draft/background/reopen and next-needed-download resume checks prepared; no destructive cache reset prescribed |
+| F4 | PARTIAL (synthetic Chromium) | Header overlap reproduced and fixed at narrow width with 200% root text; 44 px header controls; 390/768/1024 px frame checks; offline dialog focus/recovery preview pass. Native zoom, real orientation, keyboard and VoiceOver still require device evidence |
+| F5 | NOT RUN on physical Android or fresh desktop profile | Existing automated/synthetic evidence is retained; this session reused a Chromium profile and does not satisfy fresh-profile acceptance |
+
+**Phase 6F remains open.** No physical-device pass, new cold-reopen pass or audio
+availability claim is inferred from the public-file preflight or layout checks.
+
 ## Phase 6E implementation checkpoint — 2026-11-25
 
 See [the 6E report](PHASE6E_OFFLINE_AUDIO.md) for inventory, storage and playback

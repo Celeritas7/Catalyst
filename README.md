@@ -45,7 +45,11 @@ adds optional recorded-audio downloads by language and voice, verified sizes and
 checksums, pause/resume, repair and selective removal. No Catalyst recordings
 were published in Storage at the 2026-11-25 audit; the app reports this explicitly.
 Device speech is separate and may need a connection. Next is 6F physical iPad
-acceptance, with recorded speech blocked until clips are published. Existing data
+acceptance, with recorded speech blocked until clips are published.
+[Phase 6F is underway](docs/PHASE6F_DEVICE_ACCEPTANCE.md): the live release files
+were verified, enlarged-text header overlap was fixed and touch controls were
+enlarged. The device guide starts with backups and matching app/worker readiness.
+Physical iPad/Android tests and Files restore remain pending. Existing data
 stays at the same app URL; updates never require clearing website data.
 
 **Show earlier AI sentences** retains read/flag access to older multilingual and

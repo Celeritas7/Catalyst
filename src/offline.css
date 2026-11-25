@@ -1,4 +1,4 @@
-.offline-launch{color:#fff;background:#ffffff15;border:1px solid #ffffff55;border-radius:12px;padding:.5rem .65rem;font-size:.8rem;font-weight:600;flex-shrink:0}
+.offline-launch{color:#fff;background:#ffffff15;border:1px solid #ffffff55;border-radius:12px;padding:.5rem .65rem;font-size:.8rem;font-weight:600;flex-shrink:0;min-height:44px;min-width:44px;max-width:100%}
 .offline-backdrop{position:fixed;inset:0;z-index:70;background:#251c4880;display:flex;align-items:center;justify-content:center;padding:1rem}
 .offline-dialog{background:#fff;color:#251c48;border-radius:22px;width:min(100%,720px);max-height:92dvh;overflow:auto;padding:1.4rem;overscroll-behavior:contain}
 .offline-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
