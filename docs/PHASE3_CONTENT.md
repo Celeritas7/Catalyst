@@ -15,6 +15,10 @@ pilots below remain unchanged.
 activity for what/where questions, with explicit planned contexts and pinned
 references. It does not alter the earlier activity definitions.
 
+[Phase 6L](PHASE6L_BURMESE_LOCATION_DESTINATION.md) adds a fifth Burmese
+activity contrasting action location and destination, using the existing place
+and direction examples. It preserves the five earlier activity definitions.
+
 ## Content and provenance
 
 - `my-word-order`: uses existing `verb_final` Burmese examples from `data/grammar.yaml`. Original entry has `checked: false`. Chunk boundaries are authored units, never inferred by splitting Burmese script. Guidance and Marathi translations are new drafts. S–O–V is the neutral pattern being practised, not a claim that all other contextual orders are ungrammatical.

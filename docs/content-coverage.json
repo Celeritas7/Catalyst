@@ -16,7 +16,7 @@
     },
     {
       "file": "js/catalyst-activities.js",
-      "sha256": "abf5eb8032ecb922104f1762558752b9a08f3778c53f106392ecc1c955b6ff4d"
+      "sha256": "53bc5a6324887af358011f7ece8ed6bba57d62abddb5652f4886550f9dbf7095"
     },
     {
       "file": "js/catalyst-patterns.js",
@@ -63,7 +63,7 @@
       "lessons": 24,
       "examples": 50,
       "sourceCheckedLessons": 0,
-      "guidedActivities": 4,
+      "guidedActivities": 5,
       "fixedPatterns": 3,
       "meanings": [
         {
@@ -326,6 +326,60 @@
         },
         {
           "label": "NIU SEAsite: place questions and at/from/to markers",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_10/syntax.htm"
+        }
+      ]
+    },
+    {
+      "id": "my-location-destination",
+      "language": "my",
+      "concept": "place_de_ni",
+      "content": {
+        "version": 1,
+        "language": "my",
+        "script": "Myanmar",
+        "reviewStatus": "draft",
+        "register": {
+          "en": "Plain spoken statements to a friend; polite and formal variants are outside this activity.",
+          "mr": "मित्राशी बोलताना वापरायची साधी बोलचालीतील विधाने; नम्र आणि औपचारिक पर्याय या सरावात नाहीत."
+        },
+        "sense": {
+          "en": "A study habit at the library, a planned destination in Yangon, and a cat’s location.",
+          "mr": "ग्रंथालयात अभ्यास करण्याची सवय, यांगूनला जाण्याचा बेत आणि मांजराचे ठिकाण."
+        },
+        "provenance": {
+          "en": "The library and Yangon examples reuse the bundled place and direction lessons. Contexts, marker exercises and Marathi/English guidance are authored drafts informed by the linked grammar reference.",
+          "mr": "ग्रंथालयाची आणि यांगूनची उदाहरणे अॅपमधील ठिकाण आणि दिशा या धड्यांतून घेतली आहेत. संदर्भ, रिकाम्या जागांचा सराव आणि मराठी/इंग्रजी मार्गदर्शन हे दिलेल्या व्याकरण संदर्भाच्या आधारे तयार केलेले मसुदे आहेत."
+        },
+        "sourceRevision": "3ae8aef2705c012da681ff0bf084d9b54ccd10eb",
+        "exampleRefs": [
+          {
+            "conceptId": "place_de_ni",
+            "language": "my",
+            "index": 1,
+            "text": "စာကြည့်တိုက်မှာ စာ ကျက်တယ်။"
+          },
+          {
+            "conceptId": "place_de_ni",
+            "language": "my",
+            "index": 2,
+            "text": "စာကြည့်တိုက်မှာ ကြောင် ရှိတယ်။"
+          },
+          {
+            "conceptId": "direction_ni_e",
+            "language": "my",
+            "index": 1,
+            "text": "ရန်ကုန်ကို သွားမယ်။"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Bundled place and direction examples (draft, pinned source)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/3ae8aef2705c012da681ff0bf084d9b54ccd10eb/data/grammar.yaml"
+        },
+        {
+          "label": "NIU SEAsite: place expressions and at/from/to markers",
           "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_10/syntax.htm"
         }
       ]
