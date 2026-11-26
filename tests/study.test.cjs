@@ -36,8 +36,9 @@ const meanings=context.window.CatalystMeanings;
 assert.equal(meanings.language({anchor:'mr'}),'mr');
 assert.equal(meanings.language({anchor:'mr',meaningLanguage:'en'}),'en');
 assert.equal(meanings.translate('Untranslated new sentence','mr'),null);
-for(const c of concepts) for(const l of ['ja','my','zh']) for(const ex of c.entries[l].ex) {
-  assert(meanings.translate(ex.e,'mr'),`Missing Marathi meaning: ${ex.e}`);
+for(const c of concepts) for(const l of ['ja','my','zh','mr','en']) for(const ex of c.entries[l].ex) {
+  const gloss=ex.e||(l==='en'?ex.t:'');
+  assert(meanings.translate(gloss,'mr'),`Missing Marathi meaning: ${gloss}`);
 }
 const mrQuestions=context.questions(concepts,['my','mr'],'meaning','mr');
 for(const q of mrQuestions) {
@@ -84,6 +85,15 @@ for(const bad of [null,[],{targetLanguage:'invalid',anchor:'unknown',comparisonL
 assert.equal(preferences.normalize({}).comparisonLanguages.length,0);
 for(const target of preferences.availableTargets(concepts)) {
  assert(context.questions(concepts,[target],'meaning','en',[target]).length>0);
+ const questions=context.questions(concepts,[target],'meaning','mr',[target]);
+ // Every newly translated example is usable; duplicate natural meanings may
+ // occur across lessons, but a single question still has three distinct choices.
+ for(const c of concepts)for(const ex of c.entries[target].ex){
+  const q=questions.find(q=>q.id===`${c.id}-${target}-${ex.t}`);
+  assert(q,`Missing translated practice: ${c.id}:${target}:${ex.t}`);
+  assert.equal(new Set(q.options).size,3);assert(q.options.includes(q.answer));
+  assert(q.options.every(option=>typeof option==='string'&&/[\u0900-\u097f]/.test(option)));
+ }
 }
 console.log('Validated legacy preference migration, independent language choices, single-target quizzes, comparison scope and all available targets.');
 

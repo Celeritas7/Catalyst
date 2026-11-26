@@ -79,10 +79,58 @@
     "I didn't go yesterday.":'मी काल गेलो / गेले नाही.',
     'Three pens, please.':'कृपया तीन पेन द्या.',
     'There are two cats.':'दोन मांजरी आहेत.',
-    'Three pencils, please.':'कृपया तीन पेन्सिली द्या.'
+    'Three pencils, please.':'कृपया तीन पेन्सिली द्या.',
+
+    // Phase 6I: exact gaps in the pinned lesson pack, not inferred aliases.
+    // Provenance and sense/register decisions: docs/PHASE6I_MARATHI_MEANINGS.md.
+    'I eat an apple. (male; a woman says खाते)':'मी सफरचंद खातो.',
+    'My brother went to school.':'माझा भाऊ शाळेत गेला.',
+    'the book bought yesterday':'काल विकत घेतलेलं पुस्तक',
+    'a man who speaks Japanese':'जपानी बोलणारा माणूस',
+    'the book that I bought yesterday':'मी काल विकत घेतलेलं पुस्तक',
+    "As for me, I'll have tea.":'मी तर चहा घेईन.',
+    "An elephant's trunk is long. (Marathi says 'of')":'हत्तीची सोंड लांब असते.',
+    'Ram read the book.':'रामने पुस्तक वाचलं.',
+    'Who came? (no marker)':'कोण आलं?',
+    'I know him.':'मी त्याला ओळखतो / ओळखते.',
+    "I'm going to Pune.":'मी पुण्याला जात आहे.',
+    "I'll come too.":'मीही येईन.',
+    'I eat meat and fish too.':'मी मांसही खातो / खाते आणि मासेही खातो / खाते.',
+    'my car (गाडी is feminine, so माझी)':'माझी गाडी',
+    "It's very hot today, isn't it?":'आज खूप गरम आहे ना?',
+    'Do come tomorrow.':'उद्या ये ना.',
+    'I watched a film yesterday. (agrees with सिनेमा)':'मी काल सिनेमा पाहिला.',
+    'I ate. (male)':'मी जेवलो.',
+    "I'm going to study Japanese next year.":'पुढच्या वर्षी मी जपानी शिकणार आहे.',
+    "I won't be able to come tomorrow.":'मी उद्या येऊ शकणार नाही.',
+    "I'm not going because it's raining.":'पाऊस पडतोय म्हणून मी जाणार नाही.',
+    'Where are you going? (polite)':'तुम्ही कुठे जात आहात?',
+    'Where are you going? (to a friend)':'तू कुठे जात आहेस?',
+    'Could you sit down, please?':'कृपया बसाल का?',
+    'Give me three pens.':'मला तीन पेन द्या.',
+    'There are four of us.':'आम्ही चार जण आहोत.'
   };
+  // Optional guidance stays separate from the natural meaning and quiz options.
+  // These are draft notes for specific glosses, not a full grammar translation.
+  const mrNotes = {
+    'I eat an apple. (male; a woman says खाते)':"येथे बोलणारा पुरुष आहे: 'खातो'. स्त्री बोलताना 'खाते' म्हणते.",
+    'the book bought yesterday':"पुस्तक कोणी विकत घेतलं हे या वाक्यांशात सांगितलेलं नाही.",
+    'the book that I bought yesterday':"पुस्तक विकत घेणारी व्यक्ती 'मी' आहे; हा तपशील अर्थात राखला आहे.",
+    "An elephant's trunk is long. (Marathi says 'of')":"'हत्तीची' हा शब्द संबंध दाखवतो; '-ची' हे रूप 'सोंड'शी जुळते.",
+    'Who came? (no marker)':"या उदाहरणात 'कोण'नंतर स्वतंत्र कर्ता-खूण नाही.",
+    'my car (गाडी is feminine, so माझी)':"'गाडी' हा स्त्रीलिंगी शब्द असल्यामुळे 'माझी' वापरले आहे.",
+    'Do come tomorrow.':"ही उद्या येण्याची आग्रहाची विनंती आहे.",
+    'I watched a film yesterday. (agrees with सिनेमा)':"या उदाहरणात 'पाहिला' हे रूप 'सिनेमा' या पुल्लिंगी एकवचनी कर्माशी जुळते.",
+    'I ate. (male)':"येथे बोलणारा पुरुष आहे: 'जेवलो'. स्त्री बोलताना 'जेवले' म्हणते. जेवण झाल्याचा भूतकाळातील अर्थ आहे.",
+    "I'm not going because it's raining.":'या धड्यात पाऊस हे न जाण्याचे कारण आहे.',
+    'Where are you going? (polite)':"येथे एका व्यक्तीला आदराने विचारताना 'तुम्ही' वापरले आहे.",
+    'Where are you going? (to a friend)':"येथे मित्राशी बोलताना एकवचनी 'तू' वापरले आहे.",
+    'Could you sit down, please?':'ही बसण्याची नम्र विनंती आहे; बसता येते का याची क्षमता विचारलेली नाही.'
+  };
+  const lookup=(entries,text)=>typeof text==='string' && Object.prototype.hasOwnProperty.call(entries,text) ? entries[text] : null;
   root.CatalystMeanings = {
-    translate: (text, lang) => lang === 'en' ? text || null : lang === 'mr' ? mr[text] || null : null,
+    translate: (text, lang) => typeof text!=='string' || !text.trim() ? null : lang === 'en' ? text : lang === 'mr' ? lookup(mr,text) : null,
+    note: (text, lang) => lang === 'mr' ? lookup(mrNotes,text) : null,
     language: settings => settings.meaningLanguage || settings.anchor || 'en'
   };
 })(typeof window === 'undefined' ? globalThis : window);

@@ -12,20 +12,21 @@ async function preference(app,label,value){
   app.w.document.querySelector('[aria-label="Close settings"]').click();await app.wait(()=>!app.w.document.querySelector('[aria-label="Close settings"]'));
 }
 
-test('Explore counts switch with target/meaning preferences, gap links open lessons, and saved work is untouched',async()=>{
+test('Explore counts switch with target/meaning preferences without claiming review or changing saved work',async()=>{
   const sentinel='retained notebook bytes',app=await mount({storage:{'catalyst_notebook_v1:u1:my':sentinel}});
   try{
     await explore(app);assert.equal(metric(app,'Examples'),'50');assert.equal(metric(app,'Marathi meanings'),'50 / 50');assert.equal(metric(app,'Guided activities'),'2');
     assert.match(panel(app).textContent,/No lessons are marked as checked/);
     await preference(app,'I’m learning','en');await app.wait(()=>metric(app,'Examples')==='24');
-    assert.equal(metric(app,'Marathi meanings'),'20 / 24');assert.equal(metric(app,'Guided activities'),'0');
-    assert.match(panel(app).textContent,/4 examples in 4 lessons/);
+    assert.equal(metric(app,'Marathi meanings'),'24 / 24');assert.equal(metric(app,'Guided activities'),'0');
+    assert.match(panel(app).textContent,/Every example/);assert.match(panel(app).textContent,/await native-speaker review/);
+    await preference(app,'I’m learning','mr');await app.wait(()=>metric(app,'Examples')==='48');
+    assert.equal(metric(app,'Marathi meanings'),'48 / 48');
+    await preference(app,'I’m learning','en');await app.wait(()=>metric(app,'Examples')==='24');
     await preference(app,'Meaning language','en');await app.wait(()=>metric(app,'English meanings')==='24 / 24');
     assert.match(panel(app).textContent,/Every example/);
-    await preference(app,'Meaning language','mr');await app.wait(()=>metric(app,'Marathi meanings')==='20 / 24');
-    const details=panel(app).querySelector('details');details.querySelector('summary').click();
-    const link=details.querySelector('button');assert.ok(link);link.click();
-    await app.wait(()=>!app.has('Content coverage'));assert.ok(app.w.document.querySelector('[aria-label="Lesson mode"]'));
+    await preference(app,'Meaning language','mr');await app.wait(()=>metric(app,'Marathi meanings')==='24 / 24');
+    assert.equal(panel(app).querySelector('details button'),null);
     assert.equal(app.w.localStorage.getItem('catalyst_notebook_v1:u1:my'),sentinel);assert.deepEqual(app.errors,[]);
   }finally{app.dom.window.close();}
 });
@@ -45,6 +46,11 @@ test('coverage reflects late online content and never upgrades a legacy checked 
     assert.match(panel(app).textContent,/Showing online lessons/);assert.match(panel(app).textContent,/Reviewer details and evidence are not available/);
     assert.equal(panel(app).textContent.includes('native-speaker approved'),false);
     assert.match(panel(app).textContent,/1 example in 1 lesson/);
+    const details=panel(app).querySelector('details');details.querySelector('summary').click();
+    details.querySelector('button').click();
+    await app.wait(()=>!app.has('Content coverage'));assert.ok(app.w.document.querySelector('[aria-label="Lesson mode"]'));
+    app.click('Think of the meaning, then tap to reveal');await app.wait(()=>app.has('Translation not available in your meaning language yet.'));
+    assert.equal(app.has('A new, untranslated gloss'),false);
     assert.deepEqual(app.errors,[]);
   }finally{app.dom.window.close();}
 });

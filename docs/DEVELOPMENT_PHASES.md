@@ -96,6 +96,13 @@ Marathi/English guidance, authored chunk joining, notebook/review integration,
 and explicit source/register/sense metadata. Content remains draft material;
 reference checks and automated tests are not native-speaker approval.
 
+[Phase 6I](PHASE6I_MARATHI_MEANINGS.md) fills the 27 recorded Marathi-meaning
+gaps, giving all 218 bundled examples a draft Marathi meaning. Separate usage
+notes preserve gender, register and context details without putting grammar
+explanations into new quiz answers. Existing translations and saved work remain
+intact; live content with unknown glosses still shows missing meanings. The next
+bounded content expansion is a sourced Burmese yes/no-question guided activity.
+
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.
