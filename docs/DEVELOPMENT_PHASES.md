@@ -30,7 +30,7 @@ Acceptance: changing explanation language preserves target-language progress; a 
 
 ## 3. Complete lesson activities
 
-Status: two guided pilots implemented: Burmese sentence order and Japanese topic transitions. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
+Initial Phase 3 checkpoint: two guided pilots implemented, Burmese sentence order and Japanese topic transitions. Later Phase 6H and 6J add Burmese negation and yes/no questions. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
 
 Situation → Notice → Build → Choose → Use, with optional deeper explanations and comparisons. Pilot standalone ちなみに versus ところで plus one sentence-building lesson. Distinguish standalone ところで from verb-past + ところで. Support multiple valid answers and language-specific sentence chunking.
 
@@ -102,6 +102,13 @@ notes preserve gender, register and context details without putting grammar
 explanations into new quiz answers. Existing translations and saved work remain
 intact; live content with unknown glosses still shows missing meanings. The next
 bounded content expansion is a sourced Burmese yes/no-question guided activity.
+
+[Phase 6J](PHASE6J_BURMESE_QUESTIONS.md) implements that activity with a coffee
+offer, a contrasting statement reply and a noun question. Three Burmese guided
+activities now reuse the existing notebook and adaptive-review mechanisms.
+Its contexts, register, pinned references and bilingual guidance remain drafts.
+The next bounded expansion is sourced Burmese what/where questions; physical 6F
+acceptance and native-speaker review remain pending.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 

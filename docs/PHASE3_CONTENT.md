@@ -7,6 +7,10 @@ later adds a second Burmese activity for negation, with its own pinned sources
 and draft metadata. The two pilots described below retain their existing IDs
 and sentence-building behavior.
 
+[Phase 6J](PHASE6J_BURMESE_QUESTIONS.md) adds a third Burmese activity for yes/no
+questions, with separate pinned sources and draft metadata. The original two
+pilots below remain unchanged.
+
 ## Content and provenance
 
 - `my-word-order`: uses existing `verb_final` Burmese examples from `data/grammar.yaml`. Original entry has `checked: false`. Chunk boundaries are authored units, never inferred by splitting Burmese script. Guidance and Marathi translations are new drafts. S–O–V is the neutral pattern being practised, not a claim that all other contextual orders are ungrammatical.
