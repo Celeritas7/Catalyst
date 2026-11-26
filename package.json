@@ -5,6 +5,8 @@
     "build": "node tools/build_data.mjs",
     "test": "node --test tests/*.test.cjs tests/*.test.ts",
     "check:app": "node tools/check_app.cjs",
+    "inventory:content": "node tools/content_inventory.cjs --write",
+    "check:content": "node tools/content_inventory.cjs",
     "prepare:backend": "node tools/build_backend_install.cjs",
     "check:backend": "node tools/build_backend_install.cjs --check",
     "test:postgres": "node tools/validate_backend_postgres.mjs",

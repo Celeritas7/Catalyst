@@ -119,12 +119,18 @@ tests/sentence.test.ts     tests for core.ts
 ## Changing content
 1. Edit `data/grammar.yaml`.
 2. `npm ci --ignore-scripts` (once), then `node tools/build_data.mjs`. It refuses to build if a pair has no level, a highlight isn't in its sentence, a Japanese reading has kanji, or an entry has fewer than 2 examples.
-3. Run `npm run prepare:backend` and `npm run build:app`; commit the generated data/SQL and static release. Before an
+3. Run `npm run inventory:content` and review translation gaps, repeated text and
+   script warnings in `docs/content-coverage.json`. `npm run check:content` checks
+   the inventory without writing it. See [Phase 6G](docs/PHASE6G_CONTENT_COVERAGE.md).
+4. Run `npm run prepare:backend` and `npm run build:app`; commit the generated data/SQL and static release. Before an
    approved database content update, review `sql/catalyst-seed.sql`: it deletes
    removed concepts and can cascade to saved sentences. Prepare a preservation
    plan for any removals. Rerun the audio script only for approved changed content.
 
-Japanese readings are written as pronounced: topic は → わ, へ → え, を → お. Mark an entry `checked: true` once a native speaker has checked it.
+Japanese readings are written as pronounced: topic は → わ, へ → え, を → お.
+Only mark an entry `checked: true` after native-speaker review, retaining the
+reviewer's evidence, reviewed revision and date. The legacy flag alone does not
+record that evidence and is not displayed as proof of approval.
 
 ## Next steps
 - Native-speaker check of the Burmese and Marathi entries (all entries are `checked: false`).

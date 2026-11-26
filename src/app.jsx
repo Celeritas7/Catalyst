@@ -664,7 +664,30 @@
       </section>;
     }
 
-    function Home({concepts,settings,update,screen}) {
+    function ContentCoverage({concepts,settings,source}) {
+      const report=window.CatalystCoverage.summarize(concepts,settings.targetLanguage,settings.meaningLanguage,window.CatalystMeanings.translate,window.CatalystActivities.pilots);
+      const gaps=report.lessons.filter(lesson=>lesson.missing.length);
+      return <section className="study-panel" aria-labelledby="coverage-title">
+        <div className="eyebrow">{LANG[settings.targetLanguage].name} · STUDY MATERIAL</div>
+        <h2 id="coverage-title" className="text-2xl font-bold mt-2">Content coverage</h2>
+        <p className="text-sm mt-2">{source==='Supabase'?'Showing online lessons. Offline study uses the lessons included in this app version.':'Showing lessons included in this app version.'} Guided activities are included in the app.</p>
+        <dl className="coverage-grid">
+          <div><dt>Lessons with examples</dt><dd>{report.availableLessons}</dd></div>
+          <div><dt>Examples</dt><dd>{report.examples}</dd></div>
+          <div><dt>{LANG[settings.meaningLanguage].name} meanings</dt><dd>{report.translated} / {report.examples}</dd></div>
+          <div><dt>Guided activities</dt><dd>{report.guidedActivities}</dd></div>
+        </dl>
+        <p className="text-sm mt-3">Available material is not a complete course or a review of its accuracy. Examples and Marathi meanings await native-speaker review.</p>
+        <details className="activity-detail"><summary>Translation gaps and review status</summary>
+          <p className="mt-3">{report.examples===0?'No examples are available for this learning language.':gaps.length?`${report.examples-report.translated} ${report.examples-report.translated===1?'example':'examples'} in ${gaps.length} ${gaps.length===1?'lesson has':'lessons have'} no ${LANG[settings.meaningLanguage].name} meaning yet. Examples without meanings are skipped by meaning practice.`:`Every example has a ${LANG[settings.meaningLanguage].name} meaning available. This does not certify translation quality.`}</p>
+          {report.unavailableLessons>0&&<p className="mt-3">{report.unavailableLessons} lessons have no examples for this learning language.</p>}
+          {gaps.map(lesson=><button className="lesson-link" key={lesson.id} onClick={()=>go(lesson.id)}><span><strong>{quizLabel(lesson,settings.meaningLanguage)||lesson.title||lesson.id}</strong><small>{lesson.missing.length} of {lesson.examples} meanings unavailable</small></span><span aria-hidden="true">→</span></button>)}
+          <p className="mt-3">{report.sourceCheckedLessons?`${report.sourceCheckedLessons} ${report.sourceCheckedLessons===1?'lesson is':'lessons are'} marked “checked” by the content source. Reviewer details and evidence are not available here.`:'No lessons are marked as checked in this content source.'} Guided activities and fixed sentence patterns are drafts. Your own “learned” marks are separate.</p>
+        </details>
+      </section>;
+    }
+
+    function Home({concepts,settings,update,screen,source}) {
       const [q,setQ]=useState('');
       const [onlyFalse,setOnlyFalse]=useState(false);
       const learned=concepts.filter(c=>settings.learned.includes(c.id)).length;
@@ -677,6 +700,7 @@
         <div className="stats-grid"><div><span>🌱 Marked learned</span><strong>{learned}<small> / {concepts.length}</small></strong><div className="progress-track"><div style={{width:`${concepts.length?learned/concepts.length*100:0}%`}}/></div></div><div><span>🎯 Today’s practice</span><strong>{today}<small> / 5 answers</small></strong><div className="progress-track"><div style={{width:`${Math.min(today/5*100,100)}%`}}/></div></div><div><span>✨ Practice accuracy</span><strong>{p.answers?Math.round(p.correct/p.answers*100)+'%':'—'}</strong><small>{p.answers||0} answers on this device</small></div></div>
         <section className="study-panel w-full"><h2 className="text-xl font-bold">A little practice today</h2><p className="text-slate-500 mt-2">Recall a meaning, recognise a form, or compare languages. Five questions, at your pace.</p><button className="primary-btn mt-4" onClick={()=>go('practice')}>Start practice →</button><button className="quiet-btn mt-4 ml-3" onClick={()=>go('explore')}>Explore lessons</button></section></>}
         {screen==='today'&&<ReviewQueue concepts={concepts} settings={settings} compact/>}
+        {screen==='explore'&&<ContentCoverage concepts={concepts} settings={settings} source={source}/>}
         {['today','explore'].includes(screen)&&<ActivityLibrary settings={settings} update={update}/>}
         {screen==='practice' && <Practice concepts={concepts} settings={settings} update={update} onClose={()=>go(null)}/>}
         {screen==='learning' && <><SentenceNotebook key={`${settings.targetLanguage}-${settings.meaningLanguage}`} concepts={concepts} settings={settings}/><ReviewQueue concepts={concepts} settings={settings}/><VocabularyPanel settings={settings}/><MyLearning concepts={concepts} settings={settings}/></>}
@@ -907,7 +931,7 @@
           <main id="main-content" className="max-w-6xl mx-auto px-4 py-6 app-content">
             {concept
               ? <ConceptPage key={`${concept.id}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concept={concept} concepts={concepts} settings={settings} update={update} conv={conv} session={session} openSettings={() => setSheet(true)} />
-              : <Home key={`${screen}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concepts={concepts} settings={settings} update={update} screen={screen} />}
+              : <Home key={`${screen}-${settings.targetLanguage}-${settings.meaningLanguage}-${settings.anchor}-${settings.comparisonLanguages.join('-')}`} concepts={concepts} settings={settings} update={update} screen={screen} source={source} />}
           </main>
           <nav className="app-navigation" aria-label="Main navigation">{[['today','Today','☀'],['explore','Explore','⌕'],['practice','Practice','✦'],['learning','My Learning','◷']].map(([key,label,icon])=><button key={key} aria-current={!concept && screen===key?'page':undefined} onClick={()=>go(key==='today'?null:key)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav>
           {offlinePanel&&<OfflinePanel key={scope} scope={scope} language={settings.targetLanguage} onClose={()=>setOfflinePanel(false)}/>}
