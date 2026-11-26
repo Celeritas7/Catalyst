@@ -127,6 +127,67 @@
         <p>Device voices are provided by your browser or operating system. They are not downloaded by this button and may require internet. Test playback in the actual iPad Home Screen app before relying on it offline.</p>
       </section>;
     }
+    function OfflineDeviceCheck({scope,language,state,ready}) {
+      const identity=React.useContext(StudyAccountContext);
+      const [report,setReport]=useState(''),[notice,setNotice]=useState('');
+      const reportField=React.useRef(null),sequence=React.useRef(0);
+      useEffect(()=>()=>{sequence.current++;},[]);
+      const build=value=>/^[a-f0-9]{20}$/.test(value||'')?value:'unavailable';
+      function preview(){
+        sequence.current++;setNotice('');
+        const progress=state.candidate;
+        const count=value=>Number.isSafeInteger(value)&&value>=0?value:'unknown';
+        const remaining=Number.isFinite(progress?.totalBytes)&&Number.isFinite(progress?.bytes)?count(Math.max(0,progress.totalBytes-progress.bytes)):'unknown';
+        const standalone=window.navigator.standalone===true||window.matchMedia?.('(display-mode: standalone)').matches;
+        setReport([
+          'Catalyst offline status — '+new Date().toISOString(),
+          'Window: '+(standalone?'Home Screen / standalone':'Browser tab'),
+          'Learning language: '+LANG[language].name,
+          'Study scope: '+(scope==='loading'?'checking':scope==='guest'?'guest':'current account'),
+          'App: '+build(state.appBuild),
+          'Worker: '+build(state.active?.workerBuild),
+          'Active release: '+build(state.active?.activeBuild),
+          'Download candidate: '+build(progress?.candidateBuild),
+          'App and text ready: '+(ready?'yes':'no'),
+          'Worker controls this page: '+(state.controlled?'yes':'no'),
+          'Candidate files saved: '+count(progress?.files)+' / '+count(progress?.totalFiles),
+          'Candidate bytes remaining: '+remaining,
+          'Account notebook/reviews prepared: '+(scope==='loading'?'checking':scope==='guest'?'not applicable (guest)':identity.prepared?'yes':'no'),
+          'Storage protection: '+(state.persisted===true?'persistent':state.persisted===false?'best effort':'not checked'),
+          'Word sources and audio: check their separate sections; not certified by this report.',
+          'Backup in Files: not verified by this report.',
+          'Airplane-mode cold reopen and writing preservation: not verified by this report.'
+        ].join('\n'));
+      }
+      async function copy(){
+        const token=++sequence.current;
+        try{
+          if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');
+          await navigator.clipboard.writeText(report);
+          if(sequence.current===token)setNotice('Status copied. You can paste it into your support conversation.');
+        }catch(error){
+          if(sequence.current!==token)return;
+          reportField.current?.focus();reportField.current?.select();
+          setNotice('Automatic copy is unavailable. Select and copy the report below.');
+        }
+      }
+      return <section className="recovery-panel"><h3>Check this iPad before leaving Wi-Fi</h3>
+        <ol className="offline-device-steps">
+          <li>Open the Home Screen app you normally study in. Safari and Home Screen readiness must be checked separately.</li>
+          <li>Export your notebook from My Learning, or use Protect your saved work below. Confirm the backup is in Files.</li>
+          <li>Download or repair the app above. Wait for App and text ready offline, then use Verify saved files. Save or keep unfinished writing before applying an update.</li>
+          <li>If using an account, prepare it below. Check word sources and optional audio separately.</li>
+          <li>After preparation, turn on Airplane Mode and turn Wi-Fi off in Settings. Close and reopen the app, try a lesson, then save a test sentence and correction. Reopen again and check both old and new writing. Reconnect and check once more.</li>
+        </ol>
+        <p>Keep your existing installation and saved data. Readiness here does not prove a successful offline reopening on your device.</p>
+        <details><summary>Share offline status</summary>
+          <p>Preview a report containing versions and readiness only. It excludes account identifiers, writing, credentials and error details. Nothing is sent automatically. This is a status report, not a recovery backup.</p>
+          <button className="quiet-btn" onClick={preview}>{report?'Refresh status report':'Preview status report'}</button>
+          {report&&<><label>Offline status report<textarea ref={reportField} className="offline-status-report" readOnly rows={12} value={report}/></label><p>This snapshot reflects the time shown. Refresh it after downloading or preparing your account.</p><button className="quiet-btn" onClick={copy}>Copy status report</button></>}
+          <p role="status">{notice}</p>
+        </details>
+      </section>;
+    }
     function OfflinePanel({scope,language,onClose}) {
       const api=window.CatalystOffline,state=useSyncExternalStore(api.subscribe,api.getSnapshot),close=React.useRef(null);
       useEffect(()=>{
@@ -167,6 +228,7 @@
           <p className="offline-meta">Storage protection: {state.persisted?'persistent storage granted':'best effort; keep a recovery file'}. Available storage estimates are not a reservation.</p>
         </>}
         <p className="offline-help">On iPad, open the actual Home Screen app and download here before leaving Wi-Fi. Keep this window visible during the download. If it stops, reopen and resume. Updates do not require clearing website data.</p>
+        <OfflineDeviceCheck key={scope+':'+language} scope={scope} language={language} state={state} ready={api.ready()}/>
         <OfflineAccountPanel key={scope+':'+language} language={language}/>
         <OfflineAudioPanel key={'audio:'+language} language={language}/>
         <RecoveryPanel key={scope} scope={scope}/>

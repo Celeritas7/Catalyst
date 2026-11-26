@@ -4,8 +4,8 @@
 
 Baseline: merged Phase 6E PR #23, commit
 `9cd13c5696ba79ad08bbcb4d5602732cc194b75c`, release
-`6e993fd5a1ca723dd86f`. The public app at
-<https://celeritas7.github.io/Catalyst/> serves that release. A read-only check
+`6e993fd5a1ca723dd86f`. At the dated preflight, the public app at
+<https://celeritas7.github.io/Catalyst/> served that release. A read-only check
 verified **252/252 files**, 11,575,825 bytes, against the release inventory.
 See [the dated preflight result](phase6f-release-preflight.json).
 
@@ -15,9 +15,29 @@ At normal size, Study offline measured about 34 px high and Settings 36 × 36 px
 The header now wraps its brand and action groups, keeps controls at least 44 px
 high (44 × 44 px for Back and Settings), and respects display safe-area insets.
 
-The proposed corrected release is **`e890e4d32c01fdb2a434`**, 252 files,
+The header correction in merged PR #24 is release **`e890e4d32c01fdb2a434`**, 252 files,
 11,576,539 bytes. It is distinct from the live baseline above; merging a PR
 alone is not evidence that a particular iPad has downloaded the new release.
+
+## In-app preparation and status report — 2026-11-26
+
+The follow-up release adds a five-step iPad preparation checklist inside Study
+offline. Under **Share offline status**, use **Preview status report**, then
+**Copy status report**. If clipboard access fails, the report is selected for
+manual copying. Refresh the preview after changing preparation or downloads.
+The report is a snapshot, not a backup or an automatic device-test result.
+
+Only allowlisted versions, download counts, readiness flags, selected learning
+language, generic study scope and window mode appear in the report. It does not
+read notebook contents, include account identifiers or credentials, copy raw
+errors, or send a report over the network. It reports unknown candidate progress
+as unknown, not zero, and separates app readiness from account preparation and
+manual backup/cold-reopen verification. Word/audio sections remain independent.
+
+Mounted UI tests cover ready/not-ready versions, unknown progress, private-data
+exclusion, no report-triggered storage/network writes, clipboard success and
+manual-copy fallback. All **120 tests**, JSX and reproducible-build checks pass.
+No new physical device results are claimed; Phase 6F remains pending.
 
 ## Checks completed here
 
