@@ -84,6 +84,12 @@ certify Files saving or physical device tests.
 Physical acceptance remains pending. Synthetic browser results do not prove iPad
 Home Screen behavior, actual speech quality or real sign-in round trips.
 
+[Phase 6G](PHASE6G_CONTENT_COVERAGE.md) now adds Explore content coverage and a
+reproducible review inventory as the next independent content step. It exposes
+translation gaps, preserves repeated sentences with different contexts, and
+distinguishes source check marks from documented linguistic review. This is a
+coverage/review foundation, not expanded or newly approved lesson content.
+
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.

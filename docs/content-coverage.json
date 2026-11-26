@@ -1,0 +1,280 @@
+{
+  "version": 1,
+  "scope": "Bundled lesson examples, meaning availability, guided-pilot counts and fixed-pattern counts. Excludes online overrides, learned-word eligibility, personal writing and private source archives.",
+  "sources": [
+    {
+      "file": "data/grammar.yaml",
+      "sha256": "ca7aa3d3bafb191175788449914349ef6da0fd40db8e5ea7a0d72011dfb31f32"
+    },
+    {
+      "file": "js/catalyst-data.js",
+      "sha256": "a29f2f57ef5d66852a945892c4379cfb9a54992a66d1e68794544b1be65f33e8"
+    },
+    {
+      "file": "js/catalyst-meanings.js",
+      "sha256": "98a89c71c2809d3d00acd3260748dcb2e0f7adb37fcf43a2fc83332a965f37e7"
+    },
+    {
+      "file": "js/catalyst-activities.js",
+      "sha256": "753a2d7968a05fc9ba914d61e934534cadf6b1bd504a0173af42a9a071092780"
+    },
+    {
+      "file": "js/catalyst-patterns.js",
+      "sha256": "c5aa9a622be35edc066c6a404f3d420eeba05e9335beb45379e7b06ac28cf43f"
+    },
+    {
+      "file": "js/catalyst-coverage.js",
+      "sha256": "087b9a3f2fd1b40741ebf37c748a76d3cc91e65c3d40cfdd4f6b9524fdac1d7f"
+    }
+  ],
+  "review": {
+    "status": "Awaiting documented linguistic review",
+    "legacyCheckedMeaning": "A source boolean, not reviewer identity, evidence, date or proof of approval.",
+    "language": "Declared language; script checks cannot establish actual language or translation quality.",
+    "register": "Not recorded consistently as structured metadata; existing notes are retained.",
+    "sense": "Exact English glosses and readings are retained; no normalization or automatic deduplication.",
+    "provenance": "Existing repository lesson pack; individual original references and reviewer records are not recorded. Pilot references are described in docs/PHASE3_CONTENT.md. Pattern limitations are in docs/PHASE5G_PATTERN_PRACTICE.md."
+  },
+  "languages": [
+    {
+      "language": "ja",
+      "lessons": 24,
+      "examples": 48,
+      "sourceCheckedLessons": 0,
+      "guidedActivities": 1,
+      "fixedPatterns": 0,
+      "meanings": [
+        {
+          "language": "mr",
+          "available": 48,
+          "missing": 0,
+          "gaps": []
+        },
+        {
+          "language": "en",
+          "available": 48,
+          "missing": 0,
+          "gaps": []
+        }
+      ]
+    },
+    {
+      "language": "my",
+      "lessons": 24,
+      "examples": 50,
+      "sourceCheckedLessons": 0,
+      "guidedActivities": 1,
+      "fixedPatterns": 3,
+      "meanings": [
+        {
+          "language": "mr",
+          "available": 50,
+          "missing": 0,
+          "gaps": []
+        },
+        {
+          "language": "en",
+          "available": 50,
+          "missing": 0,
+          "gaps": []
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "lessons": 24,
+      "examples": 48,
+      "sourceCheckedLessons": 0,
+      "guidedActivities": 0,
+      "fixedPatterns": 0,
+      "meanings": [
+        {
+          "language": "mr",
+          "available": 48,
+          "missing": 0,
+          "gaps": []
+        },
+        {
+          "language": "en",
+          "available": 48,
+          "missing": 0,
+          "gaps": []
+        }
+      ]
+    },
+    {
+      "language": "mr",
+      "lessons": 24,
+      "examples": 48,
+      "sourceCheckedLessons": 0,
+      "guidedActivities": 0,
+      "fixedPatterns": 0,
+      "meanings": [
+        {
+          "language": "mr",
+          "available": 25,
+          "missing": 23,
+          "gaps": [
+            {
+              "location": "verb_final:mr:1",
+              "english": "I eat an apple. (male; a woman says खाते)"
+            },
+            {
+              "location": "verb_final:mr:2",
+              "english": "My brother went to school."
+            },
+            {
+              "location": "modifier_before_noun:mr:1",
+              "english": "the book bought yesterday"
+            },
+            {
+              "location": "modifier_before_noun:mr:2",
+              "english": "a man who speaks Japanese"
+            },
+            {
+              "location": "topic_wa:mr:1",
+              "english": "As for me, I'll have tea."
+            },
+            {
+              "location": "topic_wa:mr:2",
+              "english": "An elephant's trunk is long. (Marathi says 'of')"
+            },
+            {
+              "location": "subject_ga:mr:1",
+              "english": "Ram read the book."
+            },
+            {
+              "location": "subject_ga:mr:2",
+              "english": "Who came? (no marker)"
+            },
+            {
+              "location": "object_o:mr:2",
+              "english": "I know him."
+            },
+            {
+              "location": "direction_ni_e:mr:1",
+              "english": "I'm going to Pune."
+            },
+            {
+              "location": "also_mo:mr:1",
+              "english": "I'll come too."
+            },
+            {
+              "location": "also_mo:mr:2",
+              "english": "I eat meat and fish too."
+            },
+            {
+              "location": "possessive_no:mr:2",
+              "english": "my car (गाडी is feminine, so माझी)"
+            },
+            {
+              "location": "tag_ne:mr:1",
+              "english": "It's very hot today, isn't it?"
+            },
+            {
+              "location": "tag_ne:mr:2",
+              "english": "Do come tomorrow."
+            },
+            {
+              "location": "past:mr:1",
+              "english": "I watched a film yesterday. (agrees with सिनेमा)"
+            },
+            {
+              "location": "past:mr:2",
+              "english": "I ate. (male)"
+            },
+            {
+              "location": "future:mr:2",
+              "english": "I'm going to study Japanese next year."
+            },
+            {
+              "location": "ability:mr:2",
+              "english": "I won't be able to come tomorrow."
+            },
+            {
+              "location": "politeness:mr:1",
+              "english": "Where are you going? (polite)"
+            },
+            {
+              "location": "politeness:mr:2",
+              "english": "Where are you going? (to a friend)"
+            },
+            {
+              "location": "counters:mr:1",
+              "english": "Give me three pens."
+            },
+            {
+              "location": "counters:mr:2",
+              "english": "There are four of us."
+            }
+          ]
+        },
+        {
+          "language": "en",
+          "available": 48,
+          "missing": 0,
+          "gaps": []
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "lessons": 24,
+      "examples": 24,
+      "sourceCheckedLessons": 0,
+      "guidedActivities": 0,
+      "fixedPatterns": 0,
+      "meanings": [
+        {
+          "language": "mr",
+          "available": 20,
+          "missing": 4,
+          "gaps": [
+            {
+              "location": "modifier_before_noun:en:1",
+              "english": "the book that I bought yesterday"
+            },
+            {
+              "location": "topic_wa:en:1",
+              "english": "As for me, I'll have tea."
+            },
+            {
+              "location": "because:en:1",
+              "english": "I'm not going because it's raining."
+            },
+            {
+              "location": "politeness:en:1",
+              "english": "Could you sit down, please?"
+            }
+          ]
+        },
+        {
+          "language": "en",
+          "available": 24,
+          "missing": 0,
+          "gaps": []
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "scriptWarnings": [],
+  "repeatedText": [
+    {
+      "language": "mr",
+      "text": "तू कुठे जातोस?",
+      "occurrences": [
+        {
+          "location": "wh_question:mr:2",
+          "english": "Where are you going?",
+          "reading": ""
+        },
+        {
+          "location": "politeness:mr:2",
+          "english": "Where are you going? (to a friend)",
+          "reading": ""
+        }
+      ]
+    }
+  ]
+}

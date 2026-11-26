@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "buildId": "1da0f45bc1eeb72c2d73",
+  "buildId": "c7f1ab89a683ff90a70d",
   "contentVersion": "a29f2f57ef5d66852a945892c4379cfb9a54992a66d1e68794544b1be65f33e8",
   "audio": {
     "version": 1,
@@ -238,7 +238,7 @@
   "worker": {
     "url": "./sw.js",
     "protocol": 1,
-    "buildId": "1da0f45bc1eeb72c2d73"
+    "buildId": "c7f1ab89a683ff90a70d"
   },
   "packages": {
     "@fontsource-variable/dm-sans": "5.3.0",
@@ -268,7 +268,7 @@
       "url": "./index.html",
       "kind": "document",
       "bytes": 969,
-      "sha256": "60f9d2394629fd0b85426b4c560b041f7b391b95c9eaecd14fc78aa3480b3e46"
+      "sha256": "e8b9d72f7b56f1c22720efd459843e7ac8137b94a82ec4af6d24045beecc8cc5"
     },
     {
       "url": "./assets/dm-sans-latin-ext-wght-normal.a5d38fe99f930275.woff2",
@@ -1729,22 +1729,22 @@
       "sha256": "cf5986521fa87506f69d57123d7acb6e5a6995cf3d06b2ab168f38529fd055d8"
     },
     {
-      "url": "./assets/styles.c4193f63f373d961.css",
+      "url": "./assets/styles.c503d7765a92dcf2.css",
       "kind": "style",
-      "bytes": 254964,
-      "sha256": "c4193f63f373d96118846bc9482b9a2cb81ff4fdfa484779d7a355791579894b"
+      "bytes": 255341,
+      "sha256": "c503d7765a92dcf2de01d45bf511f371e993039b5066f72f44eb287e453162e3"
     },
     {
-      "url": "./assets/runtime.2ba4c405c1bd228d.js",
+      "url": "./assets/runtime.065fab819456dad5.js",
       "kind": "script",
-      "bytes": 627979,
-      "sha256": "2ba4c405c1bd228d3cc20d2103a00069d74e0b41d2d98b21e9b6bb66d081afaa"
+      "bytes": 629506,
+      "sha256": "065fab819456dad5b20beae0abe429af2f52b2a65ba670a864922e28394c59c3"
     },
     {
-      "url": "./assets/app.05e53ae7424675ba.js",
+      "url": "./assets/app.49cfcbde86a02738.js",
       "kind": "script",
-      "bytes": 151554,
-      "sha256": "05e53ae7424675ba2938c4648b83a62bcb48c9ed65f5cee62e17e3ba98a9d318"
+      "bytes": 155406,
+      "sha256": "49cfcbde86a027380c7b9df2a3c131185fc018679e9fd7722be73ead2e8e67e0"
     },
     {
       "url": "./assets/THIRD-PARTY-LICENSES.081438bf7f6852de.txt",
@@ -1777,5 +1777,5 @@
       "sha256": "3656a06b513676d4d6cd40c036b932ff20546e8013a3f4ea971d4d8a22f45d63"
     }
   ],
-  "totalBytes": 11585743
+  "totalBytes": 11591499
 }

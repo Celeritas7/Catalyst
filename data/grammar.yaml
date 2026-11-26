@@ -1,5 +1,7 @@
-# Catalyst: content source. Edit this file, then run:  python tools/build_data.py
-# That writes data/grammar.json (the app's offline copy) and sql/catalyst-seed.sql (for Supabase).
+# Catalyst: content source. Edit this file, then run: npm run build
+# That writes js/catalyst-data.js (the bundled copy) and sql/catalyst-seed.sql.
+# Review npm run inventory:content, then regenerate the app with npm run build:app.
+# Generating SQL does not authorize applying it to a database.
 #
 # One concept = one grammar idea. Each language gets an entry:
 #   form  - the grammar form (or "—" when the language has no equivalent; then set none: true)
