@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scope": "Bundled lesson examples, meaning availability, guided-pilot counts and fixed-pattern counts. Excludes online overrides, learned-word eligibility, personal writing and private source archives.",
+  "scope": "Bundled lesson examples, meaning availability, guided-activity counts/metadata and fixed-pattern counts. Excludes online overrides, learned-word eligibility, personal writing and private source archives.",
   "sources": [
     {
       "file": "data/grammar.yaml",
@@ -16,7 +16,7 @@
     },
     {
       "file": "js/catalyst-activities.js",
-      "sha256": "753a2d7968a05fc9ba914d61e934534cadf6b1bd504a0173af42a9a071092780"
+      "sha256": "abfcf1f659b652e4bc44ad5fc734ae58b35c24addc4cfd2ae84a3f135fc7f628"
     },
     {
       "file": "js/catalyst-patterns.js",
@@ -63,7 +63,7 @@
       "lessons": 24,
       "examples": 50,
       "sourceCheckedLessons": 0,
-      "guidedActivities": 1,
+      "guidedActivities": 2,
       "fixedPatterns": 3,
       "meanings": [
         {
@@ -253,6 +253,88 @@
           "available": 24,
           "missing": 0,
           "gaps": []
+        }
+      ]
+    }
+  ],
+  "guidedActivities": [
+    {
+      "id": "my-word-order",
+      "language": "my",
+      "concept": "verb_final",
+      "content": null,
+      "sources": [
+        {
+          "label": "Bundled verb_final examples (draft)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/main/data/grammar.yaml"
+        }
+      ]
+    },
+    {
+      "id": "my-negation",
+      "language": "my",
+      "concept": "negation",
+      "content": {
+        "version": 1,
+        "language": "my",
+        "script": "Myanmar",
+        "reviewStatus": "draft",
+        "register": {
+          "en": "Plain spoken statements and a direct request; politeness depends on the situation.",
+          "mr": "साधी बोलचालीतील विधाने आणि थेट विनंती; नम्रता परिस्थितीवर अवलंबून असते."
+        },
+        "sense": {
+          "en": "A decision about a future outing, a contrasting request, and an eating habit.",
+          "mr": "उद्याच्या सहलीबद्दलचा निर्णय, त्याहून वेगळी विनंती आणि खाण्याची सवय."
+        },
+        "provenance": {
+          "en": "The two negative statements reuse the bundled negation lesson. The request contrast, prompts and Marathi guidance are authored drafts informed by the linked grammar references.",
+          "mr": "दोन नकारार्थी विधाने अॅपमधील नकाराच्या धड्यातून घेतली आहेत. विनंतीशी तुलना, प्रश्न आणि मराठी मार्गदर्शन हे दिलेल्या व्याकरण संदर्भांच्या आधारे तयार केलेले मसुदे आहेत."
+        },
+        "sourceRevision": "262c47cc18d1f0c98fabeea980bf2e65b5700eb3",
+        "exampleRefs": [
+          {
+            "conceptId": "negation",
+            "language": "my",
+            "index": 2,
+            "text": "မသွားဘူး။"
+          },
+          {
+            "conceptId": "negation",
+            "language": "my",
+            "index": 1,
+            "text": "အသား မစားဘူး။"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Bundled negation examples (draft, pinned source)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/262c47cc18d1f0c98fabeea980bf2e65b5700eb3/data/grammar.yaml"
+        },
+        {
+          "label": "NIU SEAsite: negative statements",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_5/syntax.htm"
+        },
+        {
+          "label": "NIU SEAsite: negative requests",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_2/syntax.htm"
+        },
+        {
+          "label": "WALS, Matti Miestamo: Burmese negation and time interpretation",
+          "url": "https://wals.info/chapter/113"
+        }
+      ]
+    },
+    {
+      "id": "ja-topic-transitions",
+      "language": "ja",
+      "concept": null,
+      "content": null,
+      "sources": [
+        {
+          "label": "Bunpro: ところで and contrast with ちなみに",
+          "url": "https://bunpro.jp/grammar_points/ところで"
         }
       ]
     }

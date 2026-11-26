@@ -56,6 +56,41 @@ function compareSource(source,concepts){
   return errors;
 }
 
+function auditActivities(pilots,concepts){
+  const errors=[],ids=new Set(),bilingual=value=>['mr','en'].every(language=>present(value?.[language]));
+  for(const pilot of pilots){
+    const at=`activity ${pilot.id}`;
+    if(!present(pilot.id)||ids.has(pilot.id))errors.push(`${at}: missing or duplicate ID`);
+    ids.add(pilot.id);
+    if(!languages.includes(pilot.language))errors.push(`${at}: unknown language`);
+    if(pilot.concept&&!concepts.some(concept=>concept.id===pilot.concept))errors.push(`${at}: missing linked concept`);
+    for(const field of ['title','summary','situation','meaning','notice','comparison','use','checklist'])if(!bilingual(pilot[field]))errors.push(`${at}: missing bilingual ${field}`);
+    if((pilot.deeperTitle&&!bilingual(pilot.deeperTitle))||(pilot.deeper&&!bilingual(pilot.deeper)))errors.push(`${at}: missing bilingual detail`);
+    for(const field of ['prompt','hint','explanation'])if(!bilingual(pilot.build?.[field]))errors.push(`${at}: missing bilingual build ${field}`);
+    if(![' ', ''].includes(pilot.build?.joiner??' '))errors.push(`${at}: unsupported chunk joiner`);
+    const chunks=pilot.build?.chunks;
+    if(!Array.isArray(chunks)||!chunks.length||chunks.some(chunk=>!present(chunk)))errors.push(`${at}: missing build chunks`);
+    else if(!Array.isArray(pilot.build.orders)||!pilot.build.orders.length||pilot.build.orders.some(order=>!Array.isArray(order)||order.length!==chunks.length||new Set(order).size!==chunks.length||order.some(index=>!Number.isInteger(index)||index<0||index>=chunks.length)))errors.push(`${at}: invalid accepted chunk order`);
+    if(!Array.isArray(pilot.choices)||!pilot.choices.length)errors.push(`${at}: missing context choices`);
+    for(const question of Array.isArray(pilot.choices)?pilot.choices:[]){
+      if(!bilingual(question.prompt)||!bilingual(question.explanation))errors.push(`${at}: missing bilingual choice guidance`);
+      if(!Array.isArray(question.options)||question.options.length<2||question.options.some(option=>!present(option))||new Set(question.options).size!==question.options.length||!Array.isArray(question.accepted)||!question.accepted.length||question.accepted.some(index=>!Number.isInteger(index)||index<0||index>=question.options.length))errors.push(`${at}: invalid choice answers`);
+    }
+    if(!Array.isArray(pilot.sources)||!pilot.sources.length||pilot.sources.some(source=>!present(source.label)||!/^https:\/\//.test(source.url)))errors.push(`${at}: missing source reference`);
+    if(pilot.content){
+      const content=pilot.content;
+      if(content.version!==1||content.language!==pilot.language||!present(content.script)||content.reviewStatus!=='draft')errors.push(`${at}: invalid draft metadata; approval needs a documented review workflow`);
+      for(const field of ['register','sense','provenance'])if(!bilingual(content[field]))errors.push(`${at}: missing bilingual ${field}`);
+      if(!/^[a-f0-9]{40}$/.test(content.sourceRevision)||!Array.isArray(content.exampleRefs)||!content.exampleRefs.length)errors.push(`${at}: missing pinned example provenance`);
+      for(const ref of Array.isArray(content.exampleRefs)?content.exampleRefs:[]){
+        const example=concepts.find(concept=>concept.id===ref.conceptId)?.entries?.[ref.language]?.ex?.[ref.index-1];
+        if(ref.language!==pilot.language||!Number.isInteger(ref.index)||ref.index<1||!present(ref.text)||example?.t!==ref.text)errors.push(`${at}: linked example changed; review the source reference`);
+      }
+    }
+  }
+  return errors;
+}
+
 function generate(){
   const context={window:{}};vm.createContext(context);
   const inputs=['data/grammar.yaml','js/catalyst-data.js','js/catalyst-meanings.js','js/catalyst-activities.js','js/catalyst-patterns.js','js/catalyst-coverage.js'];
@@ -63,8 +98,9 @@ function generate(){
   const {CATALYST_DATA:data,CatalystMeanings:meanings,CatalystActivities:activities,CatalystPatterns:patterns,CatalystCoverage:coverage}=context.window;
   const findings=audit(data.concepts);
   findings.errors.push(...compareSource(yaml.load(fs.readFileSync(path.join(root,'data/grammar.yaml'),'utf8')),data.concepts));
+  findings.errors.push(...auditActivities(activities.pilots,data.concepts));
   const report={version:1,
-    scope:'Bundled lesson examples, meaning availability, guided-pilot counts and fixed-pattern counts. Excludes online overrides, learned-word eligibility, personal writing and private source archives.',
+    scope:'Bundled lesson examples, meaning availability, guided-activity counts/metadata and fixed-pattern counts. Excludes online overrides, learned-word eligibility, personal writing and private source archives.',
     sources:inputs.map(file=>({file,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')})),
     review:{status:'Awaiting documented linguistic review',legacyCheckedMeaning:'A source boolean, not reviewer identity, evidence, date or proof of approval.',language:'Declared language; script checks cannot establish actual language or translation quality.',register:'Not recorded consistently as structured metadata; existing notes are retained.',sense:'Exact English glosses and readings are retained; no normalization or automatic deduplication.',provenance:'Existing repository lesson pack; individual original references and reviewer records are not recorded. Pilot references are described in docs/PHASE3_CONTENT.md. Pattern limitations are in docs/PHASE5G_PATTERN_PRACTICE.md.'},
     languages:languages.map(language=>{
@@ -76,7 +112,7 @@ function generate(){
           return {language:meaningLanguage,available:translated.translated,missing:translated.examples-translated.translated,
             gaps:translated.lessons.flatMap(lesson=>lesson.missing.map(index=>({location:`${lesson.id}:${language}:${index}`,english:data.concepts.find(c=>c.id===lesson.id).entries[language].ex[index-1].e||(language==='en'?data.concepts.find(c=>c.id===lesson.id).entries[language].ex[index-1].t:'')})))};
         })};
-    }),...findings};
+    }),guidedActivities:activities.pilots.map(pilot=>({id:pilot.id,language:pilot.language,concept:pilot.concept||null,content:pilot.content||null,sources:pilot.sources})),...findings};
   return report;
 }
 
@@ -87,4 +123,4 @@ if(require.main===module){
   else if(!fs.existsSync(file)||fs.readFileSync(file,'utf8')!==output){console.error('Content inventory is stale. Run npm run inventory:content and review the changes.');process.exitCode=1;}
   else console.log(`Content inventory verified: ${report.languages.reduce((n,l)=>n+l.examples,0)} examples; ${report.repeatedText.length} repeated-text group(s); ${report.scriptWarnings.length} script warning(s). Availability is not linguistic approval.`);
 }
-module.exports={audit,compareSource,generate};
+module.exports={audit,compareSource,auditActivities,generate};

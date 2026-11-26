@@ -15,7 +15,7 @@ async function preference(app,label,value){
 test('Explore counts switch with target/meaning preferences, gap links open lessons, and saved work is untouched',async()=>{
   const sentinel='retained notebook bytes',app=await mount({storage:{'catalyst_notebook_v1:u1:my':sentinel}});
   try{
-    await explore(app);assert.equal(metric(app,'Examples'),'50');assert.equal(metric(app,'Marathi meanings'),'50 / 50');assert.equal(metric(app,'Guided activities'),'1');
+    await explore(app);assert.equal(metric(app,'Examples'),'50');assert.equal(metric(app,'Marathi meanings'),'50 / 50');assert.equal(metric(app,'Guided activities'),'2');
     assert.match(panel(app).textContent,/No lessons are marked as checked/);
     await preference(app,'I’m learning','en');await app.wait(()=>metric(app,'Examples')==='24');
     assert.equal(metric(app,'Marathi meanings'),'20 / 24');assert.equal(metric(app,'Guided activities'),'0');
