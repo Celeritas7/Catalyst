@@ -77,7 +77,11 @@ node --test --test-concurrency=1 tests/*.test.cjs tests/*.test.ts
 git diff --check
 ```
 
-**136 tests pass.** Existing GitHub CI runs its normal parallel test command.
+**136 tests pass locally.** Existing GitHub CI runs its normal parallel test command.
+Its first run exposed an existing mounted account test reading the word count
+before the asynchronous post-download recheck finished. The test now waits for
+the verified saved-word state (including after cancellation), without weakening
+application readiness or changing production code.
 No production database changes, paid API calls, deployment, real account records,
 or clearing of learner storage were needed.
 

@@ -6,7 +6,7 @@ test('compiled UI prepares account and learned words, then reopens and saves int
   const indexedDB=new IDBFactory();let app=await mount({indexedDB});
   try{
     app.click('Study offline');await app.wait(()=>app.has('Your account and words'));app.click('Prepare this account for offline study');await app.wait(()=>app.has('3/3 word sources refreshed'));
-    assert.ok(app.has('3 words · saved'));const storage=app.snapshot();assert.ok(!storage.catalyst_offline_owner_v1.includes('FAKE_TEST_TOKEN'));app.dom.window.close();
+    await app.wait(()=>app.has('3 words · saved'));const storage=app.snapshot();assert.ok(!storage.catalyst_offline_owner_v1.includes('FAKE_TEST_TOKEN'));app.dom.window.close();
     app=await mount({storage,indexedDB,offline:true,setup:w=>{w.__mockDb.auth.getSession=async()=>{throw Error('must not need SDK refresh offline');};w.__mockDb.auth.getUser=async()=>{throw Error('must not verify offline');};}});
     await app.wait(()=>app.has('Offline study: test@example.invalid'));
     app.click('✨ Your words');await app.wait(()=>app.buttons('Make practice sentence').length===1);assert.ok(app.has('Offline · saved words'));app.click('Make practice sentence');
@@ -38,8 +38,7 @@ test('cancelled word refresh returns to verified saved readiness and ignores the
     app.w.__mockDb.rpc=async(...args)=>{if(args[0]==='kg_chart_u3_my_access_snapshot')await new Promise(resolve=>{release=resolve;});return rpc(...args);};
     app.click('Refresh offline account and words');await app.wait(()=>release&&app.has('Downloading…'));
     app.click('Cancel word download');await app.wait(()=>app.has('Download cancelled.'));
-    await app.wait(()=>!app.has('Downloading…'));
-    assert.ok(app.has('3 words · saved'));
+    await app.wait(()=>!app.has('Downloading…')&&app.has('3 words · saved'));
     app.w.__mockDb.rpc=rpc;release();await new Promise(resolve=>setTimeout(resolve,30));
     assert.ok(app.has('Download cancelled.'));assert.equal(app.has('Downloading…'),false);
     for(const [key,value] of Object.entries(before).filter(([key])=>key.startsWith('catalyst_notebook_')||key.startsWith('catalyst_review_')))assert.equal(app.w.localStorage.getItem(key),value);
