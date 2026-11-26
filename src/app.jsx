@@ -758,7 +758,12 @@
       const read=()=>{if(!key)return;try{setData(api.parse(localStorage.getItem(key)));setError('');}catch(e){setError('Notebook could not be read. Existing records have not been overwritten.');}};
       useEffect(()=>{read();const sync=e=>{if(e.key===key)read();};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);},[key]);
       const commit=change=>{if(!key)return false;try{const next=api.commit(localStorage,scope,settings.targetLanguage,change);setData(next);setError('');setStatus('Saved on this device.');return true;}catch(e){setError('Could not save. Copy your writing before leaving and try again. Existing records are preserved.');return false;}};
-      const exportNotes=()=>{const blob=new Blob([JSON.stringify({language:settings.targetLanguage,...data},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='catalyst-notebook-'+settings.targetLanguage+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+      const [exportStatus,setExportStatus]=useState('');
+      const exportNotes=()=>{try{
+        const current=api.parse(localStorage.getItem(key));
+        const name=downloadBackup({language:settings.targetLanguage,...current},'catalyst-notebook-'+settings.targetLanguage);
+        setExportStatus('Download requested: '+name+'. Confirm this file is in Files or Downloads before continuing.');
+      }catch(e){setExportStatus('Notebook export could not start. Your saved writing is retained. Retry Export notebook; if records cannot be read, use Study offline → Protect your saved work.');}};
       return <section className="study-panel w-full"><span className="eyebrow">WRITE · REFLECT · REVISIT</span><h2 className="study-title mt-2">My sentence notebook</h2><p className="mt-3">{LANG[settings.targetLanguage].name} · {scope==='guest'?'Guest notebook':'Account notebook'} · saved on this device only. Corrections are your notes, not automatic grading.</p>
         <label className="block mt-4">Lesson (optional)<select className="search-input block w-full mt-2" value={lesson} disabled={scope==='loading'} onChange={e=>{edit({lesson:e.target.value});setLesson(e.target.value);}}><option value="">Everyday writing</option>{concepts.map(c=><option key={c.id} value={c.id}>{quizLabel(c,settings.meaningLanguage)||c.id}</option>)}</select></label>
         <label className="block mt-4">My original sentence<textarea className="search-input block w-full mt-2" lang={settings.targetLanguage} rows="3" maxLength={5000} value={original} disabled={scope==='loading'} onChange={e=>{edit({original:e.target.value});setOriginal(e.target.value);}}/></label>
@@ -766,7 +771,8 @@
         <button className="primary-btn mt-4" disabled={!key||!original.trim()||!!error} onClick={()=>{if(commit(d=>api.add(d,{id:crypto.randomUUID(),original,meaning,meaningLanguage:settings.meaningLanguage,lesson,createdAt:new Date().toISOString()}))){edit({original:'',meaning:''});setOriginal('');setMeaning('');}}}>Save original sentence</button>
         {error&&<p role="alert" className="review-notice">{error} <button className="quiet-btn" onClick={read}>Retry loading</button></p>}<p role="status" className="text-sm mt-3">{dirty?'Writing is not yet in the notebook. Save each entry or keep the draft for later.':status}</p>
         {writing.panel}
-        <div className="notebook-actions mt-6"><h3 className="font-bold">Saved sentences ({data.entries.length})</h3><button className="quiet-btn" disabled={!data.entries.length||!!error} onClick={exportNotes}>Export notebook</button></div>
+        <div className="notebook-actions mt-6"><h3 className="font-bold">Saved sentences ({data.entries.length})</h3><button className="quiet-btn" disabled={!key||!data.entries.length||!!error} onClick={exportNotes}>Export notebook</button></div>
+        <p role="status" className="text-sm mt-3 break-words">{exportStatus}</p>
         <NotebookImport scope={scope} language={settings.targetLanguage} disabled={!key||!!error} onImported={(next,message)=>{setData(next);setError('');setStatus(message);}}/>
         {!data.entries.length&&<p className="mt-3 text-slate-500">Write one sentence about your day. Your original stays here when you add a correction.</p>}
         {data.entries.map(entry=><details className="activity-detail" key={entry.id}><summary className="break-words" lang={settings.targetLanguage}>{entry.original}</summary><p className="text-xs text-slate-500 mt-3">{new Date(entry.createdAt).toLocaleString()} · {entry.corrections.length?'Has correction notes':'Not reviewed'}</p>

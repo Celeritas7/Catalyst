@@ -39,6 +39,34 @@ exclusion, no report-triggered storage/network writes, clipboard success and
 manual-copy fallback. All **120 tests**, JSX and reproducible-build checks pass.
 No new physical device results are claimed; Phase 6F remains pending.
 
+## Backup export reliability — 2026-11-26
+
+The next bounded 6F correction addresses export preparation before the physical
+Files test. Notebook and recovery downloads now use timestamped, randomly
+suffixed names so repeated exports can be distinguished. The shared downloader
+attaches its temporary link before clicking, removes it afterward, and releases
+the object URL after a delay (immediately on a failed click).
+
+Failures display retry guidance without discarding notebook writing or recovery
+previews. Notebook export rereads and validates the current saved record, including
+changes from another tab that have not yet rendered. Unreadable current records
+block export rather than exporting an outdated visible copy. Recovery downloads
+retain the explicitly previewed snapshot. Export formats and import behavior
+are unchanged.
+
+The UI says **Download requested**, not saved: the user must confirm the actual
+file in Files/Downloads. Browsers can cancel or block a download without reporting
+that to the page. This change does not prove Safari/iPad file saving works.
+
+Automated checks: **123 tests** pass with `--test-concurrency=1`; JSX compilation
+and reproducible build pass. The first local parallel run stopped two database
+test files without assertion diagnostics; the full serial run passed. GitHub CI
+retains the normal parallel command.
+New mounted tests cover URL creation and link-click failure, retry, link/URL
+cleanup, distinct names, latest saved notes, corrupt-record refusal, unchanged
+storage and credential exclusion. Release `a4acead030454dc81d94`: 252 files,
+11,582,843 bytes. Physical Files export/import and cold reopening remain pending.
+
 ## Checks completed here
 
 - `npm run check:app`, `npm run check:build`, all **118 tests**, and

@@ -31,9 +31,21 @@
       const panel=<div className="draft-recovery"><p role="status">{notice}</p>{hasText(fields)&&<button className="quiet-btn" type="button" onClick={keep}>Keep draft for later</button>}{saved.length>0&&<details><summary>Recovered writing ({saved.length})</summary>{saved.map(draft=><div className="recovery-row" key={draft.id}><span>{new Date(draft.updatedAt).toLocaleString()}</span><button className="quiet-btn" disabled={hasText(fields)} onClick={()=>resume(draft)}>Resume draft</button></div>)}</details>}</div>;
       return {write,panel};
     }
-    function downloadRecovery(value,name) {
-      const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
-      link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    function downloadBackup(value,prefix) {
+      const name=prefix+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomUUID().slice(0,8)+'.json';
+      const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'});
+      let url,link,requested=false;
+      try{
+        url=URL.createObjectURL(blob);link=document.createElement('a');
+        link.href=url;link.download=name;link.hidden=true;document.body.appendChild(link);
+        link.click();requested=true;
+        return name;
+      }finally{
+        link?.remove();
+        // Allow the browser time to consume the file, including its save dialog.
+        // A click requests a download; it cannot confirm that Files saved it.
+        if(url){if(requested)setTimeout(()=>URL.revokeObjectURL(url),60000);else URL.revokeObjectURL(url);}
+      }
     }
     function RecoveryPanel({scope}) {
       const safety=window.CatalystSafety;
@@ -61,7 +73,7 @@
         {scope!=='guest'&&<label><input type="checkbox" checked={guest} disabled={scope==='loading'} onChange={e=>{setGuest(e.target.checked);setSnapshot(null);}}/> Include guest notebooks, reviews and drafts</label>}
         <label><input type="checkbox" checked={device} onChange={e=>{setDevice(e.target.checked);setSnapshot(null);}}/> Include device-wide settings, legacy practice, guided drafts and audio preferences</label>
         <button className="quiet-btn" disabled={scope==='loading'} onClick={exportPreview}>Preview recovery export</button>
-        {snapshot&&<div className="recovery-preview"><p>{snapshot.records.filter(r=>r.type==='notebook').length} notebooks · {snapshot.records.filter(r=>r.type==='review').length} review sets · {snapshot.records.filter(r=>r.type==='draft').length} draft sets · {snapshot.records.filter(r=>r.owner==='device').length} device records. Damaged raw records and any existing recovery copies/journal are retained. Credentials and other accounts are excluded.</p><button className="primary-btn" onClick={()=>downloadRecovery(snapshot,'catalyst-recovery-'+new Date().toISOString().slice(0,10)+'.json')}>Download recovery file</button></div>}
+        {snapshot&&<div className="recovery-preview"><p>{snapshot.records.filter(r=>r.type==='notebook').length} notebooks · {snapshot.records.filter(r=>r.type==='review').length} review sets · {snapshot.records.filter(r=>r.type==='draft').length} draft sets · {snapshot.records.filter(r=>r.owner==='device').length} device records. Damaged raw records and any existing recovery copies/journal are retained. Credentials and other accounts are excluded.</p><button className="primary-btn" onClick={()=>{try{const name=downloadBackup(snapshot,'catalyst-recovery');setMessage('Download requested: '+name+'. Confirm this file is in Files or Downloads before continuing.');}catch(error){setMessage('Recovery download could not start. Your preview and saved work are retained. Try Download recovery file again.');}}}>Download recovery file</button></div>}
         <details><summary>Restore a recovery file</summary><p>A preview comes first. Current records win conflicting review schedules, draft versions and settings; the incoming history is kept separately in recovery copies. Existing notebook-only JSON files still use My Learning → Import / restore notebook.</p><label>Choose recovery file<input type="file" accept="application/json,.json" disabled={scope==='loading'||reading} onChange={choose}/></label>
           {reading&&<p role="status">Reading recovery file…</p>}{pending&&<div className="recovery-preview"><p>Destination: {scope==='guest'?'guest':'current account and any guest/device scopes included in this file'}.</p><p>{pending.plan.summary.changed} records to merge · {pending.plan.summary.sentences} sentences and {pending.plan.summary.notes} correction notes to add · {pending.plan.summary.copies} recovery copies · {pending.plan.summary.damaged} unreadable records retained as copies.</p><div className="offline-actions"><button className="primary-btn" onClick={commit}>Merge recovery</button><button className="quiet-btn" onClick={()=>{sequence.current++;setPending(null);setReading(false);}}>Cancel restore</button></div></div>}
         </details><p role="status">{message}</p>
