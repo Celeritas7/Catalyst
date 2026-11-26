@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const {audit,compareSource,generate}=require('../tools/content_inventory.cjs');
+const {audit,compareSource,auditActivities,generate}=require('../tools/content_inventory.cjs');
 const context={window:{}};vm.createContext(context);
 for(const file of ['catalyst-coverage','catalyst-meanings'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file+'.js'),'utf8'),context);
 const {CatalystCoverage:coverage,CatalystMeanings:meanings}=context.window;
@@ -68,7 +68,23 @@ test('checked-in inventory is reproducible and exposes current coverage limits',
   assert.equal(report.errors.length,0);
   const my=report.languages.find(row=>row.language==='my'),mr=report.languages.find(row=>row.language==='mr'),en=report.languages.find(row=>row.language==='en');
   assert.equal(my.lessons,24);assert.equal(my.examples,50);assert.equal(my.meanings[0].missing,0);
-  assert.equal(my.sourceCheckedLessons,0);assert.equal(my.guidedActivities,1);assert.equal(my.fixedPatterns,3);
+  assert.equal(my.sourceCheckedLessons,0);assert.equal(my.guidedActivities,2);assert.equal(my.fixedPatterns,3);
   assert.equal(mr.meanings[0].missing,23);assert.equal(en.meanings[0].missing,4);
   assert.equal(report.repeatedText.length,1);assert.equal(report.repeatedText[0].occurrences.length,2);
+});
+
+test('activity audit detects changed source text, incomplete meanings, malformed checks and unsupported approval',()=>{
+  const ctx={window:{}};vm.createContext(ctx);
+  for(const file of ['catalyst-data','catalyst-activities'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file+'.js'),'utf8'),ctx);
+  const concepts=plain(ctx.window.CATALYST_DATA.concepts),pilot=plain(ctx.window.CatalystActivities.pilots.find(p=>p.id==='my-negation'));
+  assert.deepEqual(auditActivities([pilot],concepts),[]);
+  const cases=[
+    [p=>{p.content.exampleRefs[0].text='changed';},/linked example changed/],
+    [p=>{delete p.notice.mr;},/bilingual notice/],
+    [p=>{p.build.orders=[[0,0,2]];},/accepted chunk order/],
+    [p=>{p.build.joiner='invented';},/chunk joiner/],
+    [p=>{p.choices[0].accepted=[8];},/choice answers/],
+    [p=>{p.content.reviewStatus='approved';},/approval needs a documented review workflow/],
+  ];
+  for(const [mutate,message] of cases){const changed=structuredClone(pilot);mutate(changed);assert.match(auditActivities([changed],concepts).join('\n'),message);}
 });

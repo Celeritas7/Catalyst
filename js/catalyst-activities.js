@@ -1,4 +1,4 @@
-/* Authored pilot content; see docs/PHASE3_CONTENT.md for provenance and review limits. */
+/* Authored draft activities; see docs/PHASE3_CONTENT.md and PHASE6H_BURMESE_NEGATION.md. */
 (function(root) {
   const t=(en,mr)=>({en,mr});
   const pilots=[{
@@ -16,6 +16,28 @@
     checklist:t('Check: who or what is clear; the action is at the end; the speaker form fits you.','तपासा: कोण किंवा काय हे स्पष्ट आहे; क्रियापद शेवटी आहे; वक्त्याचे रूप तुमच्यासाठी योग्य आहे.'),
     sources:[{label:'Bundled verb_final examples (draft)',url:'https://github.com/Celeritas7/Catalyst/blob/main/data/grammar.yaml'}]
   },{
+    id:'my-negation',language:'my',concept:'negation',
+    title:t('Say what you will not do','काय करणार नाही ते सांगा'),
+    summary:t('Build a negative statement, then distinguish it from a request.','नकारार्थी विधान तयार करा आणि ते विनंतीपेक्षा कसे वेगळे आहे ते ओळखा.'),
+    situation:t('A friend asks whether you will join tomorrow’s outing. You have decided to stay home. Reply about your own plan; you are not asking your friend to stay.','उद्या फिरायला येणार का, असे मित्राने विचारले आहे. तुम्ही घरी राहायचे ठरवले आहे. स्वतःचा बेत सांगा; मित्राला थांबायला सांगू नका.'),
+    example:'မသွားဘူး။',
+    meaning:t('I won’t go. (A reply about the planned outing.)','मी जाणार नाही. (फिरायला जाण्याच्या बेताबद्दलचे उत्तर.)'),
+    notice:t('Here သွား means “go”. Place မ before it and ဘူး after it: မသွားဘူး။ Use this ending instead of တယ် or မယ် in the pattern practised here. “Won’t” comes from the conversation about tomorrow; ဘူး alone does not mean future time.','येथे သွား म्हणजे “जाणे”. त्याच्या आधी မ आणि नंतर ဘူး ठेवा: မသွားဘူး။ येथे शिकवलेल्या रचनेत တယ် किंवा မယ် ऐवजी हा शेवट वापरा. उद्याबद्दल बोलत असल्यामुळे अर्थ “जाणार नाही” असा होतो; फक्त ဘူး म्हणजे भविष्यकाळ नाही.'),
+    comparison:t('Compare the intentions: मी जाणार नाही. states your plan; जाऊ नकोस. tells another person not to go. The Burmese endings differ too.','हेतूंची तुलना करा: “मी जाणार नाही.” हे तुमच्या बेताबद्दलचे विधान आहे; “जाऊ नकोस.” असे दुसऱ्या व्यक्तीला सांगितले जाते. बर्मीतही शेवट वेगळा असतो.'),
+    deeperTitle:t('A statement or a request?','विधान की विनंती?'),
+    deeper:t('မသွားဘူး။ is the negative statement used here. မသွားနဲ့။ means “Don’t go.” These are plain spoken forms; a polite request can include ပါ before နဲ့. This activity practises the stated intentions, not every register or context.','မသွားဘူး။ हे येथे वापरलेले नकारार्थी विधान आहे. မသွားနဲ့။ म्हणजे “जाऊ नकोस.” ही साधी बोलचालीची रूपे आहेत; नम्र विनंतीत နဲ့ च्या आधी ပါ घालता येते. या सरावात दिलेले हेतू तपासले जातात; सर्व शैली किंवा संदर्भ नाहीत.'),
+    build:{prompt:t('Reply about your plan: I won’t go.','तुमच्या बेताबद्दल उत्तर तयार करा: मी जाणार नाही.'),chunks:['မ','သွား','ဘူး။'],joiner:'',orders:[[0,1,2]],hint:t('Negative prefix → go → negative ending. The pieces join without spaces in this example.','नकार दर्शवणारा सुरुवातीचा भाग → जाणे → नकारार्थी शेवट. या उदाहरणात भाग जोडताना मधे जागा ठेवू नका.'),explanation:t('မသွားဘူး။ gives the intended negative reply. The buttons separate grammar pieces for practice; they are not separate written words.','မသွားဘူး။ हे अपेक्षित नकारार्थी उत्तर आहे. सरावासाठी व्याकरणाचे भाग वेगवेगळ्या बटणांवर दिले आहेत; ते स्वतंत्र लिखित शब्द नाहीत.')},
+    choices:[{prompt:t('You are stating your own decision about tomorrow’s outing. Which reply means “I won’t go”?','उद्याच्या सहलीबद्दल तुमचा स्वतःचा निर्णय सांगायचा आहे. “मी जाणार नाही” हे कोणते उत्तर आहे?'),options:['မသွားနဲ့။','မသွားဘူး။'],accepted:[1],explanation:t('Choose မသွားဘူး။ for this statement. The other option tells someone not to go.','या विधानासाठी မသွားဘူး။ निवडा. दुसरा पर्याय एखाद्याला न जाण्यास सांगतो.')},{prompt:t('Now you are telling your friend “Don’t go.” Which form matches that intention?','आता मित्राला “जाऊ नकोस” असे सांगायचे आहे. कोणते रूप या हेतूशी जुळते?'),options:['မသွားနဲ့။','မသွားဘူး။'],accepted:[0],explanation:t('မသွားနဲ့။ uses the negative imperative ending နဲ့. A statement about your own plan needs the other ending in this exercise.','မသွားနဲ့။ मध्ये नकारार्थी आज्ञा किंवा विनंतीसाठी နဲ့ हा शेवट आहे. या सरावात स्वतःच्या बेताबद्दलच्या विधानासाठी दुसरा शेवट लागतो.')},{prompt:t('At a meal, you are explaining your eating habit: “I don’t eat meat.” Choose that statement.','जेवताना तुमची खाण्याची सवय सांगत आहात: “मी मांस खात नाही.” ते विधान निवडा.'),options:['မသွားဘူး။','အသား မစားဘူး။'],accepted:[1],explanation:t('အသား is meat and စား is eat. The negative statement keeps မ before စား and ဘူး after it.','အသား म्हणजे मांस आणि စား म्हणजे खाणे. नकारार्थी विधानात စား च्या आधी မ आणि नंतर ဘူး येते.')}],
+    use:t('Write one negative statement about your own plan or eating habit. You may adapt မသွားဘူး။ or အသား မစားဘူး။ Add your intended meaning so you can review the context later.','स्वतःच्या बेताबद्दल किंवा खाण्याच्या सवयीबद्दल एक नकारार्थी विधान लिहा. မသွားဘူး။ किंवा အသား မစားဘူး။ यात बदल करू शकता. नंतर संदर्भ तपासता यावा म्हणून तुम्हाला अभिप्रेत असलेला अर्थही लिहा.'),
+    checklist:t('Check: you mean a statement, not an instruction; မ comes before the verb and ဘူး after it; your intended meaning records who and when. Saving is not grammar approval.','तपासा: तुम्हाला विधान करायचे आहे, सूचना द्यायची नाही; क्रियापदाच्या आधी မ आणि नंतर ဘူး आहे; अभिप्रेत अर्थात कोण आणि केव्हा हे स्पष्ट आहे. जतन केले म्हणजे व्याकरण बरोबर ठरले असे नाही.'),
+    content:{version:1,language:'my',script:'Myanmar',reviewStatus:'draft',
+      register:t('Plain spoken statements and a direct request; politeness depends on the situation.','साधी बोलचालीतील विधाने आणि थेट विनंती; नम्रता परिस्थितीवर अवलंबून असते.'),
+      sense:t('A decision about a future outing, a contrasting request, and an eating habit.','उद्याच्या सहलीबद्दलचा निर्णय, त्याहून वेगळी विनंती आणि खाण्याची सवय.'),
+      provenance:t('The two negative statements reuse the bundled negation lesson. The request contrast, prompts and Marathi guidance are authored drafts informed by the linked grammar references.','दोन नकारार्थी विधाने अॅपमधील नकाराच्या धड्यातून घेतली आहेत. विनंतीशी तुलना, प्रश्न आणि मराठी मार्गदर्शन हे दिलेल्या व्याकरण संदर्भांच्या आधारे तयार केलेले मसुदे आहेत.'),
+      sourceRevision:'262c47cc18d1f0c98fabeea980bf2e65b5700eb3',
+      exampleRefs:[{conceptId:'negation',language:'my',index:2,text:'မသွားဘူး။'},{conceptId:'negation',language:'my',index:1,text:'အသား မစားဘူး။'}]},
+    sources:[{label:'Bundled negation examples (draft, pinned source)',url:'https://github.com/Celeritas7/Catalyst/blob/262c47cc18d1f0c98fabeea980bf2e65b5700eb3/data/grammar.yaml'},{label:'NIU SEAsite: negative statements',url:'https://seasite.niu.edu/Burmese/Beginning/Blesson_5/syntax.htm'},{label:'NIU SEAsite: negative requests',url:'https://seasite.niu.edu/Burmese/Beginning/Blesson_2/syntax.htm'},{label:'WALS, Matti Miestamo: Burmese negation and time interpretation',url:'https://wals.info/chapter/113'}]
+  },{
     id:'ja-topic-transitions',language:'ja',
     title:t('ちなみに or ところで?','ちなみに की ところで?'),
     summary:t('Add a related detail or start another topic.','संबंधित माहिती जोडा किंवा विषय बदला.'),
@@ -32,8 +54,11 @@
     sources:[{label:'Bunpro: ところで and contrast with ちなみに',url:'https://bunpro.jp/grammar_points/ところで'}]
   }];
   const text=(value,language)=>value?.[language] || null;
+  // Explicit authored grammar pieces may touch in the written sentence. Keep
+  // the original pilots' spaces unless a build explicitly specifies otherwise.
+  const assemble=(build,order)=>order.map(index=>build.chunks[index]).join(build.joiner??' ');
   const key=p=>`${p.language}:${p.id}`;
   const validOrder=(build,order)=>Array.isArray(order)&&build.orders.some(a=>a.length===order.length&&a.every((v,i)=>v===order[i]));
   const choiceCorrect=(question,answer)=>question.accepted.includes(answer);
-  root.CatalystActivities={pilots,text,key,validOrder,choiceCorrect};
+  root.CatalystActivities={pilots,text,key,validOrder,choiceCorrect,assemble};
 })(typeof window==='undefined'?globalThis:window);

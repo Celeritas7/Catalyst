@@ -2,6 +2,11 @@
 
 Two language-scoped pilots follow Situation → Notice → Build → Choose → Use. Find them on Today and Explore; the Burmese pilot also appears in the verb-final lesson. No automatic target-language switch occurs. Other target languages show an honest unavailable state.
 
+This records the original Phase 3 checkpoint. [Phase 6H](PHASE6H_BURMESE_NEGATION.md)
+later adds a second Burmese activity for negation, with its own pinned sources
+and draft metadata. The two pilots described below retain their existing IDs
+and sentence-building behavior.
+
 ## Content and provenance
 
 - `my-word-order`: uses existing `verb_final` Burmese examples from `data/grammar.yaml`. Original entry has `checked: false`. Chunk boundaries are authored units, never inferred by splitting Burmese script. Guidance and Marathi translations are new drafts. S–O–V is the neutral pattern being practised, not a claim that all other contextual orders are ungrammatical.

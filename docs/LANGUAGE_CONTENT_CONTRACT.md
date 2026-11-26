@@ -26,3 +26,11 @@ nor the legacy `checked` flag proves linguistic review. Preserve provenance,
 reviewer evidence, register and sense when expanding content; unresolved repeats
 remain separate until their context has been reviewed. See
 [the coverage checkpoint](PHASE6G_CONTENT_COVERAGE.md) for measured gaps and limits.
+
+Guided activities may declare a build `joiner` of `''` for authored grammar
+pieces that touch in writing; omitted joiners retain the legacy space. Use the
+same assembler for displayed accepted answers and activity/review records.
+Do not infer Burmese word boundaries by splitting the text. Phase 6H's draft
+metadata includes language, script, bilingual register/sense/provenance and
+pinned example references; the inventory validates these and keeps older
+pilots' missing structured metadata explicit.

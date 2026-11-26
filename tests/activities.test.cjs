@@ -14,10 +14,24 @@ for(const p of api.pilots){
  assert(p.sources.length);
 }
 assert.equal(new Set(api.pilots.map(api.key)).size,api.pilots.length);
-assert.equal(api.pilots.filter(p=>p.language==='my').length,1);
+assert.equal(api.pilots.filter(p=>p.language==='my').length,2);
 assert.equal(api.pilots.filter(p=>p.language==='zh').length,0);
 assert.equal(api.pilots.find(p=>p.language==='ja').build.orders.length,2);
 assert(api.pilots.find(p=>p.language==='ja').deeper.en.includes('verb-past'));
 console.log('Validated pilot coverage, every chunk permutation, multiple accepted orders, choice grading and target isolation.');
 
 assert(require('../tools/app_sources.cjs').includes('js/catalyst-activities.js'));
+
+const negation=api.pilots.find(p=>p.id==='my-negation');
+assert.equal(negation.concept,'negation');
+assert.equal(api.assemble(negation.build,negation.build.orders[0]),'မသွားဘူး။');
+assert.equal(api.assemble(negation.build,[1,0,2]),'သွားမဘူး။');
+assert.equal(negation.example,api.assemble(negation.build,[0,1,2]));
+assert.equal(negation.content.reviewStatus,'draft');
+assert.equal(negation.content.language,'my');
+assert.equal(negation.content.script,'Myanmar');
+assert(negation.notice.en.includes('ဘူး alone does not mean future time'));
+assert.equal(negation.choices[0].options[negation.choices[0].accepted[0]],'မသွားဘူး။');
+assert.equal(negation.choices[1].options[negation.choices[1].accepted[0]],'မသွားနဲ့။');
+for(const old of api.pilots.filter(p=>p.id!=='my-negation'))for(const order of old.build.orders)assert.equal(api.assemble(old.build,order),order.map(i=>old.build.chunks[i]).join(' '));
+console.log('Validated negation statement/request contrast and authored joining without changing existing pilots.');
