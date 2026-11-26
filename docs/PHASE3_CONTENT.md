@@ -19,6 +19,11 @@ references. It does not alter the earlier activity definitions.
 activity contrasting action location and destination, using the existing place
 and direction examples. It preserves the five earlier activity definitions.
 
+[Phase 6M](PHASE6M_GUIDED_ACTIVITY_OWNERSHIP.md) replaces new writes to the
+legacy activity settings described below with account/language-scoped progress.
+Older writing remains in place and requires explicit review/copying. The
+original Phase 3 storage description below records its historical behaviour.
+
 ## Content and provenance
 
 - `my-word-order`: uses existing `verb_final` Burmese examples from `data/grammar.yaml`. Original entry has `checked: false`. Chunk boundaries are authored units, never inferred by splitting Burmese script. Guidance and Marathi translations are new drafts. S–O–V is the neutral pattern being practised, not a claim that all other contextual orders are ungrammatical.
