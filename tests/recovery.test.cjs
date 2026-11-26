@@ -106,3 +106,97 @@ test('interleaved tab saves use separate atomic slots; export and restore includ
   const plan=f.s.planRecovery(f.storage,'one',exported);other.s.saveDraft(f.storage,'one','my','third','activity','pilot:mr',fields);
   assert.throws(()=>f.s.commitRecovery(f.storage,plan),/changed since preview/);
 });
+
+test('export and restore of unchanged recovery history is a no-op across repeated cycles',()=>{
+  const f=fixture();
+  f.s.commitRecovery(f.storage,f.s.planRecovery(f.storage,'one',backup([{owner:'current',type:'notebook',language:'my',raw:JSON.stringify(notebook())}])));
+  const before=Object.fromEntries(f.values),first=f.s.exportRecovery(f.storage,'one');
+  for(let i=0;i<12;i++){
+    const exported=f.s.exportRecovery(f.storage,'one'),plan=f.s.planRecovery(f.storage,'one',f.s.parseRecovery(JSON.stringify(exported),'one'));
+    assert.equal(plan.changes.length,0,'unchanged export must not wrap its own journal/copies');
+    f.s.commitRecovery(f.storage,plan);assert.deepEqual(Object.fromEntries(f.values),before);
+    assert.equal(JSON.stringify(exported).length,JSON.stringify(first).length);
+  }
+});
+
+test('restoring recovery copies alone preserves the existing journal and merges copies without nested envelopes',()=>{
+  const existing={record:{owner:'current',type:'notebook',language:'my'},raw:'retained original'},added={record:{owner:'current',type:'draft',language:'my'},raw:'retained draft'};
+  const f=fixture(),oldJournal=JSON.stringify({version:1,changes:[]});
+  f.storage.setItem(f.s.archiveKey('one'),JSON.stringify({version:1,copies:[existing]}));f.storage.setItem(f.s.journalKey('one'),oldJournal);
+  const data={...backup([]),copies:JSON.stringify({version:1,copies:[existing,added]}),journal:oldJournal};
+  const plan=f.s.planRecovery(f.storage,'one',f.s.parseRecovery(JSON.stringify(data),'one'));
+  f.s.commitRecovery(f.storage,plan);
+  assert.deepEqual(JSON.parse(f.storage.getItem(f.s.archiveKey('one'))).copies,[existing,added]);
+  assert.equal(f.storage.getItem(f.s.journalKey('one')),oldJournal);
+  assert.equal(f.s.planRecovery(f.storage,'one',data).changes.length,0);
+});
+
+test('copy retention failure cannot replace the previous recovery journal or write learner records',()=>{
+  const f=fixture(),oldJournal=JSON.stringify({version:1,changes:[{key:'old-record',before:'keep previous',after:'keep incoming'}]});
+  f.storage.setItem(f.s.journalKey('one'),oldJournal);
+  const data=backup([{owner:'current',type:'notebook',language:'my',raw:JSON.stringify(notebook())}]);
+  const plan=f.s.planRecovery(f.storage,'one',data),before=Object.fromEntries(f.values);
+  const failing={...f.storage,setItem:(key,value)=>{if(key===f.s.archiveKey('one'))throw Error('Copy storage full');f.storage.setItem(key,value);}};
+  assert.throws(()=>f.s.commitRecovery(failing,plan),/Copy storage full/);
+  assert.deepEqual(Object.fromEntries(f.values),before);
+});
+
+test('unknown and malformed incoming copy formats remain inert and byte-for-byte recoverable',()=>{
+  for(const copies of ['{damaged',JSON.stringify({version:2,copies:[]}),JSON.stringify({version:1,copies:[null]}),JSON.stringify({version:1,copies:[{record:{type:'future-type',owner:'current',extra:'keep'},raw:'keep'}]})]){
+    const f=fixture(),data={...backup([]),copies};f.s.commitRecovery(f.storage,f.s.planRecovery(f.storage,'one',f.s.parseRecovery(JSON.stringify(data),'one')));
+    const retained=JSON.parse(f.storage.getItem(f.s.archiveKey('one'))).copies;
+    assert.ok(retained.some(copy=>copy.raw===copies));assert.equal(f.s.planRecovery(f.storage,'one',data).changes.length,0);
+  }
+});
+
+test('unchanged backups exchanged between two installations converge without growing wrapped history',()=>{
+  const a=fixture({'catalyst_notebook_v1:one:my':JSON.stringify(notebook('Original',['note A']))});
+  const b=fixture({'catalyst_notebook_v1:one:my':JSON.stringify(notebook('Original',['note B']))});
+  const exchange=(source,target)=>{const data=source.s.exportRecovery(source.storage,'one');target.s.commitRecovery(target.storage,target.s.planRecovery(target.storage,'one',target.s.parseRecovery(JSON.stringify(data),'one')));};
+  exchange(a,b);exchange(b,a);exchange(a,b);
+  const beforeA=Object.fromEntries(a.values),beforeB=Object.fromEntries(b.values);
+  for(let i=0;i<8;i++){exchange(a,b);exchange(b,a);}
+  assert.deepEqual(Object.fromEntries(a.values),beforeA);assert.deepEqual(Object.fromEntries(b.values),beforeB);
+  for(const f of [a,b]){
+    const saved=JSON.parse(f.storage.getItem('catalyst_notebook_v1:one:my'));
+    assert.equal(saved.entries.length,1);assert.equal(saved.entries[0].corrections.length,2);
+    assert.ok(JSON.stringify(f.s.exportRecovery(f.storage,'one')).length<10000);
+  }
+});
+
+test('journal and record failures after retention keep both histories and retry safely',()=>{
+  const data=backup([{owner:'current',type:'notebook',language:'my',raw:JSON.stringify(notebook('Original',['incoming']))}]);
+  for(const failedKey of ['journal','notebook']){
+    const f=fixture({'catalyst_notebook_v1:one:my':JSON.stringify(notebook('Original',['local']))});
+    const previousJournal=JSON.stringify({version:1,changes:[{key:'historical',before:'old',after:'incoming'}]});f.storage.setItem(f.s.journalKey('one'),previousJournal);
+    const beforeNotebook=f.storage.getItem('catalyst_notebook_v1:one:my'),plan=f.s.planRecovery(f.storage,'one',data);
+    const key=failedKey==='journal'?f.s.journalKey('one'):'catalyst_notebook_v1:one:my';
+    const failing={...f.storage,setItem:(name,value)=>{if(name===key)throw Error('Write interrupted');f.storage.setItem(name,value);}};
+    assert.throws(()=>f.s.commitRecovery(failing,plan),/Write interrupted/);
+    assert.equal(f.storage.getItem('catalyst_notebook_v1:one:my'),beforeNotebook);
+    assert.ok(JSON.parse(f.storage.getItem(f.s.archiveKey('one'))).copies.some(copy=>copy.raw===previousJournal));
+    if(failedKey==='journal')assert.equal(f.storage.getItem(f.s.journalKey('one')),previousJournal);
+    else{const journal=JSON.parse(f.storage.getItem(f.s.journalKey('one')));assert.equal(journal.changes.length,1);assert.equal(journal.changes[0].before,beforeNotebook);assert.ok(journal.changes[0].after.includes('incoming'));}
+    f.s.commitRecovery(f.storage,f.s.planRecovery(f.storage,'one',data));
+    const saved=JSON.parse(f.storage.getItem('catalyst_notebook_v1:one:my'));assert.equal(saved.entries[0].corrections.length,2);
+    assert.equal(f.s.planRecovery(f.storage,'one',data).changes.length,0);
+  }
+});
+
+test('a concurrent journal change during copy retention pauses before learner writes',()=>{
+  const f=fixture(),oldJournal=JSON.stringify({version:1,changes:[]}),newJournal='newer concurrent journal';
+  f.storage.setItem(f.s.journalKey('one'),oldJournal);
+  const data=backup([{owner:'current',type:'notebook',language:'my',raw:JSON.stringify(notebook())}]);
+  const plan=f.s.planRecovery(f.storage,'one',data);
+  const interleaved={...f.storage,setItem:(key,value)=>{f.storage.setItem(key,value);if(key===f.s.archiveKey('one'))f.storage.setItem(f.s.journalKey('one'),newJournal);}};
+  assert.throws(()=>f.s.commitRecovery(interleaved,plan),/history changed/);
+  assert.equal(f.storage.getItem(f.s.journalKey('one')),newJournal);assert.equal(f.storage.getItem('catalyst_notebook_v1:one:my'),null);
+  assert.ok(JSON.parse(f.storage.getItem(f.s.archiveKey('one'))).copies.some(copy=>copy.raw===oldJournal));
+});
+
+test('unknown current copy envelope blocks writes but remains exportable in full',()=>{
+  const f=fixture(),raw=JSON.stringify({version:1,copies:[],futureHistory:{keep:'untouched'}});
+  f.storage.setItem(f.s.archiveKey('one'),raw);const before=Object.fromEntries(f.values);
+  assert.throws(()=>f.s.planRecovery(f.storage,'one',backup([])),/copies cannot be read/);
+  assert.deepEqual(Object.fromEntries(f.values),before);assert.equal(f.s.exportRecovery(f.storage,'one').copies,raw);
+});

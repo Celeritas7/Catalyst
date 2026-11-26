@@ -90,6 +90,13 @@ successful recovery. Physical device and real permission checks remain pending.
 All **126 tests** pass with `--test-concurrency=1`; JSX compilation, reproducible
 build and diff checks pass. Release `a04af308ed7cdea25d4c`: 252 files, 11,583,549 bytes.
 
+## Recovery round-trip checkpoint — 2026-11-27
+
+The [recovery acceptance report](PHASE6F_RECOVERY_ROUNDTRIP.md) records a correction
+for self-wrapping backup history and interrupted journal retention, plus compiled
+UI/account-switch and synthetic Chromium round-trip results. All 136 tests pass.
+Physical iPad and native Files acceptance remain pending.
+
 ## Checks completed here
 
 - `npm run check:app`, `npm run check:build`, all **118 tests**, and

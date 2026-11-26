@@ -93,7 +93,23 @@
   }
   const archiveKey=scope=>'catalyst_recovery_copies_v1:'+encodeURIComponent(scope);
   const journalKey=scope=>'catalyst_recovery_journal_v1:'+encodeURIComponent(scope);
-  function parseCopies(raw){const value=raw===null?{version:1,copies:[]}:JSON.parse(raw);if(!object(value)||value.version!==1||!Array.isArray(value.copies))throw Error('Recovery copies cannot be read; export their raw contents first.');return value;}
+  function parseCopies(raw){const value=raw===null?{version:1,copies:[]}:JSON.parse(raw);if(!object(value)||value.version!==1||Object.keys(value).some(key=>!['version','copies'].includes(key))||!Array.isArray(value.copies)||value.copies.some(copy=>!object(copy)||!object(copy.record)||typeof copy.raw!=='string'))throw Error('Recovery copies cannot be read; export their raw contents first.');return value;}
+  const copyDescriptor=record=>({type:record.type,owner:record.owner,language:record.language});
+  const copyIdentity=(record,raw)=>JSON.stringify([copyDescriptor(record),raw]);
+  function knownCopies(raw){
+    try{
+      const value=parseCopies(raw);
+      // Flatten only the known inert envelope. Unknown fields/formats are kept
+      // verbatim as a single copy rather than silently discarded or executed.
+      if(Object.keys(value).some(key=>!['version','copies'].includes(key))||value.copies.some(copy=>
+        Object.keys(copy).some(key=>!['record','raw'].includes(key))||
+        Object.keys(copy.record).some(key=>!['type','owner','language'].includes(key))||
+        !['notebook','review','draft','settings','audio','retained-copies','retained-journal'].includes(copy.record.type)||
+        !['current','guest','device'].includes(copy.record.owner)||
+        (copy.record.language!==undefined&&!languages.includes(copy.record.language))))return null;
+      return value.copies;
+    }catch{return null;}
+  }
   function exportRecovery(storage,scope,{guest=false,device=true}={}){
     if(!scope||scope==='loading')throw Error('Wait for the current account before exporting.');
     const records=[],damagedDraftCopies=[];
@@ -137,11 +153,11 @@
     if(record.type==='audio'){const value=JSON.parse(raw);if(!object(value))throw Error('Invalid audio preferences.');return value;}
   }
   function planRecovery(storage,scope,backup){
-    const originalCopies=storage.getItem(archiveKey(scope)),archive=parseCopies(originalCopies);
-    const copies=[...archive.copies],seen=new Set(copies.map(copy=>JSON.stringify([copy.record,copy.raw])));
+    const originalCopies=storage.getItem(archiveKey(scope)),archive=parseCopies(originalCopies),previousJournal=storage.getItem(journalKey(scope));
+    const copies=[...archive.copies],seen=new Set(copies.map(copy=>copyIdentity(copy.record,copy.raw)));
     const summary={records:backup.records.length,changed:0,notebooks:0,sentences:0,notes:0,reviews:0,drafts:0,copies:0,damaged:0};
     const changes=[],snapshots=[],draftInventories=[];
-    const retain=(record,raw)=>{const descriptor={type:record.type,owner:record.owner,language:record.language};const identity=JSON.stringify([descriptor,raw]);if(!seen.has(identity)){copies.push({record:descriptor,raw});seen.add(identity);summary.copies++;}};
+    const retain=(record,raw)=>{const descriptor=copyDescriptor(record);const identity=copyIdentity(descriptor,raw);if(!seen.has(identity)){copies.push({record:descriptor,raw});seen.add(identity);summary.copies++;}};
     for(const record of backup.records){
       const key=recordKey(record,scope),before=storage.getItem(key);snapshots.push({key,raw:before});
       let incoming,current;
@@ -163,9 +179,15 @@
       if(record.type==='draft')summary.drafts+=Object.keys(next.drafts).length;
       const after=JSON.stringify(next);if(before!==after){changes.push({key,before,after});summary.changed++;}
     }
-    // Old recovery copies/journals are kept as inert copies, never executed as writes.
-    for(const type of ['copies','journal'])if(backup[type])retain({type:'retained-'+type,owner:scope==='guest'?'guest':'current'},backup[type]);
-    const previousJournal=storage.getItem(journalKey(scope));
+    // Existing history must not wrap itself on each export/import cycle.
+    // Known copy envelopes merge as inert records; journals are never replayed.
+    const owner=scope==='guest'?'guest':'current';
+    if(backup.copies&&backup.copies!==originalCopies){
+      const incomingCopies=knownCopies(backup.copies);
+      if(incomingCopies){for(const copy of incomingCopies)if(!(copy.record.type==='retained-journal'&&copy.record.owner===owner&&copy.raw===previousJournal))retain(copy.record,copy.raw);}
+      else retain({type:'retained-copies',owner},backup.copies);
+    }
+    if(backup.journal&&backup.journal!==previousJournal)retain({type:'retained-journal',owner},backup.journal);
     snapshots.push({key:archiveKey(scope),raw:originalCopies},{key:journalKey(scope),raw:previousJournal});
     if(changes.length&&previousJournal)retain({type:'retained-journal',owner:scope==='guest'?'guest':'current'},previousJournal);
     const archiveAfter=JSON.stringify({version:1,copies});
@@ -177,10 +199,18 @@
     for(const inventory of plan.draftInventories)if(JSON.stringify(draftSlots(storage,inventory.key).map(slot=>slot.key).sort())!==JSON.stringify(inventory.slots))throw Error('Drafts changed since preview. Select the file again to review the current merge.');
     for(const snapshot of plan.snapshots)if(storage.getItem(snapshot.key)!==snapshot.raw)throw Error('Records changed since preview. Select the file again to review the current merge.');
     if(!plan.changes.length)return;
-    // Journal both sides before touching any record. Quota failure here changes
-    // nothing. An interrupted restore retains every original and incoming value.
-    storage.setItem(journalKey(plan.scope),JSON.stringify({version:1,createdAt:new Date().toISOString(),changes:plan.changes}));
-    for(const change of plan.changes){
+    const archiveChange=plan.changes.find(change=>change.key===archiveKey(plan.scope));
+    const records=plan.changes.filter(change=>change.key!==archiveKey(plan.scope));
+    // Append retained history atomically before replacing its old journal. If
+    // this fails, the previous journal and learner records are untouched.
+    if(archiveChange)storage.setItem(archiveChange.key,archiveChange.after);
+    if(!records.length)return;
+    // The archive is additive and already durable: do not embed its whole
+    // history inside the next journal. Record both sides of learner changes.
+    const journal=plan.snapshots.find(snapshot=>snapshot.key===journalKey(plan.scope));
+    if(storage.getItem(journal.key)!==journal.raw)throw Error('Recovery history changed during restore. Preview the file again.');
+    storage.setItem(journal.key,JSON.stringify({version:1,createdAt:new Date().toISOString(),changes:records}));
+    for(const change of records){
       if(storage.getItem(change.key)!==change.before)throw Error('A record changed during restore. The recovery journal preserves the proposed merge. Preview again.');
       storage.setItem(change.key,change.after);
     }
