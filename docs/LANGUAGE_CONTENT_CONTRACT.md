@@ -34,3 +34,12 @@ Do not infer Burmese word boundaries by splitting the text. Phase 6H's draft
 metadata includes language, script, bilingual register/sense/provenance and
 pinned example references; the inventory validates these and keeps older
 pilots' missing structured metadata explicit.
+
+Phase 6I fills the 27 measured gaps using 26 exact gloss keys; see
+[the meaning decisions](PHASE6I_MARATHI_MEANINGS.md). Optional draft Marathi
+usage notes are accessed separately via `CatalystMeanings.note`. Keep notes out
+of quiz options and recorded answers, and reveal them only with a lesson meaning
+or after a practice/review answer. They do not replace or translate all grammar
+explanations. Translation and note lookups reject inherited object properties
+and non-string inputs; unknown glosses remain unavailable. Complete bundled
+meaning availability is not approval and does not promise online-override coverage.

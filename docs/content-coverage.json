@@ -12,7 +12,7 @@
     },
     {
       "file": "js/catalyst-meanings.js",
-      "sha256": "98a89c71c2809d3d00acd3260748dcb2e0f7adb37fcf43a2fc83332a965f37e7"
+      "sha256": "a6a1a790baa70f09c5bf2624790d33ae17b673745826b9fc956ef371278b70d5"
     },
     {
       "file": "js/catalyst-activities.js",
@@ -112,102 +112,9 @@
       "meanings": [
         {
           "language": "mr",
-          "available": 25,
-          "missing": 23,
-          "gaps": [
-            {
-              "location": "verb_final:mr:1",
-              "english": "I eat an apple. (male; a woman says खाते)"
-            },
-            {
-              "location": "verb_final:mr:2",
-              "english": "My brother went to school."
-            },
-            {
-              "location": "modifier_before_noun:mr:1",
-              "english": "the book bought yesterday"
-            },
-            {
-              "location": "modifier_before_noun:mr:2",
-              "english": "a man who speaks Japanese"
-            },
-            {
-              "location": "topic_wa:mr:1",
-              "english": "As for me, I'll have tea."
-            },
-            {
-              "location": "topic_wa:mr:2",
-              "english": "An elephant's trunk is long. (Marathi says 'of')"
-            },
-            {
-              "location": "subject_ga:mr:1",
-              "english": "Ram read the book."
-            },
-            {
-              "location": "subject_ga:mr:2",
-              "english": "Who came? (no marker)"
-            },
-            {
-              "location": "object_o:mr:2",
-              "english": "I know him."
-            },
-            {
-              "location": "direction_ni_e:mr:1",
-              "english": "I'm going to Pune."
-            },
-            {
-              "location": "also_mo:mr:1",
-              "english": "I'll come too."
-            },
-            {
-              "location": "also_mo:mr:2",
-              "english": "I eat meat and fish too."
-            },
-            {
-              "location": "possessive_no:mr:2",
-              "english": "my car (गाडी is feminine, so माझी)"
-            },
-            {
-              "location": "tag_ne:mr:1",
-              "english": "It's very hot today, isn't it?"
-            },
-            {
-              "location": "tag_ne:mr:2",
-              "english": "Do come tomorrow."
-            },
-            {
-              "location": "past:mr:1",
-              "english": "I watched a film yesterday. (agrees with सिनेमा)"
-            },
-            {
-              "location": "past:mr:2",
-              "english": "I ate. (male)"
-            },
-            {
-              "location": "future:mr:2",
-              "english": "I'm going to study Japanese next year."
-            },
-            {
-              "location": "ability:mr:2",
-              "english": "I won't be able to come tomorrow."
-            },
-            {
-              "location": "politeness:mr:1",
-              "english": "Where are you going? (polite)"
-            },
-            {
-              "location": "politeness:mr:2",
-              "english": "Where are you going? (to a friend)"
-            },
-            {
-              "location": "counters:mr:1",
-              "english": "Give me three pens."
-            },
-            {
-              "location": "counters:mr:2",
-              "english": "There are four of us."
-            }
-          ]
+          "available": 48,
+          "missing": 0,
+          "gaps": []
         },
         {
           "language": "en",
@@ -227,26 +134,9 @@
       "meanings": [
         {
           "language": "mr",
-          "available": 20,
-          "missing": 4,
-          "gaps": [
-            {
-              "location": "modifier_before_noun:en:1",
-              "english": "the book that I bought yesterday"
-            },
-            {
-              "location": "topic_wa:en:1",
-              "english": "As for me, I'll have tea."
-            },
-            {
-              "location": "because:en:1",
-              "english": "I'm not going because it's raining."
-            },
-            {
-              "location": "politeness:en:1",
-              "english": "Could you sit down, please?"
-            }
-          ]
+          "available": 24,
+          "missing": 0,
+          "gaps": []
         },
         {
           "language": "en",
