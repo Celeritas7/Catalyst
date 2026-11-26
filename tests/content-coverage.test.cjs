@@ -68,7 +68,7 @@ test('checked-in inventory is reproducible and exposes current coverage limits',
   assert.equal(report.errors.length,0);
   const my=report.languages.find(row=>row.language==='my'),mr=report.languages.find(row=>row.language==='mr'),en=report.languages.find(row=>row.language==='en');
   assert.equal(my.lessons,24);assert.equal(my.examples,50);assert.equal(my.meanings[0].missing,0);
-  assert.equal(my.sourceCheckedLessons,0);assert.equal(my.guidedActivities,4);assert.equal(my.fixedPatterns,3);
+  assert.equal(my.sourceCheckedLessons,0);assert.equal(my.guidedActivities,5);assert.equal(my.fixedPatterns,3);
   assert.equal(mr.meanings[0].available,48);assert.equal(en.meanings[0].available,24);
   assert.ok(report.languages.every(row=>row.meanings.every(meaning=>meaning.missing===0)));
   assert.equal(report.repeatedText.length,1);assert.equal(report.repeatedText[0].occurrences.length,2);

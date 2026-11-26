@@ -30,7 +30,7 @@ Acceptance: changing explanation language preserves target-language progress; a 
 
 ## 3. Complete lesson activities
 
-Initial Phase 3 checkpoint: two guided pilots implemented, Burmese sentence order and Japanese topic transitions. Later Phase 6H and 6J add Burmese negation and yes/no questions. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
+Initial Phase 3 checkpoint: two guided pilots implemented, Burmese sentence order and Japanese topic transitions. Later Phases 6H–6L add Burmese negation, yes/no questions, what/where questions and location/destination. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
 
 Situation → Notice → Build → Choose → Use, with optional deeper explanations and comparisons. Pilot standalone ちなみに versus ところで plus one sentence-building lesson. Distinguish standalone ところで from verb-past + ところで. Support multiple valid answers and language-specific sentence chunking.
 
@@ -116,6 +116,13 @@ yes/no contrast. Four Burmese activities are now available. Existing core
 examples, meanings and older activities remain unchanged; all new guidance is
 draft content. Next is a sourced action-location/destination contrast using
 `မှာ` and `ကို`; linguistic review and physical acceptance remain separate.
+
+[Phase 6L](PHASE6L_BURMESE_LOCATION_DESTINATION.md) adds that contrast with
+studying at the library, a planned trip to Yangon and a cat's location. Five
+Burmese guided activities now use the existing notebook and review flow.
+The new activity reuses three pinned examples with draft bilingual guidance;
+all five earlier activity definitions and all 218 core examples remain intact.
+Native-speaker review and physical Phase 6F acceptance remain pending.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 

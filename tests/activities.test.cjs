@@ -14,7 +14,7 @@ for(const p of api.pilots){
  assert(p.sources.length);
 }
 assert.equal(new Set(api.pilots.map(api.key)).size,api.pilots.length);
-assert.equal(api.pilots.filter(p=>p.language==='my').length,4);
+assert.equal(api.pilots.filter(p=>p.language==='my').length,5);
 assert.equal(api.pilots.filter(p=>p.language==='zh').length,0);
 assert.equal(api.pilots.find(p=>p.language==='ja').build.orders.length,2);
 assert(api.pilots.find(p=>p.language==='ja').deeper.en.includes('verb-past'));
