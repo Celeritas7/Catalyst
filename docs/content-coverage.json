@@ -16,7 +16,7 @@
     },
     {
       "file": "js/catalyst-activities.js",
-      "sha256": "abfcf1f659b652e4bc44ad5fc734ae58b35c24addc4cfd2ae84a3f135fc7f628"
+      "sha256": "ac1bb31a818f50a1acd4521f3fb0d23002ff90df23867b58c3e4e5c0fc12a4ba"
     },
     {
       "file": "js/catalyst-patterns.js",
@@ -63,7 +63,7 @@
       "lessons": 24,
       "examples": 50,
       "sourceCheckedLessons": 0,
-      "guidedActivities": 2,
+      "guidedActivities": 3,
       "fixedPatterns": 3,
       "meanings": [
         {
@@ -213,6 +213,62 @@
         {
           "label": "WALS, Matti Miestamo: Burmese negation and time interpretation",
           "url": "https://wals.info/chapter/113"
+        }
+      ]
+    },
+    {
+      "id": "my-yes-no",
+      "language": "my",
+      "concept": "yes_no_ka",
+      "content": {
+        "version": 1,
+        "language": "my",
+        "script": "Myanmar",
+        "reviewStatus": "draft",
+        "register": {
+          "en": "Plain spoken forms for a familiar conversation; this is not a full lesson on polite address.",
+          "mr": "ओळखीच्या व्यक्तीशी बोलताना वापरण्याची साधी रूपे; आदरार्थी संबोधनाचा हा संपूर्ण धडा नाही."
+        },
+        "sense": {
+          "en": "An offer of coffee, the listener’s affirmative plan, and a question about a male addressee’s student status.",
+          "mr": "कॉफी देऊ करणारा प्रश्न, ऐकणाऱ्याचे होकारार्थी उत्तर आणि समोरचा पुरुष विद्यार्थी आहे का याबद्दलचा प्रश्न."
+        },
+        "provenance": {
+          "en": "The two questions reuse the bundled yes/no lesson. The coffee reply, situations and bilingual guidance are authored drafts informed by the linked grammar references.",
+          "mr": "दोन्ही प्रश्न अॅपमधील हो/नाही प्रश्नांच्या धड्यातून घेतले आहेत. कॉफीबद्दलचे उत्तर, प्रसंग आणि दोन्ही भाषांतील मार्गदर्शन हे दिलेल्या व्याकरण संदर्भांच्या आधारे तयार केलेले मसुदे आहेत."
+        },
+        "sourceRevision": "e329e2d1f0eb14f0fe90332d2e7c2700ed3f1ab2",
+        "exampleRefs": [
+          {
+            "conceptId": "yes_no_ka",
+            "language": "my",
+            "index": 2,
+            "text": "ကော်ဖီ သောက်မလား။"
+          },
+          {
+            "conceptId": "yes_no_ka",
+            "language": "my",
+            "index": 1,
+            "text": "ကျောင်းသားလား။"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Bundled yes/no questions (draft, pinned source)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/e329e2d1f0eb14f0fe90332d2e7c2700ed3f1ab2/data/grammar.yaml"
+        },
+        {
+          "label": "NIU SEAsite: noun questions with လား",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_3/syntax.htm"
+        },
+        {
+          "label": "NIU SEAsite: question endings and future forms",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_6/syntax.htm"
+        },
+        {
+          "label": "NIU SEAsite: negative prefix and verb questions",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_5/syntax.htm"
         }
       ]
     },
