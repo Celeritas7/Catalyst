@@ -81,20 +81,24 @@
     }
     function OfflineAccountPanel({language}) {
       const identity=React.useContext(StudyAccountContext),version=useSyncExternalStore(snapshotApi.subscribe,snapshotApi.getVersion);
-      const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[records,setRecords]=useState({});
+      const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[records,setRecords]=useState({}),[refreshErrors,setRefreshErrors]=useState({});
       const sequence=React.useRef(0);
       const sources=[...window.CatalystVocabulary.sources(language).map(p=>({source:p.id,kind:'ratings',label:p.name})),...(language==='my'?[{source:'kg',kind:'patterns',label:'KG Chart · learned nouns for patterns'}]:[])];
       useUpdateGuard(busy);
       useEffect(()=>{return()=>{sequence.current++;};},[identity.scope,language]);
       useEffect(()=>{
         let cancelled=false;
-        if(!identity.prepared||!identity.owner)return;
+        // Download progress owns the rows until it completes or is cancelled.
+        // Older background reads must not overwrite an in-flight refresh.
+        if(busy)return;
+        if(!identity.prepared||!identity.owner){setRecords({});return;}
+        setRecords(Object.fromEntries(sources.map(source=>[source.source+':'+source.kind,'Checking saved words…'])));
         for(const source of sources){const id=source.source+':'+source.kind,d=window.CatalystSnapshots.descriptor(identity.owner.id,language,source.source,source.kind);
-          snapshotApi.read(d).then(record=>{if(!cancelled&&record)setRecords(old=>({...old,[id]:`${record.data.words.length} words · saved ${new Date(record.savedAt).toLocaleString()}`}));}).catch(error=>{if(!cancelled)setRecords(old=>({...old,[id]:error.message}));});}
+          snapshotApi.read(d).then(record=>{if(!cancelled)setRecords(old=>({...old,[id]:record?`${record.data.words.length} words · saved ${new Date(record.savedAt).toLocaleString()}`:'Not saved for offline study'}));}).catch(error=>{if(!cancelled)setRecords(old=>({...old,[id]:error.message||'Saved words could not be checked.'}));});}
         return()=>{cancelled=true;};
-      },[identity.scope,identity.prepared,language,version]);
+      },[identity.scope,identity.prepared,language,version,busy]);
       async function prepare(){
-        const run=++sequence.current,current=()=>sequence.current===run;setBusy(true);setMessage('Checking this account…');
+        const run=++sequence.current,current=()=>sequence.current===run;setBusy(true);setRefreshErrors({});setMessage('Checking this account…');
         try{
           const ticket=await accountApi.prepare();if(!current())return;
           setMessage('Notebook and reviews prepared. Saving complete word sources…');
@@ -104,7 +108,7 @@
             const id=source.source+':'+source.kind,d=window.CatalystSnapshots.descriptor(ticket.owner,language,source.source,source.kind);
             setRecords(old=>({...old,[id]:'Downloading…'}));
             try{const record=await snapshotApi.refresh(d,{persist:true,current});if(!current())return;complete++;setRecords(old=>({...old,[id]:`${record.data.words.length} words · saved ${new Date(record.savedAt).toLocaleString()}`}));}
-            catch(error){if(!current())return;setRecords(old=>({...old,[id]:error.message||'Download failed. Previous complete snapshot retained.'}));}
+            catch(error){if(!current())return;setRefreshErrors(old=>({...old,[id]:error.message||'Download failed. Retry online.'}));setRecords(old=>({...old,[id]:'Checking saved words after refresh…'}));}
           }
           if(current())setMessage(accountApi.valid(ticket)?`Notebook and reviews ready for this account. ${complete}/${sources.length} word sources refreshed. Sources marked unavailable need an online retry.`:'Account changed during preparation. Reconnect and try again.');
         }catch(error){if(current())setMessage(error.message);}finally{if(current())setBusy(false);}
@@ -114,7 +118,7 @@
         <p>{identity.prepared?'Notebook and reviews: ready for this account on this device.':'Notebook and reviews: account not prepared for offline access.'} Word sources are saved separately for each account and learning language. Saving words does not sync your writing to the cloud.</p>
         <p>Prepare in the actual iPad Home Screen app before leaving Wi-Fi. After signing out here or in another app sharing this sign-in, reconnect and prepare again. Source permissions cannot be checked while disconnected.</p>
         <div className="offline-actions"><button className="primary-btn" disabled={!identity.online||busy} onClick={prepare}>{identity.prepared?'Refresh offline account and words':'Prepare this account for offline study'}</button>{busy&&<button className="quiet-btn" onClick={()=>{sequence.current++;setBusy(false);setMessage('Download cancelled. Completed snapshots and existing writing are retained.');}}>Cancel word download</button>}{!identity.online&&<button className="quiet-btn" onClick={()=>accountApi.verify()}>Check account online</button>}</div>
-        {sources.map(source=><div className="recovery-row" key={source.source+source.kind}><strong>{source.label}</strong><span>{records[source.source+':'+source.kind]||'Not saved for offline study'}</span></div>)}
+        {sources.map(source=><div className="recovery-row" key={source.source+source.kind}><strong>{source.label}</strong><span>{identity.prepared?(records[source.source+':'+source.kind]||'Checking saved words…'):'Account not prepared for offline words'}{refreshErrors[source.source+':'+source.kind]&&<span className="block">Last refresh failed: {refreshErrors[source.source+':'+source.kind]}</span>}</span></div>)}
         {!sources.length&&<p>No connected vocabulary source for this language. Lessons, notebooks and reviews can still be used offline.</p>}
         <p role="status">{message}</p>
       </section>;

@@ -75,7 +75,9 @@ text sizes, and prepared backup-first physical iPad/Android/desktop checks.
 A follow-up adds an in-app iPad preparation checklist and a copyable, privacy-limited
 status report for versions and readiness. A further backup reliability correction
 adds distinct filenames, visible retry guidance and current-record validation on
-notebook export. Neither change certifies Files saving or device tests.
+notebook export. Word-source readiness now rechecks after cancellation, withdraws
+missing snapshots, and separates refresh errors from retained or locked saved words.
+These corrections do not certify Files saving or physical device tests.
 Physical acceptance remains pending. Synthetic browser results do not prove iPad
 Home Screen behavior, actual speech quality or real sign-in round trips.
 

@@ -67,6 +67,29 @@ cleanup, distinct names, latest saved notes, corrupt-record refusal, unchanged
 storage and credential exclusion. Release `a4acead030454dc81d94`: 252 files,
 11,582,843 bytes. Physical Files export/import and cold reopening remain pending.
 
+## Word-source readiness correction — 2026-11-26 (Japan)
+
+Following merged PR #26, mounted acceptance tests reproduced two UI issues:
+background snapshot reads could overwrite an in-flight refresh with an old saved
+count, and a missing snapshot could leave its old count visible after rechecking.
+Cancellation could also leave stale progress because it did not trigger a saved
+snapshot recheck.
+
+The account panel now suspends background row reads during refresh, ignores old
+read results, and rechecks saved snapshots after completion or cancellation. A
+missing snapshot becomes **Not saved for offline study**. Refresh errors remain
+separate from the saved-state row: a network failure can retain a dated complete
+snapshot, while a denied source displays the existing lock instead of a usable
+count. A subsequent successful refresh clears the prior error. Unprepared
+accounts do not display old ready counts.
+
+No snapshot storage, access gates, authentication or notebook format changes.
+Synthetic tests cover a deferred refresh and cancellation/late completion,
+missing snapshot rechecks, network failure with retained words, denial/lock and
+successful recovery. Physical device and real permission checks remain pending.
+All **126 tests** pass with `--test-concurrency=1`; JSX compilation, reproducible
+build and diff checks pass. Release `a04af308ed7cdea25d4c`: 252 files, 11,583,549 bytes.
+
 ## Checks completed here
 
 - `npm run check:app`, `npm run check:build`, all **118 tests**, and

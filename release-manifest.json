@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "buildId": "a4acead030454dc81d94",
+  "buildId": "a04af308ed7cdea25d4c",
   "contentVersion": "a29f2f57ef5d66852a945892c4379cfb9a54992a66d1e68794544b1be65f33e8",
   "audio": {
     "version": 1,
@@ -238,7 +238,7 @@
   "worker": {
     "url": "./sw.js",
     "protocol": 1,
-    "buildId": "a4acead030454dc81d94"
+    "buildId": "a04af308ed7cdea25d4c"
   },
   "packages": {
     "@fontsource-variable/dm-sans": "5.3.0",
@@ -268,7 +268,7 @@
       "url": "./index.html",
       "kind": "document",
       "bytes": 969,
-      "sha256": "1012cc1aa22af3bd674c3164e8c152afb786dbbe70a4a8184d615be4807cf0be"
+      "sha256": "6c212c633b76e0803e9a029c2d2f42c9c91272bc9dac35bf0da9ff48698a53d1"
     },
     {
       "url": "./assets/dm-sans-latin-ext-wght-normal.a5d38fe99f930275.woff2",
@@ -1741,10 +1741,10 @@
       "sha256": "f21aab7dafd4010780cb8067a74a260263143dfd653110b01cf508b1d4c40ebf"
     },
     {
-      "url": "./assets/app.382cc61b06bbc501.js",
+      "url": "./assets/app.05e53ae7424675ba.js",
       "kind": "script",
-      "bytes": 150848,
-      "sha256": "382cc61b06bbc501feb8ba8ce0dda957109d1863bc6b3e779ab36ba199052871"
+      "bytes": 151554,
+      "sha256": "05e53ae7424675ba2938c4648b83a62bcb48c9ed65f5cee62e17e3ba98a9d318"
     },
     {
       "url": "./assets/THIRD-PARTY-LICENSES.081438bf7f6852de.txt",
@@ -1777,5 +1777,5 @@
       "sha256": "3656a06b513676d4d6cd40c036b932ff20546e8013a3f4ea971d4d8a22f45d63"
     }
   ],
-  "totalBytes": 11582843
+  "totalBytes": 11583549
 }

@@ -28,3 +28,57 @@ test('compiled UI clears old word choices and notebook on account switch while r
     app.w.__changeUser(null);await app.wait(()=>app.has('Guest notebook'));assert.equal(JSON.parse(app.w.localStorage.getItem('catalyst_offline_owner_v1')).enabled,false);assert.deepEqual(app.errors,[]);
   }finally{app.dom.window.close();}
 });
+
+test('cancelled word refresh returns to verified saved readiness and ignores the late download',async()=>{
+  const app=await mount({indexedDB:new IDBFactory()});let release;
+  try{
+    app.click('Study offline');await app.wait(()=>app.has('Your account and words'));
+    app.click('Prepare this account for offline study');await app.wait(()=>app.has('3/3 word sources refreshed'));
+    const before=app.snapshot(),rpc=app.w.__mockDb.rpc;
+    app.w.__mockDb.rpc=async(...args)=>{if(args[0]==='kg_chart_u3_my_access_snapshot')await new Promise(resolve=>{release=resolve;});return rpc(...args);};
+    app.click('Refresh offline account and words');await app.wait(()=>release&&app.has('Downloading…'));
+    app.click('Cancel word download');await app.wait(()=>app.has('Download cancelled.'));
+    await app.wait(()=>!app.has('Downloading…'));
+    assert.ok(app.has('3 words · saved'));
+    app.w.__mockDb.rpc=rpc;release();await new Promise(resolve=>setTimeout(resolve,30));
+    assert.ok(app.has('Download cancelled.'));assert.equal(app.has('Downloading…'),false);
+    for(const [key,value] of Object.entries(before).filter(([key])=>key.startsWith('catalyst_notebook_')||key.startsWith('catalyst_review_')))assert.equal(app.w.localStorage.getItem(key),value);
+    assert.deepEqual(app.errors,[]);
+  }finally{release?.();app.dom.window.close();}
+});
+
+test('missing saved word snapshots withdraw old counts after a storage recheck',async()=>{
+  const indexedDB=new IDBFactory(),app=await mount({indexedDB});
+  try{
+    app.click('Study offline');await app.wait(()=>app.has('Your account and words'));
+    app.click('Prepare this account for offline study');await app.wait(()=>app.has('3/3 word sources refreshed'));
+    await app.wait(()=>app.has('3 words · saved'));
+    await new Promise((resolve,reject)=>{const request=indexedDB.open('catalyst_study_snapshots_v1');request.onsuccess=()=>{const db=request.result,tx=db.transaction('snapshots','readwrite');tx.objectStore('snapshots').clear();tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);});
+    app.w.dispatchEvent(new app.w.StorageEvent('storage',{key:null}));
+    await app.wait(()=>!app.has('3 words · saved'));
+    const section=[...app.w.document.querySelectorAll('section')].find(node=>node.querySelector('h3')?.textContent==='Your account and words');
+    await app.wait(()=>[...section.querySelectorAll('.recovery-row')].every(row=>row.textContent.includes('Not saved for offline study')));
+    assert.deepEqual(app.errors,[]);
+  }finally{app.dom.window.close();}
+});
+
+test('refresh failure distinguishes retained saved words from a locked source',async()=>{
+  const app=await mount({indexedDB:new IDBFactory()});
+  try{
+    app.click('Study offline');await app.wait(()=>app.has('Your account and words'));
+    app.click('Prepare this account for offline study');await app.wait(()=>app.has('3/3 word sources refreshed'));
+    app.w.__qa.progressError=true;
+    app.click('Refresh offline account and words');await app.wait(()=>app.has('2/3 word sources refreshed'));
+    const row=()=>[...app.w.document.querySelectorAll('.recovery-row')].find(node=>node.textContent.includes('learned nouns for patterns'));
+    await app.wait(()=>row().textContent.includes('3 words · saved'));
+    assert.ok(row().textContent.includes('Last refresh failed:'));
+    app.w.__qa.progressError=false;app.w.__qa.allowed=false;
+    app.click('Refresh offline account and words');await app.wait(()=>app.has('1/3 word sources refreshed'));
+    await app.wait(()=>row().textContent.includes('Saved words are locked'));
+    assert.equal(row().textContent.includes('3 words · saved'),false);
+    app.w.__qa.allowed=true;
+    app.click('Refresh offline account and words');await app.wait(()=>app.has('3/3 word sources refreshed'));
+    await app.wait(()=>row().textContent.includes('3 words · saved'));
+    assert.equal(row().textContent.includes('Last refresh failed:'),false);assert.deepEqual(app.errors,[]);
+  }finally{app.dom.window.close();}
+});
