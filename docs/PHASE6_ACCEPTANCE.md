@@ -64,6 +64,19 @@ extend token expiry, enable paid generation or change production source records
 to make a check pass. Fresh synthetic profiles can be used for repeatable tests;
 the owner's existing browser/PWA is always treated as persistent learner data.
 
+## Phase 6F recovery checkpoint — 2026-11-27
+
+Following merged PR #27, [recovery round-trip testing](PHASE6F_RECOVERY_ROUNDTRIP.md)
+reproduced and corrected repeated backup wrapping and loss of the prior journal
+when retaining it failed. Release `1da0f45bc1eeb72c2d73`; 136 tests pass.
+
+C9 has additional automated and synthetic Chromium evidence: cancel/merge,
+export/re-import with no added copies, original/note preservation after reload,
+account-switch rejection, and failure/retry retention. Browser exports remained
+2,444 bytes across the repeated fixture cycles. This does not satisfy native Files
+saving/import, fresh-profile F5, or the physical iPad F1–F3 checks. No additional
+cold-offline, Android, audio or live-auth result is claimed.
+
 ## Phase 6F preparation checkpoint — 2026-11-25
 
 See [the device guide and result form](PHASE6F_DEVICE_ACCEPTANCE.md). Live

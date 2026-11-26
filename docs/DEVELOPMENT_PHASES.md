@@ -77,7 +77,10 @@ status report for versions and readiness. A further backup reliability correctio
 adds distinct filenames, visible retry guidance and current-record validation on
 notebook export. Word-source readiness now rechecks after cancellation, withdraws
 missing snapshots, and separates refresh errors from retained or locked saved words.
-These corrections do not certify Files saving or physical device tests.
+Recovery round-trip acceptance also corrects repeated history wrapping and
+preserves the previous journal before replacement; see the
+[recovery checkpoint](PHASE6F_RECOVERY_ROUNDTRIP.md). These corrections do not
+certify Files saving or physical device tests.
 Physical acceptance remains pending. Synthetic browser results do not prove iPad
 Home Screen behavior, actual speech quality or real sign-in round trips.
 
