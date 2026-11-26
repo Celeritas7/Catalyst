@@ -16,7 +16,7 @@
     },
     {
       "file": "js/catalyst-activities.js",
-      "sha256": "ac1bb31a818f50a1acd4521f3fb0d23002ff90df23867b58c3e4e5c0fc12a4ba"
+      "sha256": "abf5eb8032ecb922104f1762558752b9a08f3778c53f106392ecc1c955b6ff4d"
     },
     {
       "file": "js/catalyst-patterns.js",
@@ -63,7 +63,7 @@
       "lessons": 24,
       "examples": 50,
       "sourceCheckedLessons": 0,
-      "guidedActivities": 3,
+      "guidedActivities": 4,
       "fixedPatterns": 3,
       "meanings": [
         {
@@ -269,6 +269,64 @@
         {
           "label": "NIU SEAsite: negative prefix and verb questions",
           "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_5/syntax.htm"
+        }
+      ]
+    },
+    {
+      "id": "my-wh-questions",
+      "language": "my",
+      "concept": "wh_question",
+      "content": {
+        "version": 1,
+        "language": "my",
+        "script": "Myanmar",
+        "reviewStatus": "draft",
+        "register": {
+          "en": "Plain spoken questions in a familiar planning conversation; formal and polite address variants are outside this activity.",
+          "mr": "ओळखीच्या व्यक्तीशी बेत ठरवताना विचारण्याचे साधे बोलचालीतील प्रश्न; औपचारिक आणि आदरार्थी संबोधनाचे पर्याय या सरावात नाहीत."
+        },
+        "sense": {
+          "en": "Ask for a food choice or a planned destination, then contrast those information questions with a yes/no coffee offer.",
+          "mr": "खाण्याची निवड किंवा जाण्याचा बेत असलेले ठिकाण विचारा; नंतर या माहिती विचारणाऱ्या प्रश्नांची कॉफीच्या हो/नाही प्रश्नाशी तुलना करा."
+        },
+        "provenance": {
+          "en": "Both information questions and the coffee contrast reuse the bundled lesson pack. Scenarios and bilingual guidance are authored drafts informed by the linked grammar references.",
+          "mr": "दोन्ही माहिती विचारणारे प्रश्न आणि कॉफीच्या प्रश्नाशी तुलना अॅपमधील धड्यांवर आधारित आहे. प्रसंग आणि दोन्ही भाषांतील मार्गदर्शन हे दिलेल्या व्याकरण संदर्भांच्या आधारे तयार केलेले मसुदे आहेत."
+        },
+        "sourceRevision": "ab4a915cd63d4cfdc6454e3577e2d9ad1b28e09e",
+        "exampleRefs": [
+          {
+            "conceptId": "wh_question",
+            "language": "my",
+            "index": 1,
+            "text": "ဘာ စားမလဲ။"
+          },
+          {
+            "conceptId": "wh_question",
+            "language": "my",
+            "index": 2,
+            "text": "ဘယ်ကို သွားမလဲ။"
+          },
+          {
+            "conceptId": "yes_no_ka",
+            "language": "my",
+            "index": 2,
+            "text": "ကော်ဖီ သောက်မလား။"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Bundled what/where and yes/no examples (draft, pinned source)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/ab4a915cd63d4cfdc6454e3577e2d9ad1b28e09e/data/grammar.yaml"
+        },
+        {
+          "label": "NIU SEAsite: information questions and future forms",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_6/syntax.htm"
+        },
+        {
+          "label": "NIU SEAsite: place questions and at/from/to markers",
+          "url": "https://seasite.niu.edu/Burmese/Beginning/Blesson_10/syntax.htm"
         }
       ]
     },

@@ -110,6 +110,13 @@ Its contexts, register, pinned references and bilingual guidance remain drafts.
 The next bounded expansion is sourced Burmese what/where questions; physical 6F
 acceptance and native-speaker review remain pending.
 
+[Phase 6K](PHASE6K_BURMESE_INFORMATION_QUESTIONS.md) adds guided Burmese
+what/where questions about a food choice and a planned destination, with a
+yes/no contrast. Four Burmese activities are now available. Existing core
+examples, meanings and older activities remain unchanged; all new guidance is
+draft content. Next is a sourced action-location/destination contrast using
+`မှာ` and `ကို`; linguistic review and physical acceptance remain separate.
+
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.

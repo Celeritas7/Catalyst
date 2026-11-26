@@ -14,7 +14,7 @@ for(const p of api.pilots){
  assert(p.sources.length);
 }
 assert.equal(new Set(api.pilots.map(api.key)).size,api.pilots.length);
-assert.equal(api.pilots.filter(p=>p.language==='my').length,3);
+assert.equal(api.pilots.filter(p=>p.language==='my').length,4);
 assert.equal(api.pilots.filter(p=>p.language==='zh').length,0);
 assert.equal(api.pilots.find(p=>p.language==='ja').build.orders.length,2);
 assert(api.pilots.find(p=>p.language==='ja').deeper.en.includes('verb-past'));
@@ -49,3 +49,16 @@ assert.equal(questions.content.language,'my');assert.equal(questions.content.scr
 assert.match(questions.notice.en,/not the negative prefix/);
 assert.match(questions.content.register.en,/familiar conversation/);
 console.log('Validated yes/no offer, statement reply and noun-question context.');
+
+const information=api.pilots.find(p=>p.id==='my-wh-questions');
+assert.equal(information.concept,'wh_question');
+assert.equal(api.assemble(information.build,[0,1]),'ဘာ စားမလဲ။');
+assert.equal(information.example,api.assemble(information.build,information.build.orders[0]));
+assert.equal(information.choices[0].options[information.choices[0].accepted[0]],'ဘာ စားမလဲ။');
+assert.equal(information.choices[1].options[information.choices[1].accepted[0]],'ဘယ်ကို သွားမလဲ။');
+assert.equal(information.choices[2].options[information.choices[2].accepted[0]],'ကော်ဖီ သောက်မလား။');
+assert.equal(information.content.reviewStatus,'draft');
+assert.match(information.deeper.en,/destination, not where someone currently lives/);
+assert.match(information.notice.en,/omitted “you”/);
+assert.equal(information.content.exampleRefs.length,3);
+console.log('Validated food/destination information questions and the separate yes/no contrast.');
