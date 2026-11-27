@@ -64,6 +64,10 @@
     'I want to drink water.':'मला पाणी प्यायचं आहे.',
     'I want to go to Japan.':'मला जपानला जायचं आहे.',
     'I can swim.':'मला पोहता येतं.',
+    'I can hear birds outside.':'बाहेरून पक्ष्यांचा आवाज ऐकू येतो.',
+    "It is noisy around me, so I cannot hear the teacher's voice.":'आजूबाजूला गोंगाट असल्यामुळे शिक्षकांचा आवाज ऐकू येत नाही.',
+    'You can listen to lesson recordings on this website.':'या संकेतस्थळावर धड्यांची ध्वनिमुद्रणे ऐकता येतात.',
+    'Without the password, I cannot listen to the recording.':'पासवर्ड नसल्यामुळे ध्वनिमुद्रण ऐकता येत नाही.',
     "I can't come tomorrow.":'मी उद्या येऊ शकणार नाही.',
     'I can swim. (I know how)':'मला पोहता येतं.',
     "It's raining, so I'm not going.":'पाऊस पडतोय म्हणून मी जाणार नाही.',
@@ -113,6 +117,10 @@
   // Optional guidance stays separate from the natural meaning and quiz options.
   // These are draft notes for specific glosses, not a full grammar translation.
   const mrNotes = {
+    'I can hear birds outside.':'येथे पक्ष्यांचा आवाज कानावर पडतो आहे; ध्वनिमुद्रण ऐकण्याची सोय आहे असा अर्थ नाही.',
+    "It is noisy around me, so I cannot hear the teacher's voice.":'गोंगाटामुळे आवाज ऐकू येत नाही. येथे परवानगी किंवा ध्वनिमुद्रण उपलब्ध असण्याबद्दल बोललेले नाही.',
+    'You can listen to lesson recordings on this website.':'उदाहरणातील संकेतस्थळावर ध्वनिमुद्रणे उपलब्ध आहेत; ती सध्या वाजत आहेत असे सांगितलेले नाही.',
+    'Without the password, I cannot listen to the recording.':'ध्वनिमुद्रण उघडण्यासाठी पासवर्ड आवश्यक आहे. आवाज कमी असल्यामुळे ऐकू येत नाही असा अर्थ येथे नाही.',
     'I eat an apple. (male; a woman says खाते)':"येथे बोलणारा पुरुष आहे: 'खातो'. स्त्री बोलताना 'खाते' म्हणते.",
     'the book bought yesterday':"पुस्तक कोणी विकत घेतलं हे या वाक्यांशात सांगितलेलं नाही.",
     'the book that I bought yesterday':"पुस्तक विकत घेणारी व्यक्ती 'मी' आहे; हा तपशील अर्थात राखला आहे.",
