@@ -27,6 +27,14 @@ select:focus-visible{outline:3px solid #a995f5;outline-offset:3px}
 .word-badge.unrated { background:#f6f5fa; }
 
 /* Notebook transfer controls wrap comfortably on phones and tablets. */
+.activity-panel :is(button,summary,a,input,textarea):focus-visible,
+.activity-library button:focus-visible,
+.activity-panel :is(h2,h3)[tabindex="-1"]:focus{outline:3px solid #533795;outline-offset:4px}
+.activity-panel :is(button,summary,a,input,textarea,h2,h3){scroll-margin-block:12rem 8rem}
+.activity-steps button{font-size:.875rem;min-width:5.5rem;padding:.5rem;overflow-wrap:anywhere}
+.activity-library .lesson-link strong{font-size:1rem}
+.activity-library .lesson-link small{font-size:.875rem;color:#625777}
+@media(forced-colors:active){.activity-panel :focus-visible,.activity-panel :is(h2,h3):focus,.activity-library button:focus-visible{outline-color:Highlight}}
 .notebook-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .notebook-transfer{margin-top:18px;padding:18px;border:1px solid #ded4ef;border-radius:16px;background:#faf8fe;font-size:14px;line-height:1.65;overflow-wrap:anywhere}
 .notebook-transfer textarea,.notebook-import input{font-size:16px}
