@@ -88,6 +88,7 @@
     if(record.type==='audio')return 'catalyst_audio_prefs';
     if(record.type==='notebook')return root.CatalystNotebook.key(owner,record.language);
     if(record.type==='review')return root.CatalystReview.storageKey(owner,record.language);
+    if(record.type==='activity')return root.CatalystActivityProgress.key(owner,record.language);
     if(record.type==='draft')return draftKey(owner,record.language);
     throw Error('Unsupported recovery record.');
   }
@@ -104,7 +105,7 @@
       if(Object.keys(value).some(key=>!['version','copies'].includes(key))||value.copies.some(copy=>
         Object.keys(copy).some(key=>!['record','raw'].includes(key))||
         Object.keys(copy.record).some(key=>!['type','owner','language'].includes(key))||
-        !['notebook','review','draft','settings','audio','retained-copies','retained-journal'].includes(copy.record.type)||
+        !['notebook','review','draft','activity','settings','audio','retained-copies','retained-journal'].includes(copy.record.type)||
         !['current','guest','device'].includes(copy.record.owner)||
         (copy.record.language!==undefined&&!languages.includes(copy.record.language))))return null;
       return value.copies;
@@ -114,7 +115,7 @@
     if(!scope||scope==='loading')throw Error('Wait for the current account before exporting.');
     const records=[],damagedDraftCopies=[];
     const owners=scope==='guest'?['guest']:['current',...guest?['guest']:[]];
-    for(const owner of owners)for(const language of languages)for(const type of ['notebook','review','draft']){
+    for(const owner of owners)for(const language of languages)for(const type of ['notebook','review','draft','activity']){
       const descriptor={owner,language,type},key=recordKey(descriptor,scope);let raw=storage.getItem(key);
       if(type==='draft'&&draftSlots(storage,key).length){
         try{raw=JSON.stringify(readDrafts(storage,key));}
@@ -133,11 +134,11 @@
   function parseRecovery(raw,scope){
     if(typeof raw!=='string'||new TextEncoder().encode(raw).length>MAX_RECOVERY_BYTES)throw Error('Choose a Catalyst recovery file smaller than 25 MB.');
     const value=JSON.parse(raw.replace(/^\uFEFF/,''));
-    if(!object(value)||value.format!=='catalyst-recovery'||value.version!==1||!object(value.owner)||!['guest','account'].includes(value.owner.kind)||!Array.isArray(value.records)||value.records.length>32)throw Error('Unsupported Catalyst recovery file. Notebook-only exports still use Import / restore notebook.');
+    if(!object(value)||value.format!=='catalyst-recovery'||value.version!==1||!object(value.owner)||!['guest','account'].includes(value.owner.kind)||!Array.isArray(value.records)||value.records.length>42)throw Error('Unsupported Catalyst recovery file. Notebook-only exports still use Import / restore notebook.');
     if(value.owner.kind==='account'&&(scope==='guest'||scope!==value.owner.id))throw Error('Sign in to the same account that created this recovery file. Import never signs you in or transfers another account’s records.');
     const seen=new Set();
     for(const record of value.records){
-      if(!object(record)||typeof record.raw!=='string'||!['notebook','review','draft','settings','audio'].includes(record.type))throw Error('Invalid recovery record.');
+      if(!object(record)||typeof record.raw!=='string'||!['notebook','review','draft','activity','settings','audio'].includes(record.type))throw Error('Invalid recovery record.');
       if(['settings','audio'].includes(record.type)){if(record.owner!=='device'||record.language!==undefined)throw Error('Invalid device record.');}
       else if(!['guest','current'].includes(record.owner)||!languages.includes(record.language)||(record.owner==='current'&&value.owner.kind!=='account'))throw Error('Invalid recovery owner or language.');
       const key=recordKey(record,scope);if(seen.has(key))throw Error('Duplicate recovery records.');seen.add(key);
@@ -148,6 +149,7 @@
   function parsed(record,raw){
     if(record.type==='notebook')return root.CatalystNotebook.parse(raw);
     if(record.type==='review')return root.CatalystReview.parse(raw);
+    if(record.type==='activity')return root.CatalystActivityProgress.parse(raw);
     if(record.type==='draft')return parseDrafts(raw);
     if(record.type==='settings')return settings(raw);
     if(record.type==='audio'){const value=JSON.parse(raw);if(!object(value))throw Error('Invalid audio preferences.');return value;}
@@ -155,7 +157,7 @@
   function planRecovery(storage,scope,backup){
     const originalCopies=storage.getItem(archiveKey(scope)),archive=parseCopies(originalCopies),previousJournal=storage.getItem(journalKey(scope));
     const copies=[...archive.copies],seen=new Set(copies.map(copy=>copyIdentity(copy.record,copy.raw)));
-    const summary={records:backup.records.length,changed:0,notebooks:0,sentences:0,notes:0,reviews:0,drafts:0,copies:0,damaged:0};
+    const summary={records:backup.records.length,changed:0,notebooks:0,sentences:0,notes:0,reviews:0,drafts:0,activities:0,copies:0,damaged:0};
     const changes=[],snapshots=[],draftInventories=[];
     const retain=(record,raw)=>{const descriptor=copyDescriptor(record);const identity=copyIdentity(descriptor,raw);if(!seen.has(identity)){copies.push({record:descriptor,raw});seen.add(identity);summary.copies++;}};
     for(const record of backup.records){
@@ -172,11 +174,13 @@
         retain(record,record.raw);
         if(record.type==='review'){
           next={version:1,items:{...incoming.items,...current.items},states:{...incoming.states,...current.states}};
-        }else if(record.type==='draft')next={version:1,drafts:{...incoming.drafts,...current.drafts}};
+        }else if(record.type==='activity')next={version:1,items:{...incoming.items,...current.items}};
+        else if(record.type==='draft')next={version:1,drafts:{...incoming.drafts,...current.drafts}};
         else if(record.type==='settings')next={...incoming,...current,learned:[...new Set([...(current.learned||[]),...(incoming.learned||[])])]};
       }
       if(record.type==='review')summary.reviews+=Object.keys(next.items).length;
       if(record.type==='draft')summary.drafts+=Object.keys(next.drafts).length;
+      if(record.type==='activity')summary.activities+=Object.keys(next.items).length;
       const after=JSON.stringify(next);if(before!==after){changes.push({key,before,after});summary.changed++;}
     }
     // Existing history must not wrap itself on each export/import cycle.

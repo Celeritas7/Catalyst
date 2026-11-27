@@ -591,37 +591,57 @@
       const language=window.CatalystMeanings.language(settings);
       return <><p lang={language}>{window.CatalystActivities.text(value,language)||'Translation not available.'}</p>{language!=='en'&&settings.showEnglish&&value?.en&&<p lang="en" className="text-sm text-slate-500 mt-2">{value.en}</p>}</>;
     }
+    function useActivityProgress(scope,language) {
+      const api=window.CatalystActivityProgress,key=scope==='loading'?null:api.key(scope,language);
+      const read=()=>{try{return {data:key?api.parse(localStorage.getItem(key)):api.empty(),error:''};}catch(error){return {data:api.empty(),error:error.message};}};
+      const [state,setState]=useState(read);
+      const reload=()=>{const next=read();setState(previous=>next.error?{...previous,error:next.error}:next);};
+      useEffect(()=>{const sync=e=>{if(e.key===key)reload();};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);},[key]);
+      const current=()=>scope!=='loading'&&accountApi.getSnapshot().scope===scope;
+      const save=(id,patch,expected)=>{
+        try{
+          if(!current())throw Error('The study account changed. Reopen the activity before saving.');
+          const data=api.commit(localStorage,scope,language,id,patch,expected);setState({data,error:''});return data.items[id];
+        }catch(error){setState(previous=>({...previous,error:'Activity changes could not be saved. '+error.message}));return false;}
+      };
+      return {...state,save,current,notice:state.error&&<p className="review-notice" role="alert">{state.error} <button className="quiet-btn" onClick={reload}>Retry activity storage</button></p>};
+    }
     function ActivityLibrary({settings,update,conceptId}) {
       const api=window.CatalystActivities;
+      const {scope}=React.useContext(ReviewContext),progress=useActivityProgress(scope,settings.targetLanguage);
       const pilots=api.pilots.filter(p=>p.language===settings.targetLanguage&&(!conceptId||p.concept===conceptId));
       const [active,setActive]=useState(null);
       const pilot=pilots.find(p=>p.id===active);
       if(!pilots.length) return conceptId?null:<section className="study-panel"><h2 className="text-xl font-bold">Guided activities</h2><p className="mt-2 text-slate-500">Pilots are available for Burmese sentence order, negation, questions, location and destination, and Japanese topic transitions. Activities for your selected learning language are not available yet.</p></section>;
-      if(pilot) return <ActivityLesson key={`${pilot.id}-${settings.meaningLanguage}`} pilot={pilot} settings={settings} update={update} onClose={()=>setActive(null)}/>;
-      return <section className="study-panel w-full"><div className="eyebrow">NEW · GUIDED ACTIVITIES</div><h2 className="text-2xl font-bold mt-2">From noticing to using</h2><p className="text-sm text-slate-500 mt-2">Situation → Notice → Build → Choose → Use</p>{pilots.map(p=><button className="lesson-link mt-4" key={p.id} onClick={()=>setActive(p.id)}><span className="lesson-number">✦</span><span className="flex-1"><strong>{api.text(p.title,settings.meaningLanguage)}</strong><small>{api.text(p.summary,settings.meaningLanguage)} · {settings.activities?.[api.key(p)]?.completed?'Completed activity · revisit':settings.activities?.[api.key(p)]?'Resume activity':'Start activity'}</small></span><span>→</span></button>)}</section>;
+      if(pilot) return <>{progress.notice}<ActivityLesson key={`${pilot.id}-${settings.meaningLanguage}`} pilot={pilot} settings={settings} progress={progress} update={update} onClose={()=>setActive(null)}/></>;
+      return <section className="study-panel w-full"><div className="eyebrow">NEW · GUIDED ACTIVITIES</div><h2 className="text-2xl font-bold mt-2">From noticing to using</h2><p className="text-sm text-slate-500 mt-2">Situation → Notice → Build → Choose → Use</p>{progress.notice}<p className="text-sm mt-2">{scope==='loading'?'Checking the study account…':scope==='guest'?'Guest activity progress · this device only.':'Activity progress for the current study account · this device only.'}</p>{pilots.map(p=><button className="lesson-link mt-4" key={p.id} disabled={scope==='loading'} onClick={()=>setActive(p.id)}><span className="lesson-number">✦</span><span className="flex-1"><strong>{api.text(p.title,settings.meaningLanguage)}</strong><small>{api.text(p.summary,settings.meaningLanguage)} · {progress.data.items[p.id]?.completed?'Completed activity · revisit':progress.data.items[p.id]?'Resume activity':'Start activity'}</small></span><span>→</span></button>)}</section>;
     }
-    function ActivityLesson({pilot,settings,update,onClose}) {
-      const api=window.CatalystActivities, recordKey=api.key(pilot), saved=settings.activities?.[recordKey]||{};
+    function ActivityLesson({pilot,settings,update,onClose,progress}) {
+      const api=window.CatalystActivities, recordKey=api.key(pilot);
+      const [baseline,setBaseline]=useState(()=>progress.data.items[pilot.id]||null);
+      const saved=baseline||{},savedWriting=saved.writing?.[settings.meaningLanguage]||{};
       const review=React.useContext(ReviewContext),attempted=React.useRef(new Set()),activityAssisted=React.useRef(new Set());
       const track=(kind,index,correct,response,assisted=false)=>{const task=activityTask(pilot,kind,index,settings.meaningLanguage),ok=review.record(task,{correct,response,assisted:assisted||activityAssisted.current.has(task.id),retry:attempted.current.has(task.id)});if(ok)attempted.current.add(task.id);return ok;};
       const [step,setStep]=useState(Number.isInteger(saved.step)?Math.max(0,Math.min(4,saved.step)):0);
       const [order,setOrder]=useState([]),[buildFeedback,setBuildFeedback]=useState(null),[hint,setHint]=useState(false);
       const [answers,setAnswers]=useState({}),[revealed,setRevealed]=useState({});
-      const [draft,setDraft]=useState(typeof saved.draft==='string'?saved.draft:'');
-      const [notebookMeaning,setNotebookMeaning]=useState('');
+      const [draft,setDraft]=useState(savedWriting.draft||'');
+      const [notebookMeaning,setNotebookMeaning]=useState(savedWriting.meaning||'');
+      const [legacyPreview,setLegacyPreview]=useState(null);
       const [notebookStatus,setNotebookStatus]=useState('');
       const [notebookSaved,setNotebookSaved]=useState(null);
       const [checked,setChecked]=useState(false);
       const [saveStatus,setSaveStatus]=useState('');
       const writing=useWritingDraft({scope:review.scope,language:settings.targetLanguage,type:'activity',context:pilot.id+':'+settings.meaningLanguage,fields:{draft,meaning:notebookMeaning},empty:{draft:'',meaning:''},restore:value=>{setDraft(value.draft||'');setNotebookMeaning(value.meaning||'');setStep(4);setNotebookSaved(null);}});
       const steps=['Situation','Notice','Build','Choose','Use'];
-      const persist=patch=>update(s=>({activities:{...s.activities,[recordKey]:{...s.activities?.[recordKey],...patch,updatedAt:new Date().toISOString()}}}));
+      const persist=patch=>{const next=progress.save(pilot.id,patch,baseline);if(next)setBaseline(next);return !!next;};
       const move=n=>{setStep(n);persist({step:n});};
       const say=value=><ActivityText value={value} settings={settings}/>;
       const bank=useMemo(()=>shuffle(pilot.build.chunks.map((_,i)=>i)),[pilot.id]);
       const language=LANG[pilot.language];
       const saveToNotebook=()=>{
         try{
+          if(!progress.current())throw Error('The study account changed.');
           let added=false;
           window.CatalystNotebook.commit(localStorage,review.scope,settings.targetLanguage,data=>{
             const result=window.CatalystNotebook.addFromActivity(data,{pilot,targetLanguage:settings.targetLanguage,
@@ -633,15 +653,22 @@
           setNotebookStatus(added?'Saved to My Learning → My sentence notebook on this device.':'This writing is already in your notebook. No duplicate was added.');
         }catch(e){setNotebookStatus('Could not save to the notebook. Your writing is still here; copy it before leaving and try again.');}
       };
-      const saveDraft=()=>{
-        if(persist({draft,step})&&writing.write({draft,meaning:notebookMeaning},false))setSaveStatus('Draft saved on this device.');
-        else setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');
+      const saveActivity=complete=>{
+        const fields={draft,meaning:notebookMeaning};
+        if(progress.current()&&writing.write(fields)&&persist({step:complete?4:step,...complete?{completed:true}:{},writing:{[settings.meaningLanguage]:fields}})){
+          writing.markSaved();setSaveStatus(complete?'Activity completed and draft saved. This is self-reviewed practice, not a mastery score.':'Draft saved on this device.');
+        }else setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');
       };
-      const finish=()=>{
-        if(persist({draft,step:4,completed:true})&&writing.write({draft,meaning:notebookMeaning},false))setSaveStatus('Activity completed and draft saved. This is self-reviewed practice, not a mastery score.');
-        else setSaveStatus('Could not save. Keep this page open and copy your draft before leaving.');
+      const reviewLegacy=()=>{try{setLegacyPreview(window.CatalystActivityProgress.legacyWriting(localStorage.getItem(SETTINGS_KEY),recordKey));}catch(error){setSaveStatus(error.message);}};
+      const copyLegacy=()=>{
+        try{
+          if(!progress.current()||draft||notebookMeaning)return;
+          const current=window.CatalystActivityProgress.legacyWriting(localStorage.getItem(SETTINGS_KEY),recordKey);
+          if(!legacyPreview||current!==legacyPreview)throw Error('Older writing changed. Review it again before copying.');
+          if(writing.write({draft:current,meaning:''})){setDraft(current);setNotebookMeaning('');setChecked(false);setLegacyPreview(null);setSaveStatus('Older writing copied into this draft. Save it when ready; its original is retained.');}
+        }catch(error){setSaveStatus(error.message);}
       };
-      return <section className="study-panel activity-panel"><div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(((draft!==(saved.draft||'')&&draft!==notebookSaved?.draft)||(notebookMeaning&&notebookMeaning!==notebookSaved?.meaning))&&!window.confirm('Leave without saving your writing?'))return;onClose();}}>Close activity</button></div>
+      return <section className="study-panel activity-panel"><div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(((draft!==(savedWriting.draft||'')&&draft!==notebookSaved?.draft)||(notebookMeaning!==(savedWriting.meaning||'')&&notebookMeaning!==notebookSaved?.meaning))&&!window.confirm('Leave without saving your writing?'))return;onClose();}}>Close activity</button></div>
         <p className="text-xs text-amber-800 mt-3">Draft content · examples and Marathi guidance await native-speaker review.</p>
         <nav className="activity-steps" aria-label="Activity steps">{steps.map((name,i)=><button key={name} aria-current={step===i?'step':undefined} onClick={()=>move(i)}><span>{i+1}</span>{name}</button>)}</nav>
         <EnglishOption settings={settings} update={update}/>
@@ -652,6 +679,7 @@
         {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{if(track('choice',i,api.choiceCorrect(q,j),option)){setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>{if(!revealed[i]){activityAssisted.current.add(activityTask(pilot,'choice',i,settings.meaningLanguage).id);if(!track('choice',i,null,null,true))return;}setRevealed({...revealed,[i]:!revealed[i]});}} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
         {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft:e.target.value,meaning:notebookMeaning});setDraft(e.target.value);setChecked(false);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div>
           {writing.panel}
+          {typeof settings.activities?.[recordKey]?.draft==='string'&&settings.activities[recordKey].draft.trim()&&<div className="draft-recovery"><p>Older device writing has no recorded account. Review it and copy only your own writing.</p><button className="quiet-btn" onClick={reviewLegacy}>Review older writing</button>{legacyPreview!==null&&<><p className="whitespace-pre-wrap mt-3" lang={pilot.language}>{legacyPreview}</p><button className="quiet-btn" disabled={!!draft||!!notebookMeaning||review.scope==='loading'} onClick={copyLegacy}>Copy this writing into my draft</button><p className="text-sm mt-2">Keep or save any current writing first. Older completion marks are not copied.</p></>}</div>}
           <div className="notebook-transfer">
             <h4 className="font-bold">Keep this writing in your notebook</h4>
             <p className="mt-2">Save this attempt, then add correction notes later in My Learning. Saving does not grade or complete the activity.</p>
@@ -663,7 +691,7 @@
               {notebookSaved?.draft===draft&&notebookSaved?.meaning===notebookMeaning&&<button className="quiet-btn" onClick={()=>go('learning')}>Open notebook</button>}
             </div><p className="mt-3" role="status">{notebookStatus}</p>
           </div>
-          <div className="feedback">{say(pilot.checklist)}</div><label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label><div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" onClick={saveDraft}>Save draft</button><button className="primary-btn" disabled={!checked||!draft.trim()} onClick={finish}>Complete activity</button></div><p role="status" className="text-sm mt-3">{saveStatus}</p></>}
+          <div className="feedback">{say(pilot.checklist)}</div><label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label><div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" disabled={review.scope==='loading'} onClick={()=>saveActivity(false)}>Save draft</button><button className="primary-btn" disabled={review.scope==='loading'||!checked||!draft.trim()} onClick={()=>saveActivity(true)}>Complete activity</button></div><p role="status" className="text-sm mt-3">{saveStatus}</p></>}
         </div><div className="flex justify-between gap-3 mt-6"><button className="quiet-btn" disabled={step===0} onClick={()=>move(step-1)}>← Previous step</button>{step<4&&<button className="primary-btn" onClick={()=>move(step+1)}>Next: {steps[step+1]} →</button>}</div>
         <details className="activity-detail"><summary>Content sources and review status</summary>{pilot.content?<><p className="mt-3">{LANG[pilot.content.language].name} · {pilot.content.script} script · Draft; awaiting native-speaker review.</p><h4 className="font-bold mt-3">Usage and context</h4>{say(pilot.content.register)}{say(pilot.content.sense)}<h4 className="font-bold mt-3">Where this activity comes from</h4>{say(pilot.content.provenance)}</>:<p>Japanese guidance is informed by the linked reference. Burmese sentences come from the existing lesson pack. Activities, translations and added examples are drafts, not native-speaker-approved material.</p>}{pilot.sources.map(source=><a className="block underline mt-2" key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>)}</details>
       </section>;

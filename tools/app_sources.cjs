@@ -7,6 +7,7 @@ module.exports = [
   'js/catalyst-meanings.js',
   'js/catalyst-preferences.js',
   'js/catalyst-activities.js',
+  'js/catalyst-activity-progress.js',
   'js/catalyst-coverage.js',
   'js/catalyst-review.js',
   'js/catalyst-notebook.js',

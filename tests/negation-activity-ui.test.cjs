@@ -64,7 +64,7 @@ test('activity notebook failure retains writing, retry and repeated save preserv
     const data=JSON.parse(app.w.localStorage.getItem(notebookKey));assert.equal(data.entries.length,2);assert.deepEqual(data.entries[1],old);
     assert.equal(data.entries[0].activityId,'my-negation');assert.equal(data.entries[0].lesson,'negation');assert.equal(data.entries[0].original,'မသွားဘူး။');
     app.click('Save to notebook');await app.wait(()=>app.has('No duplicate was added.'));assert.equal(JSON.parse(app.w.localStorage.getItem(notebookKey)).entries.length,2);
-    assert.ok(!JSON.parse(app.w.localStorage.getItem('catalyst_settings')).activities['my:my-negation'].completed);
+    assert.ok(!JSON.parse(app.w.localStorage.getItem('catalyst_activity_v1:u1:my')).items['my-negation'].completed);
     app.click('Save draft');await app.wait(()=>app.has('Draft saved on this device.'));
     const storage=app.snapshot();app.dom.window.close();app=await mount({storage});await open(app);
     assert.equal(app.w.document.querySelector('#draft-my-negation').value,'မသွားဘူး။');

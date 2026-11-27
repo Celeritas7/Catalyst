@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 function fixture(initial={}){
   const context={TextEncoder,Date,crypto};vm.createContext(context);
-  for(const file of ['preferences','review','notebook','safety'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/catalyst-'+file+'.js'),'utf8'),context);
+  for(const file of ['preferences','review','notebook','activity-progress','safety'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/catalyst-'+file+'.js'),'utf8'),context);
   const values=new Map(Object.entries(initial));let count=0,failAt=Infinity;
   const storage={get length(){return values.size;},key:i=>[...values.keys()][i],getItem:key=>values.has(key)?values.get(key):null,removeItem:key=>values.delete(key),setItem:(key,value)=>{if(++count===failAt)throw new DOMException('Full','QuotaExceededError');values.set(key,value);}};
   return {s:context.CatalystSafety,n:context.CatalystNotebook,r:context.CatalystReview,values,storage,failNext:n=>{failAt=count+n;}};

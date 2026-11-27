@@ -124,6 +124,16 @@ The new activity reuses three pinned examples with draft bilingual guidance;
 all five earlier activity definitions and all 218 core examples remain intact.
 Native-speaker review and physical Phase 6F acceptance remain pending.
 
+[Phase 6M](PHASE6M_GUIDED_ACTIVITY_OWNERSHIP.md) separates new guided-activity
+steps, saved writing and completion by study account/guest and target language.
+Marathi/English writing contexts retain their own intended meanings. Older
+device-wide writing stays intact and can be reviewed and explicitly copied;
+its completion marks are not silently attributed to the current account.
+Recovery exports include the new records. A regression reproduced the prior
+account-switch problem; automated and synthetic desktop-browser checks pass.
+Next bounded development step: guided-activity keyboard and screen-reader
+interaction review. Physical iPad acceptance and linguistic review stay open.
+
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
 Acceptance: downloaded lessons reopen without network; updates preserve progress; missing audio and unreviewed content are clearly identified; validate phone/tablet layouts, fonts, keyboard navigation and assistive labels.
