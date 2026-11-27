@@ -30,7 +30,7 @@ Acceptance: changing explanation language preserves target-language progress; a 
 
 ## 3. Complete lesson activities
 
-Initial Phase 3 checkpoint: two guided pilots implemented, Burmese sentence order and Japanese topic transitions. Later Phases 6H–6L add Burmese negation, yes/no questions, what/where questions and location/destination. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
+Initial Phase 3 checkpoint: two guided pilots implemented, Burmese sentence order and Japanese topic transitions. Later Phases 6H–6L add Burmese negation, yes/no questions, what/where questions and location/destination; Phase 6P adds Japanese hearing. Available in Today/Explore for the selected target language, with Marathi/English guidance, chunk building, contextual choices, hints, reveals and locally saved self-reviewed writing. See [content provenance and limits](PHASE3_CONTENT.md). All examples and new translations await native-speaker review; other lessons retain the existing flow.
 
 Situation → Notice → Build → Choose → Use, with optional deeper explanations and comparisons. Pilot standalone ちなみに versus ところで plus one sentence-building lesson. Distinguish standalone ところで from verb-past + ところで. Support multiple valid answers and language-specific sentence chunking.
 
@@ -147,12 +147,21 @@ meaning, limits, example needs, Marathi support and unresolved corrections.
 This is a bounded source-review checkpoint, not a full-archive import or a new
 app lesson. Private originals and personal examples remain outside the repository.
 
-Next bounded content step, Phase 6P: one draft Japanese hearing activity
-contrasting 聞こえる with 聞ける, with contextual examples, Marathi/English
-explanations and precise form guidance. Review the existing `ability` summary
-as part of that pilot. Seeing follows separately; conditional and other complex
-tables need further source correction before implementation. See the Phase 6O
-implementation contract for scope, checks and remaining review gates.
+[Phase 6P](PHASE6P_JAPANESE_HEARING.md) implements the draft Japanese hearing
+activity contrasting 聞こえる with 聞ける. It adds four explicit situations,
+Marathi/English explanations, separate readings and worked positive/negative
+forms. The bundled `ability` summary and notes now distinguish potential forms
+from audibility. Seven guided activities and 222 bundled examples are available;
+all added language content remains draft. Older online lesson content keeps
+its existing precedence, while the new guided activity is available in either
+mode. No production database content was changed.
+
+Next bounded content step, Phase 6Q: Japanese seeing, 見える versus 見られる,
+with newly authored visibility/viewing-opportunity contexts. Keep passive and
+honorific senses out of the first practice batch while explaining their
+existence. Conditional and other complex tables need further source correction
+before implementation. Physical 6F acceptance and independent language review
+remain open.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 

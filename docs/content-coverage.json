@@ -4,19 +4,19 @@
   "sources": [
     {
       "file": "data/grammar.yaml",
-      "sha256": "ca7aa3d3bafb191175788449914349ef6da0fd40db8e5ea7a0d72011dfb31f32"
+      "sha256": "f09b5e0bab40add07afb62b3c3f1cb24221a06983a6894144f143055b396b0d0"
     },
     {
       "file": "js/catalyst-data.js",
-      "sha256": "a29f2f57ef5d66852a945892c4379cfb9a54992a66d1e68794544b1be65f33e8"
+      "sha256": "4970310744cd354be8b21dbeffac78bd1d1dc0355867a0aa8ce0807451f56d77"
     },
     {
       "file": "js/catalyst-meanings.js",
-      "sha256": "a6a1a790baa70f09c5bf2624790d33ae17b673745826b9fc956ef371278b70d5"
+      "sha256": "ecf523e8db1ac600c79b3180368b47167ae1fa26ffd14971b2675fcfaa5007dd"
     },
     {
       "file": "js/catalyst-activities.js",
-      "sha256": "53bc5a6324887af358011f7ece8ed6bba57d62abddb5652f4886550f9dbf7095"
+      "sha256": "e8e31418dae5c1582c1b9a0906f50d6915aa75ee9f57c453ee48902dbd763004"
     },
     {
       "file": "js/catalyst-patterns.js",
@@ -39,20 +39,20 @@
     {
       "language": "ja",
       "lessons": 24,
-      "examples": 48,
+      "examples": 52,
       "sourceCheckedLessons": 0,
-      "guidedActivities": 1,
+      "guidedActivities": 2,
       "fixedPatterns": 0,
       "meanings": [
         {
           "language": "mr",
-          "available": 48,
+          "available": 52,
           "missing": 0,
           "gaps": []
         },
         {
           "language": "en",
-          "available": 48,
+          "available": 52,
           "missing": 0,
           "gaps": []
         }
@@ -393,6 +393,74 @@
         {
           "label": "Bunpro: ところで and contrast with ちなみに",
           "url": "https://bunpro.jp/grammar_points/ところで"
+        }
+      ]
+    },
+    {
+      "id": "ja-hearing-possibility",
+      "language": "ja",
+      "concept": "ability",
+      "content": {
+        "version": 1,
+        "language": "ja",
+        "script": "Japanese",
+        "reviewStatus": "draft",
+        "register": {
+          "en": "Polite ます/ません statements; plain dictionary forms appear only to explain formation.",
+          "mr": "नम्र ます/ません विधानांचा सराव; साधी शब्दकोशातील रूपे फक्त रूपांतर समजावण्यासाठी आहेत."
+        },
+        "sense": {
+          "en": "Audibility versus access to listening in four explicit fictional situations.",
+          "mr": "चार स्पष्ट काल्पनिक प्रसंगांत आवाज ऐकू येणे आणि ऐकण्यासाठी उपलब्धता असणे यातील फरक."
+        },
+        "provenance": {
+          "en": "Newly written examples and draft Marathi/English explanations. The linked Japanese grammar references support the hearing distinction and the worked forms.",
+          "mr": "नव्याने लिहिलेली उदाहरणे आणि मराठी/इंग्रजी स्पष्टीकरणांचे मसुदे. ऐकण्यातील हा फरक आणि दाखवलेली रूपे यांसाठी खाली दिलेले जपानी व्याकरण संदर्भ वापरले आहेत."
+        },
+        "sourceRevision": "c49e669f904cc2c163701f81b9ea6bdf7990453a",
+        "exampleRefs": [
+          {
+            "conceptId": "ability",
+            "language": "ja",
+            "index": 3,
+            "text": "外から鳥の声が聞こえます。"
+          },
+          {
+            "conceptId": "ability",
+            "language": "ja",
+            "index": 4,
+            "text": "周りがうるさくて、先生の声が聞こえません。"
+          },
+          {
+            "conceptId": "ability",
+            "language": "ja",
+            "index": 5,
+            "text": "このサイトで授業の録音が聞けます。"
+          },
+          {
+            "conceptId": "ability",
+            "language": "ja",
+            "index": 6,
+            "text": "パスワードがないので、録音が聞けません。"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Authored hearing examples (draft, pinned source)",
+          "url": "https://github.com/Celeritas7/Catalyst/blob/c49e669f904cc2c163701f81b9ea6bdf7990453a/data/grammar.yaml"
+        },
+        {
+          "label": "Japan Foundation: potential forms and perception verbs",
+          "url": "https://www.kyozai.jpf.go.jp/kyozai/material/BTS00063/ja/render.do"
+        },
+        {
+          "label": "TUFS: potential-form formation",
+          "url": "https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/074.html"
+        },
+        {
+          "label": "TUFS: perception expressions",
+          "url": "https://www.coelang.tufs.ac.jp/mt/grammar/gmod/contents/card/048.html"
         }
       ]
     }

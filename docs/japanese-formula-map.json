@@ -32,22 +32,37 @@
       "concepts": [
         "ability"
       ],
-      "activities": [],
-      "status": "pilot_selected",
+      "activities": [
+        "ja-hearing-possibility"
+      ],
+      "status": "implemented_draft",
       "attachment": "聞く → 聞ける → 聞けます; 聞こえる → 聞こえます is a separate lexical verb. Use Nが in the first authored examples.",
       "meaning": "Audible sound versus the ability or opportunity to listen in a stated situation.",
       "limits": "Do not derive 聞こえる as a second conjugation of 聞く. Do not equate every occurrence of English 'can hear' with one form; do not teach volitional control as an absolute rule.",
       "examples": "Write new audibility and listening-access contexts, including one negative example for each. Source examples need editing and are not answer keys.",
       "marathi": "A contrast explanation exists; rewrite as ऐकू येणे versus ऐकण्याची संधी/सोय असणे with context. Draft Marathi and English wording still needs review.",
       "blockers": [
-        "Revise the current ability lesson's overly broad 'one can' framing in the pilot PR.",
-        "Author and review readings, meanings and narrowly contextual answer keys."
+        "Independent review of Japanese contexts/readings and Marathi explanations remains pending.",
+        "Older online lesson content retains its own wording until a separately approved hosted content update."
       ],
       "references": [
         "JF_POTENTIAL",
         "TUFS_POTENTIAL",
         "TUFS_PERCEPTION"
-      ]
+      ],
+      "implementation": {
+        "phase": "6P",
+        "document": "PHASE6P_JAPANESE_HEARING.md",
+        "exampleSourceRevision": "c49e669f904cc2c163701f81b9ea6bdf7990453a",
+        "exampleRefs": [
+          "ability:ja:3",
+          "ability:ja:4",
+          "ability:ja:5",
+          "ability:ja:6"
+        ],
+        "reviewStatus": "draft",
+        "scope": "Bundled activity and four authored examples; general ability summary/notes corrected in the bundled source. Online lesson precedence is unchanged."
+      }
     },
     {
       "id": "JP-F02",
@@ -413,6 +428,14 @@
         "Do not duplicate the current activity or claim the conjunction archive is implemented."
       ],
       "references": []
+    }
+  ],
+  "implementationUpdates": [
+    {
+      "phase": "6P",
+      "date": "2026-11-27",
+      "family": "JP-F01",
+      "note": "Hearing pilot implemented as draft; original Phase 6O review date and base revision remain the source-mapping checkpoint."
     }
   ]
 }

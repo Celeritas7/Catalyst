@@ -744,18 +744,22 @@
 - id: ability
   group: Mood
   title: "Can: できる・potential form"
-  summary: "Japanese has one 'can'. Burmese, Chinese and Marathi split 'know how to' from 'be able to'."
+  summary: "Expressing ability and possibility. Japanese potential forms cover several situations, but audible sound uses a different verb. Compare the meanings in context."
   levels: {ja-my: partial, ja-zh: partial, ja-mr: partial, my-zh: close, my-mr: close, zh-mr: close, ja-en: close, my-en: partial, zh-en: partial, mr-en: partial}
   pair_notes:
-    ja-my: "Japanese uses one potential form. Burmese makes you choose: တတ် (learned skill) or နိုင် (possible)."
+    ja-my: "Japanese potential forms can express learned ability or situational possibility. Burmese distinguishes တတ် (learned skill) and နိုင် (possible). Japanese 聞こえる describes audibility, not another potential form of 聞く."
     my-zh: "တတ် ≈ 会 (learned skill), နိုင် ≈ 能 (able). Chinese adds 可以 for 'allowed'."
     my-mr: "တတ် ≈ येणे (मला पोहता येतं), နိုင် ≈ शकणे."
   ja:
     form: "potential form / できる"
-    note: "One form for skill, possibility and permission."
+    note: "Potential forms and できる express ability or possibility in context. Do not infer permission from an isolated 'can' translation. 聞く becomes 聞ける (be able to listen). 聞こえる is a separate verb for audible sound, not a second potential conjugation."
     ex:
       - {t: "泳げます。", r: "およげます", e: "I can swim.", h: "泳げます"}
       - {t: "明日は来られません。", r: "あした わ こられません", e: "I can't come tomorrow.", h: "来られません"}
+      - {t: "外から鳥の声が聞こえます。", r: "そと から とり の こえ が きこえます", e: "I can hear birds outside.", h: "聞こえます"}
+      - {t: "周りがうるさくて、先生の声が聞こえません。", r: "まわり が うるさくて せんせい の こえ が きこえません", e: "It is noisy around me, so I cannot hear the teacher's voice.", h: "聞こえません"}
+      - {t: "このサイトで授業の録音が聞けます。", r: "この サイト で じゅぎょう の ろくおん が きけます", e: "You can listen to lesson recordings on this website.", h: "聞けます"}
+      - {t: "パスワードがないので、録音が聞けません。", r: "パスワード が ない ので ろくおん が きけません", e: "Without the password, I cannot listen to the recording.", h: "聞けません"}
   my:
     form: "တတ် (skill) / နိုင် (able)"
     note: "Pick by meaning."
@@ -776,7 +780,7 @@
       - {t: "मी उद्या येऊ शकणार नाही.", e: "I won't be able to come tomorrow.", h: "शकणार"}
   en:
     form: "can"
-    note: "One word for all meanings, like Japanese."
+    note: "English 'can' can express ability, possibility or permission. A translation such as 'can hear' does not by itself identify the intended Japanese construction."
     ex:
       - {t: "I can swim."}
 

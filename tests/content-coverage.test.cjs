@@ -89,3 +89,15 @@ test('activity audit detects changed source text, incomplete meanings, malformed
   ];
   for(const [mutate,message] of cases){const changed=structuredClone(pilot);mutate(changed);assert.match(auditActivities([changed],concepts).join('\n'),message);}
 });
+
+test('worked form guides reject missing language support and empty readings without requiring guides on older activities',()=>{
+  const ctx={window:{}};vm.createContext(ctx);
+  for(const file of ['catalyst-data','catalyst-activities'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file+'.js'),'utf8'),ctx);
+  const concepts=plain(ctx.window.CATALYST_DATA.concepts),pilots=plain(ctx.window.CatalystActivities.pilots);
+  assert.deepEqual(auditActivities(pilots,concepts),[]);
+  const hearing=pilots.find(p=>p.id==='ja-hearing-possibility');
+  for(const mutate of [p=>{p.formGuide=[];},p=>{p.formGuide[0].reading='';},p=>{delete p.formGuide[1].explanation.mr;},p=>{delete p.formGuide[0].title.en;}]){
+    const changed=structuredClone(hearing);mutate(changed);assert.match(auditActivities([changed],concepts).join('\n'),/incomplete worked form guide/);
+  }
+  const changed=structuredClone(hearing);changed.reading='';assert.match(auditActivities([changed],concepts).join('\n'),/missing example reading/);
+});
