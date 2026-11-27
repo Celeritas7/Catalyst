@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "phase": "6O",
+  "reviewedOn": "2026-11-27",
+  "baseRevision": "300f22f0d0bd71bd8d47fee4cd821dc15562ab92",
+  "scope": "Sixteen selected formula families from four private documents. Documentation only; not an exhaustive archive inventory or a teaching pack.",
+  "reviewStatus": "Source mapping complete for this bounded set; independent linguistic review pending.",
+  "privateSources": {
+    "JN01": "Pattern comparison notes; full document text and table structure read.",
+    "JN02": "Separate conditional comparison draft; full document text and table structure read.",
+    "JN03": "Foundational pattern notes; full document text and table structure read.",
+    "JN04": "Short conjunction gloss list; full readable text read."
+  },
+  "sourcePolicy": "Private file identifiers, exact filenames, hashes and locators are kept in the owner's companion source register. No original documents, personal examples or copied third-party lessons are distributed here.",
+  "references": {
+    "JF_POTENTIAL": "https://www.kyozai.jpf.go.jp/kyozai/material/BTS00063/ja/render.do",
+    "TUFS_POTENTIAL": "https://www.coelang.tufs.ac.jp/mt/ja/gmod/contents/explanation/074.html",
+    "TUFS_PERCEPTION": "https://www.coelang.tufs.ac.jp/mt/grammar/gmod/contents/card/048.html",
+    "JF_NOMINALIZATION": "https://www.jpf.go.jp/j/project/japanese/teach/tsushin/grammar/201112.html"
+  },
+  "families": [
+    {
+      "id": "JP-F01",
+      "topic": "Hearing: 聞こえる / 聞ける",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Hearing comparison",
+        "Ability"
+      ],
+      "concepts": [
+        "ability"
+      ],
+      "activities": [],
+      "status": "pilot_selected",
+      "attachment": "聞く → 聞ける → 聞けます; 聞こえる → 聞こえます is a separate lexical verb. Use Nが in the first authored examples.",
+      "meaning": "Audible sound versus the ability or opportunity to listen in a stated situation.",
+      "limits": "Do not derive 聞こえる as a second conjugation of 聞く. Do not equate every occurrence of English 'can hear' with one form; do not teach volitional control as an absolute rule.",
+      "examples": "Write new audibility and listening-access contexts, including one negative example for each. Source examples need editing and are not answer keys.",
+      "marathi": "A contrast explanation exists; rewrite as ऐकू येणे versus ऐकण्याची संधी/सोय असणे with context. Draft Marathi and English wording still needs review.",
+      "blockers": [
+        "Revise the current ability lesson's overly broad 'one can' framing in the pilot PR.",
+        "Author and review readings, meanings and narrowly contextual answer keys."
+      ],
+      "references": [
+        "JF_POTENTIAL",
+        "TUFS_POTENTIAL",
+        "TUFS_PERCEPTION"
+      ]
+    },
+    {
+      "id": "JP-F02",
+      "topic": "Seeing: 見える / 見られる",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Seeing comparison",
+        "Ability"
+      ],
+      "concepts": [
+        "ability"
+      ],
+      "activities": [],
+      "status": "later_candidate",
+      "attachment": "見る → 見られる → 見られます; 見える → 見えます is a separate lexical verb.",
+      "meaning": "Something is visible versus an opportunity or ability to see/watch.",
+      "limits": "見られる also has passive/honorific readings in other contexts. Use explicit opportunity contexts; colloquial 見れる is outside the first pilot.",
+      "examples": "Author a view from a location and access to a showing. Do not copy the hearing examples accidentally repeated in the source's seeing section.",
+      "marathi": "Comparison exists, but part of the draft repeats hearing material. Rebuild the pair with दिसणे and पाहण्याची संधी/सोय असणे.",
+      "blockers": [
+        "Review polysemy and new example pairs after the hearing pilot."
+      ],
+      "references": [
+        "JF_POTENTIAL",
+        "TUFS_POTENTIAL"
+      ]
+    },
+    {
+      "id": "JP-F03",
+      "topic": "General potential and ことができる",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Ability"
+      ],
+      "concepts": [
+        "ability"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Explicit verb class, dictionary form, potential form and polite form; dictionary form + ことができる.",
+      "meaning": "Ability or possibility, distinguished from an event simply being completed or ready.",
+      "limits": "Do not generate all verbs by a single stem rule. Separate lexical できる senses and verbs without an ordinary potential form.",
+      "examples": "Existing swimming/coming examples are app coverage, not proof the private formulas were imported.",
+      "marathi": "Partial explanatory notes; no complete reviewed class-by-class Marathi pack.",
+      "blockers": [
+        "Resolve source category confusion and the scope of permission claims before expanding the general lesson."
+      ],
+      "references": [
+        "JF_POTENTIAL",
+        "TUFS_POTENTIAL"
+      ]
+    },
+    {
+      "id": "JP-F04",
+      "topic": "Experience: Vたことがある / ない",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Experience"
+      ],
+      "concepts": [
+        "experience"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Past plain verb + ことがある / ことがない; record the chosen verb's actual past form.",
+      "meaning": "Having or lacking prior experience.",
+      "limits": "The source's count restriction needs correction; experience does not itself specify exactly one occurrence.",
+      "examples": "Current app has prior-experience examples; new contrast tasks should distinguish experience from a single dated event.",
+      "marathi": "Only partial notes in this source section; bundled Marathi example meanings do not supply a full formula explanation.",
+      "blockers": [
+        "Check meaning/count wording and author examples before selecting an activity."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F05",
+      "topic": "Ease and difficulty: やすい / にくい",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Ease and difficulty"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Verb ます stem + やすい / にくい; record adjective inflection and verb class explicitly.",
+      "meaning": "An action is easy or difficult to perform in context.",
+      "limits": "The source has formula headings with empty explanation/example cells. Do not treat headings as reviewed teaching content.",
+      "examples": "New readable/easy-to-use contexts are needed; none is selected as an answer key.",
+      "marathi": "No developed Marathi explanation in the mapped section.",
+      "blockers": [
+        "Fill meaning, context, inflection and exceptions from an independent reference."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F06",
+      "topic": "Conditions and concession: と / ば / たら / なら / ても",
+      "sources": [
+        "JN01",
+        "JN02"
+      ],
+      "sections": [
+        "Conditional comparisons",
+        "Conditional attachment table"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review verb, い-adjective, な-adjective and noun attachment separately. Never apply a generic 'ます stem + ending' algorithm.",
+      "meaning": "Habitual result, hypothesis, temporal sequence, topic-based condition and concession are distinct lesson objectives.",
+      "limits": "Conflicting columns and blanket restrictions in the drafts cannot become universal valid/invalid labels. ても must retain its concessive meaning.",
+      "examples": "Machine-result, advice and future-sequence cases occur in the notes; all require context-specific re-authoring.",
+      "marathi": "Sparse labels and partial comparisons; no complete five-way explanation.",
+      "blockers": [
+        "Resolve contradictory restrictions and misplaced examples.",
+        "Split the five-way chart into small lessons after a fuller reference review."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F07",
+      "topic": "Completion and regret: てしまう / ちゃう / じゃう",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Completion and contractions"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review contraction from the actual て/で form, then inflect the resulting form; do not use the conflicting dictionary-ending lists.",
+      "meaning": "Completion and unwanted-result/regret uses, with casual contractions.",
+      "limits": "Do not teach every completion as an accident. Malformed past contractions and mismatched verbs appear in the draft.",
+      "examples": "Author ordinary completion and unintended-result pairs; source sentences are correction candidates.",
+      "marathi": "No complete Marathi contrast pack in the mapped tables.",
+      "blockers": [
+        "Validate conjugation, transitivity, register and tense before drafting exercises."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F08",
+      "topic": "Without doing: ずに / ないで",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Action linking"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review the negative-base connection and irregular する → せずに; the draft's general ます-stem rule is unsuitable.",
+      "meaning": "One action happens without another action being performed.",
+      "limits": "Do not automatically substitute in every negative て-form construction or generate all verbs from ます stems.",
+      "examples": "The notes contrast doing an action before another with omitting it; author fresh examples after checking the forms.",
+      "marathi": "Paired करून / न करता explanations exist.",
+      "blockers": [
+        "Verify formation and the boundary with causal negative constructions."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F09",
+      "topic": "Nominalizers: の / こと",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Nominalization",
+        "Liking an action"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Plain clause + nominalizer + the particle required by the following predicate.",
+      "meaning": "Treat an action or event as a noun-like constituent; restrictions depend on the following expression.",
+      "limits": "Reject the shortcut 'の only with perception, こと everywhere else'; some contexts allow both and fixed expressions constrain the choice.",
+      "examples": "The file contains copied lesson text as well as notes. Write new examples rather than distributing that transcript.",
+      "marathi": "Partial transliterated Marathi explanation; rewrite in reviewed natural Marathi.",
+      "blockers": [
+        "Review overlap, fixed expressions and independent examples."
+      ],
+      "references": [
+        "JF_NOMINALIZATION"
+      ]
+    },
+    {
+      "id": "JP-F10",
+      "topic": "Aspect: ている",
+      "sources": [
+        "JN01",
+        "JN03"
+      ],
+      "sections": [
+        "Aspect and state"
+      ],
+      "concepts": [
+        "progressive"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Actual verb て-form + いる; interpret the construction using the verb and context.",
+      "meaning": "Ongoing activity, resulting state and habitual/current situation need separate contexts.",
+      "limits": "Several source cells contain unrelated copied explanations; do not map all uses to English present continuous or Vた + います.",
+      "examples": "Existing app has action/state examples. New tasks need explicit time or state cues.",
+      "marathi": "No complete Marathi explanation set in these sections.",
+      "blockers": [
+        "Reconcile column mismatches and remove placeholder meanings before reuse."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F11",
+      "topic": "Preparation and result: ておく / てある",
+      "sources": [
+        "JN01",
+        "JN03"
+      ],
+      "sections": [
+        "Preparation and retained result"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review verb て-form and the construction's participant/particle pattern separately; casual contractions are a later subtopic.",
+      "meaning": "Doing something in preparation or leaving it so versus describing a resulting prepared state.",
+      "limits": "Do not import the draft's equality chain as unrestricted interchangeability.",
+      "examples": "New preparation/result context pairs needed; private examples are not selected.",
+      "marathi": "No developed Marathi comparison in the mapped section.",
+      "blockers": [
+        "Check transitivity, viewpoint, particles and register."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F12",
+      "topic": "Reason versus concession: から / ので / のに",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Reason and contrast"
+      ],
+      "concepts": [
+        "because"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review clause attachment, including noun/な-adjective forms; distinguish concessive のに from purpose のに.",
+      "meaning": "Reasons and an outcome contrary to expectation are separate senses.",
+      "limits": "The existing because lesson is only partial coverage. Avoid an absolute rude/polite rule based solely on から versus ので.",
+      "examples": "The notes have contrasts; replace personal dialogue with fresh contextual pairs.",
+      "marathi": "Useful reason/concession comparisons exist, with some oversimplified register labels.",
+      "blockers": [
+        "Review attachment, register and separate senses before import."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F13",
+      "topic": "Desire and plans: たい / ほしい / つもり / 予定",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Desire and plans",
+        "Thought and intention"
+      ],
+      "concepts": [
+        "want_tai",
+        "future"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Review ます stem + たい, noun + がほしい, verb + つもり, and verb/noun + 予定 as separate records.",
+      "meaning": "A desired action/item, an intention and a schedule are distinct.",
+      "limits": "Perspective, reported desire and opinion versus intention are mixed in parts of the draft; do not infer another person's inner state from a fixed formula alone.",
+      "examples": "Current app covers たい and some future plans. New cases need fictional speakers and consistent viewpoint.",
+      "marathi": "Partial explanations exist; some translations conflate viewpoint.",
+      "blockers": [
+        "Resolve viewpoint, particle and meaning mismatches; replace personal examples."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F14",
+      "topic": "Comparison: より / ほう / ほど",
+      "sources": [
+        "JN01"
+      ],
+      "sections": [
+        "Comparison"
+      ],
+      "concepts": [],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Explicit compared items and quality; review adjective class and negative form in the ほど construction.",
+      "meaning": "Relative degree and not reaching another item's degree, with comparison questions.",
+      "limits": "Do not reverse the compared items, infer real-world rankings, or use an い-adjective ending for every predicate.",
+      "examples": "Author fictional comparison data rather than reuse unsupported city/language rankings.",
+      "marathi": "Limited explanatory labels, not a reviewed comparison lesson.",
+      "blockers": [
+        "Complete meanings and resolve incomplete or mismatched comparison cells."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F15",
+      "topic": "Polite, respectful and humble forms",
+      "sources": [
+        "JN03"
+      ],
+      "sections": [
+        "Politeness tables"
+      ],
+      "concepts": [
+        "politeness"
+      ],
+      "activities": [],
+      "status": "needs_review",
+      "attachment": "Separate です/ます, honorific and humble constructions; review lexical exceptions and participant roles.",
+      "meaning": "Listener politeness and treatment of the person whose action is described are different dimensions.",
+      "limits": "The app covers basic polite endings only. The source's gender and first/second-person shortcuts are not universal rules.",
+      "examples": "Use fictional role-based conversations after specialist review.",
+      "marathi": "No complete Marathi explanation set in these tables.",
+      "blockers": [
+        "Review social context, special verbs, malformed examples and gender generalizations."
+      ],
+      "references": []
+    },
+    {
+      "id": "JP-F16",
+      "topic": "Standalone topic transitions and conjunctions",
+      "sources": [
+        "JN03",
+        "JN04"
+      ],
+      "sections": [
+        "Topic transitions",
+        "Conjunction glosses"
+      ],
+      "concepts": [],
+      "activities": [
+        "ja-topic-transitions"
+      ],
+      "status": "existing_pilot_related",
+      "attachment": "Standalone connector + clause; do not confuse it with a similar-looking attached grammar construction.",
+      "meaning": "Topic change, related detail and unexpected result must be distinguished by conversational intention.",
+      "limits": "Source ところで entries relate to the current pilot; the short list alone does not establish the ちなみに contrast or validate the pilot.",
+      "examples": "Keep the existing authored activity. Expansion requires contextual examples and source checking.",
+      "marathi": "Current pilot has draft Marathi; the short source list is mainly English glosses.",
+      "blockers": [
+        "Do not duplicate the current activity or claim the conjunction archive is implemented."
+      ],
+      "references": []
+    }
+  ]
+}

@@ -93,10 +93,9 @@ explicit older-writing path. Report unavailable equipment as NOT RUN.
 
 ## Next content work
 
-The user's Japanese grammar formula notes are retained as planned work. The
-next bounded content step is to review and map those sources: record each
-formula's source, meaning, attachment/conjugation rules, exceptions, examples,
-Marathi support and review status. Select a small pilot only after the relevant
-notes have been fully read. Subsequent implementation batches can then add
-explanations, worked examples and exercises without treating the private archive
-as fully reviewed or authorized for wholesale publication.
+[Phase 6O](PHASE6O_JAPANESE_FORMULA_REVIEW.md) completes the next bounded
+source-review step: four selected documents, 16 mapped formula families and
+a hearing-contrast pilot selected for Phase 6P. It records attachment/conjugation,
+meaning, limits, example needs, Marathi support and review status. Later batches
+depend on source corrections and linguistic review; the private archive is
+not treated as fully reviewed or authorized for wholesale publication.
