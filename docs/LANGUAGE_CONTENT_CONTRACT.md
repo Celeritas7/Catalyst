@@ -35,6 +35,14 @@ metadata includes language, script, bilingual register/sense/provenance and
 pinned example references; the inventory validates these and keeps older
 pilots' missing structured metadata explicit.
 
+Phase 6P adds optional `reading` for an activity's situation example and an
+authored `formGuide` array for the Notice step. Each guide row has bilingual
+`title` and `explanation`, target-language `form`, and a separate `reading`.
+These strings are worked examples, not an input conjugator. The inventory
+rejects empty guides/readings and missing Marathi or English guidance. Older
+activities need not declare either field. Preserve the target-language `lang`
+attributes and selected meaning-language behavior when displaying them.
+
 Phase 6I fills the 27 measured gaps using 26 exact gloss keys; see
 [the meaning decisions](PHASE6I_MARATHI_MEANINGS.md). Optional draft Marathi
 usage notes are accessed separately via `CatalystMeanings.note`. Keep notes out

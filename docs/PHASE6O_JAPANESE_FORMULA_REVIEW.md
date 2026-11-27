@@ -154,3 +154,8 @@ were edited.
 Physical iPad/Safari/Home Screen and VoiceOver acceptance under Phase 6F,
 production audio publication, cloud sync and independent language review remain
 separate work. This phase produces no new app version to test on the iPad.
+
+Follow-up: [Phase 6P](PHASE6P_JAPANESE_HEARING.md) implements the selected hearing
+pilot as draft content. JP-F01 in the structured map now includes its activity
+and pinned authored example references. The source-review checkpoint and limits
+above remain historical; the follow-up is not native-speaker approval.

@@ -66,6 +66,8 @@ function auditActivities(pilots,concepts){
     if(pilot.concept&&!concepts.some(concept=>concept.id===pilot.concept))errors.push(`${at}: missing linked concept`);
     for(const field of ['title','summary','situation','meaning','notice','comparison','use','checklist'])if(!bilingual(pilot[field]))errors.push(`${at}: missing bilingual ${field}`);
     if((pilot.deeperTitle&&!bilingual(pilot.deeperTitle))||(pilot.deeper&&!bilingual(pilot.deeper)))errors.push(`${at}: missing bilingual detail`);
+    if(pilot.reading!==undefined&&!present(pilot.reading))errors.push(`${at}: missing example reading`);
+    if(pilot.formGuide!==undefined&&(!Array.isArray(pilot.formGuide)||!pilot.formGuide.length||pilot.formGuide.some(row=>!row||!bilingual(row.title)||!bilingual(row.explanation)||!present(row.form)||!present(row.reading))))errors.push(`${at}: incomplete worked form guide`);
     for(const field of ['prompt','hint','explanation'])if(!bilingual(pilot.build?.[field]))errors.push(`${at}: missing bilingual build ${field}`);
     if(![' ', ''].includes(pilot.build?.joiner??' '))errors.push(`${at}: unsupported chunk joiner`);
     const chunks=pilot.build?.chunks;
