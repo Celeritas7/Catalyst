@@ -131,8 +131,20 @@ device-wide writing stays intact and can be reviewed and explicitly copied;
 its completion marks are not silently attributed to the current account.
 Recovery exports include the new records. A regression reproduced the prior
 account-switch problem; automated and synthetic desktop-browser checks pass.
-Next bounded development step: guided-activity keyboard and screen-reader
-interaction review. Physical iPad acceptance and linguistic review stay open.
+Its keyboard and screen-reader interaction follow-up is recorded as Phase 6N
+below. Physical iPad acceptance and linguistic review stay open.
+
+[Phase 6N](PHASE6N_GUIDED_ACTIVITY_ACCESSIBILITY.md) improves all six guided
+activities' keyboard navigation and feedback: title/step/return focus, chunk
+selection and removal, stable status regions, question groups, recovery focus
+and visible focus outlines. Automated and synthetic desktop checks pass;
+physical iPad, actual zoom and VoiceOver acceptance remain open under Phase 6F.
+
+Next bounded content step: review and map the user's Japanese grammar formula
+notes, then select a small sourced pilot. Record attachment/conjugation rules,
+meaning, exceptions, examples and Marathi support before implementing exercises.
+This is planned work, not a claim that the notes' full formula system is already
+in the app. Later batches depend on source coverage and linguistic review.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 

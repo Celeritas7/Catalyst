@@ -108,3 +108,7 @@ Native-speaker review and the physical Phase 6F checklist remain pending.
 
 Next bounded development step: review keyboard navigation, focus and announced
 feedback in guided activities, preserving this account ownership contract.
+
+Follow-up: [Phase 6N](PHASE6N_GUIDED_ACTIVITY_ACCESSIBILITY.md) implements that
+bounded keyboard/feedback work. Physical assistive-technology acceptance remains
+pending; it does not alter the account ownership or recovery formats above.

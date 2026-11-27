@@ -591,6 +591,17 @@
       const language=window.CatalystMeanings.language(settings);
       return <><p lang={language}>{window.CatalystActivities.text(value,language)||'Translation not available.'}</p>{language!=='en'&&settings.showEnglish&&value?.en&&<p lang="en" className="text-sm text-slate-500 mt-2">{value.en}</p>}</>;
     }
+    function focusActivityElement(element) {
+      if(!element?.isConnected)return;
+      element.focus({preventScroll:true});
+      const rect=element.getBoundingClientRect();
+      if(!rect.width||!rect.height)return;
+      // Keep the focused control below the wrapping header and above the bottom navigation.
+      const top=(document.querySelector('.app-header')?.getBoundingClientRect().bottom||0)+12;
+      const bottom=(document.querySelector('.app-navigation')?.getBoundingClientRect().top||window.innerHeight)-12;
+      const distance=rect.top<top?rect.top-top:rect.bottom>bottom?Math.min(rect.top-top,rect.bottom-bottom):0;
+      if(distance)window.scrollBy({top:distance,behavior:'instant'});
+    }
     function useActivityProgress(scope,language) {
       const api=window.CatalystActivityProgress,key=scope==='loading'?null:api.key(scope,language);
       const read=()=>{try{return {data:key?api.parse(localStorage.getItem(key)):api.empty(),error:''};}catch(error){return {data:api.empty(),error:error.message};}};
@@ -611,19 +622,31 @@
       const {scope}=React.useContext(ReviewContext),progress=useActivityProgress(scope,settings.targetLanguage);
       const pilots=api.pilots.filter(p=>p.language===settings.targetLanguage&&(!conceptId||p.concept===conceptId));
       const [active,setActive]=useState(null);
+      const launchers=React.useRef({}),returnTo=React.useRef(null);
+      React.useLayoutEffect(()=>{if(!active&&returnTo.current){focusActivityElement(launchers.current[returnTo.current]);returnTo.current=null;}},[active]);
       const pilot=pilots.find(p=>p.id===active);
       if(!pilots.length) return conceptId?null:<section className="study-panel"><h2 className="text-xl font-bold">Guided activities</h2><p className="mt-2 text-slate-500">Pilots are available for Burmese sentence order, negation, questions, location and destination, and Japanese topic transitions. Activities for your selected learning language are not available yet.</p></section>;
-      if(pilot) return <>{progress.notice}<ActivityLesson key={`${pilot.id}-${settings.meaningLanguage}`} pilot={pilot} settings={settings} progress={progress} update={update} onClose={()=>setActive(null)}/></>;
-      return <section className="study-panel w-full"><div className="eyebrow">NEW · GUIDED ACTIVITIES</div><h2 className="text-2xl font-bold mt-2">From noticing to using</h2><p className="text-sm text-slate-500 mt-2">Situation → Notice → Build → Choose → Use</p>{progress.notice}<p className="text-sm mt-2">{scope==='loading'?'Checking the study account…':scope==='guest'?'Guest activity progress · this device only.':'Activity progress for the current study account · this device only.'}</p>{pilots.map(p=><button className="lesson-link mt-4" key={p.id} disabled={scope==='loading'} onClick={()=>setActive(p.id)}><span className="lesson-number">✦</span><span className="flex-1"><strong>{api.text(p.title,settings.meaningLanguage)}</strong><small>{api.text(p.summary,settings.meaningLanguage)} · {progress.data.items[p.id]?.completed?'Completed activity · revisit':progress.data.items[p.id]?'Resume activity':'Start activity'}</small></span><span>→</span></button>)}</section>;
+      if(pilot) return <>{progress.notice}<ActivityLesson key={`${pilot.id}-${settings.meaningLanguage}`} pilot={pilot} settings={settings} progress={progress} update={update} onClose={()=>{returnTo.current=pilot.id;setActive(null);}}/></>;
+      return <section className="study-panel activity-library w-full"><div className="eyebrow">NEW · GUIDED ACTIVITIES</div><h2 className="text-2xl font-bold mt-2">From noticing to using</h2><p className="text-sm text-slate-500 mt-2">Situation → Notice → Build → Choose → Use</p>{progress.notice}<p className="text-sm mt-2">{scope==='loading'?'Checking the study account…':scope==='guest'?'Guest activity progress · this device only.':'Activity progress for the current study account · this device only.'}</p>{pilots.map(p=><button className="lesson-link mt-4" key={p.id} ref={element=>{launchers.current[p.id]=element;}} disabled={scope==='loading'} onClick={()=>setActive(p.id)}><span className="lesson-number" aria-hidden="true">✦</span><span className="flex-1"><strong lang={settings.meaningLanguage}>{api.text(p.title,settings.meaningLanguage)}</strong><small><span lang={settings.meaningLanguage}>{api.text(p.summary,settings.meaningLanguage)}</span> · {progress.data.items[p.id]?.completed?'Completed activity · revisit':progress.data.items[p.id]?'Resume activity':'Start activity'}</small></span></button>)}</section>;
     }
     function ActivityLesson({pilot,settings,update,onClose,progress}) {
       const api=window.CatalystActivities, recordKey=api.key(pilot);
+      const domId=React.useId(),titleRef=React.useRef(null),stepRef=React.useRef(null),bankRef=React.useRef(null),answerRef=React.useRef(null),checkRef=React.useRef(null),draftRef=React.useRef(null);
+      const focusRequest=React.useRef({kind:'title'});
+      React.useLayoutEffect(()=>{
+        const request=focusRequest.current;if(!request)return;focusRequest.current=null;
+        const element=request.kind==='title'?titleRef.current:request.kind==='step'?stepRef.current:request.kind==='draft'?draftRef.current:
+          request.kind==='add'?(bankRef.current?.querySelector('button:not(:disabled)')||checkRef.current):
+          answerRef.current?.querySelectorAll('button')[request.index]||answerRef.current?.querySelector('button:last-child')||bankRef.current?.querySelector(`[data-chunk="${request.id}"]`);
+        focusActivityElement(element);
+      });
       const [baseline,setBaseline]=useState(()=>progress.data.items[pilot.id]||null);
       const saved=baseline||{},savedWriting=saved.writing?.[settings.meaningLanguage]||{};
       const review=React.useContext(ReviewContext),attempted=React.useRef(new Set()),activityAssisted=React.useRef(new Set());
       const track=(kind,index,correct,response,assisted=false)=>{const task=activityTask(pilot,kind,index,settings.meaningLanguage),ok=review.record(task,{correct,response,assisted:assisted||activityAssisted.current.has(task.id),retry:attempted.current.has(task.id)});if(ok)attempted.current.add(task.id);return ok;};
       const [step,setStep]=useState(Number.isInteger(saved.step)?Math.max(0,Math.min(4,saved.step)):0);
       const [order,setOrder]=useState([]),[buildFeedback,setBuildFeedback]=useState(null),[hint,setHint]=useState(false);
+      const [chunkStatus,setChunkStatus]=useState('');
       const [answers,setAnswers]=useState({}),[revealed,setRevealed]=useState({});
       const [draft,setDraft]=useState(savedWriting.draft||'');
       const [notebookMeaning,setNotebookMeaning]=useState(savedWriting.meaning||'');
@@ -632,13 +655,21 @@
       const [notebookSaved,setNotebookSaved]=useState(null);
       const [checked,setChecked]=useState(false);
       const [saveStatus,setSaveStatus]=useState('');
-      const writing=useWritingDraft({scope:review.scope,language:settings.targetLanguage,type:'activity',context:pilot.id+':'+settings.meaningLanguage,fields:{draft,meaning:notebookMeaning},empty:{draft:'',meaning:''},restore:value=>{setDraft(value.draft||'');setNotebookMeaning(value.meaning||'');setStep(4);setNotebookSaved(null);}});
+      const writing=useWritingDraft({scope:review.scope,language:settings.targetLanguage,type:'activity',context:pilot.id+':'+settings.meaningLanguage,fields:{draft,meaning:notebookMeaning},empty:{draft:'',meaning:''},restore:value=>{focusRequest.current={kind:'draft'};setDraft(value.draft||'');setNotebookMeaning(value.meaning||'');setStep(4);setNotebookSaved(null);setChecked(false);setSaveStatus('');setNotebookStatus('');}});
       const steps=['Situation','Notice','Build','Choose','Use'];
       const persist=patch=>{const next=progress.save(pilot.id,patch,baseline);if(next)setBaseline(next);return !!next;};
-      const move=n=>{setStep(n);persist({step:n});};
+      const move=n=>{focusRequest.current={kind:'step'};setStep(n);persist({step:n});};
       const say=value=><ActivityText value={value} settings={settings}/>;
       const bank=useMemo(()=>shuffle(pilot.build.chunks.map((_,i)=>i)),[pilot.id]);
       const language=LANG[pilot.language];
+      const changeChunk=(id,index)=>{
+        const removing=index!==undefined;
+        if(!removing&&order.includes(id))return;
+        const next=removing?order.filter((_,i)=>i!==index):[...order,id];
+        focusRequest.current=removing?{kind:'remove',index,id}:{kind:'add'};
+        setOrder(next);setBuildFeedback(null);
+        setChunkStatus(`Chunk ${removing?'removed':'added'}. ${next.length} of ${pilot.build.chunks.length} chunks selected.`);
+      };
       const saveToNotebook=()=>{
         try{
           if(!progress.current())throw Error('The study account changed.');
@@ -665,34 +696,73 @@
           if(!progress.current()||draft||notebookMeaning)return;
           const current=window.CatalystActivityProgress.legacyWriting(localStorage.getItem(SETTINGS_KEY),recordKey);
           if(!legacyPreview||current!==legacyPreview)throw Error('Older writing changed. Review it again before copying.');
-          if(writing.write({draft:current,meaning:''})){setDraft(current);setNotebookMeaning('');setChecked(false);setLegacyPreview(null);setSaveStatus('Older writing copied into this draft. Save it when ready; its original is retained.');}
+          if(writing.write({draft:current,meaning:''})){focusRequest.current={kind:'draft'};setDraft(current);setNotebookMeaning('');setChecked(false);setLegacyPreview(null);setSaveStatus('Older writing copied into this draft. Save it when ready; its original is retained.');}
         }catch(error){setSaveStatus(error.message);}
       };
-      return <section className="study-panel activity-panel"><div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(((draft!==(savedWriting.draft||'')&&draft!==notebookSaved?.draft)||(notebookMeaning!==(savedWriting.meaning||'')&&notebookMeaning!==notebookSaved?.meaning))&&!window.confirm('Leave without saving your writing?'))return;onClose();}}>Close activity</button></div>
+      return <section className="study-panel activity-panel" aria-labelledby={domId+'-title'}>
+        <div className="flex items-start justify-between gap-3"><div><div className="eyebrow">{language.name} · GUIDED PILOT</div><h2 id={domId+'-title'} ref={titleRef} tabIndex={-1} lang={settings.meaningLanguage} className="text-2xl font-bold mt-2">{api.text(pilot.title,settings.meaningLanguage)}</h2></div><button className="quiet-btn" onClick={()=>{if(((draft!==(savedWriting.draft||'')&&draft!==notebookSaved?.draft)||(notebookMeaning!==(savedWriting.meaning||'')&&notebookMeaning!==notebookSaved?.meaning))&&!window.confirm('Leave without saving your writing?'))return;onClose();}}>Close activity</button></div>
         <p className="text-xs text-amber-800 mt-3">Draft content · examples and Marathi guidance await native-speaker review.</p>
-        <nav className="activity-steps" aria-label="Activity steps">{steps.map((name,i)=><button key={name} aria-current={step===i?'step':undefined} onClick={()=>move(i)}><span>{i+1}</span>{name}</button>)}</nav>
+        <nav className="activity-steps" aria-label="Activity steps">{steps.map((name,i)=><button key={name} aria-current={step===i?'step':undefined} aria-controls={domId+'-body'} onClick={()=>move(i)}><span>{i+1}</span>{name}</button>)}</nav>
         <EnglishOption settings={settings} update={update}/>
-        <div className="activity-body">
-        {step===0&&<><h3 className="text-xl font-bold mb-3">01 / Situation</h3>{say(pilot.situation)}<div className="pattern-box"><p className={`text-2xl ${language.font}`} lang={pilot.language}>{pilot.example}</p><div className="mt-4">{say(pilot.meaning)}</div></div></>}
-        {step===1&&<><h3 className="text-xl font-bold mb-3">02 / Notice</h3>{say(pilot.notice)}<details className="activity-detail"><summary>Compare with Marathi · optional</summary>{say(pilot.comparison)}</details>{pilot.deeper&&<details className="activity-detail"><summary>{api.text(pilot.deeperTitle,settings.meaningLanguage)||'Different pattern: verb-past + ところで'}</summary>{say(pilot.deeper)}</details>}</>}
-        {step===2&&<><h3 className="text-xl font-bold mb-3">03 / Build</h3>{say(pilot.build.prompt)}<p className="text-sm text-slate-500 mt-3">Tap chunks in order. Tap a selected chunk to remove it.</p><div className="chunk-answer" aria-label="Your sentence">{!order.length&&<span className="text-slate-400">Your sentence appears here</span>}{order.map((id,i)=><button className={`chunk ${language.font}`} lang={pilot.language} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>{setOrder(order.filter((_,n)=>n!==i));setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="chunk-bank" aria-label="Available chunks">{bank.map(id=><button key={id} className={`chunk ${language.font}`} lang={pilot.language} disabled={order.includes(id)} onClick={()=>{setOrder([...order,id]);setBuildFeedback(null);}}>{pilot.build.chunks[id]}</button>)}</div><div className="flex flex-wrap gap-2 mt-4"><button className="primary-btn" disabled={order.length!==pilot.build.chunks.length} onClick={()=>{const correct=api.validOrder(pilot.build,order);if(track('build',0,correct,api.assemble(pilot.build,order)))setBuildFeedback(correct?'correct':'retry');}}>Check order</button><button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);}}>Clear</button><button className="quiet-btn" aria-expanded={hint} onClick={()=>{activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setHint(!hint);}}>Hint</button><button className="quiet-btn" onClick={()=>{if(track('build',0,null,null,true)){activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setOrder([...pilot.build.orders[0]]);setBuildFeedback('revealed');}}}>Reveal one answer</button></div>{hint&&<div className="feedback">{say(pilot.build.hint)}</div>}{buildFeedback&&<div className="feedback" role="status"><strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>{['correct','revealed'].includes(buildFeedback)&&<p className={language.font} lang={pilot.language}>{api.assemble(pilot.build,order)}</p>}{say(pilot.build.explanation)}</div>}</>}
-        {step===3&&<><h3 className="text-xl font-bold mb-3">04 / Choose</h3>{pilot.choices.map((q,i)=><div className="activity-choice" key={i}>{say(q.prompt)}<div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} onClick={()=>{if(track('choice',i,api.choiceCorrect(q,j),option)){setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}}>{option}</button>)}</div><button className="quiet-btn mt-3" onClick={()=>{if(!revealed[i]){activityAssisted.current.add(activityTask(pilot,'choice',i,settings.meaningLanguage).id);if(!track('choice',i,null,null,true))return;}setRevealed({...revealed,[i]:!revealed[i]});}} aria-expanded={!!revealed[i]}>Reveal answer and explanation</button>{(answers[i]!==undefined||revealed[i])&&<div className="feedback" role="status"><strong>{revealed[i]?`Accepted answer: ${q.accepted.map(a=>q.options[a]).join(' / ')}`:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}</div>}</div>)}</>}
-        {step===4&&<><h3 className="text-xl font-bold mb-3">05 / Use it yourself</h3>{say(pilot.use)}<label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label><textarea id={`draft-${pilot.id}`} lang={pilot.language} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft:e.target.value,meaning:notebookMeaning});setDraft(e.target.value);setChecked(false);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/><div className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div>
-          {writing.panel}
-          {typeof settings.activities?.[recordKey]?.draft==='string'&&settings.activities[recordKey].draft.trim()&&<div className="draft-recovery"><p>Older device writing has no recorded account. Review it and copy only your own writing.</p><button className="quiet-btn" onClick={reviewLegacy}>Review older writing</button>{legacyPreview!==null&&<><p className="whitespace-pre-wrap mt-3" lang={pilot.language}>{legacyPreview}</p><button className="quiet-btn" disabled={!!draft||!!notebookMeaning||review.scope==='loading'} onClick={copyLegacy}>Copy this writing into my draft</button><p className="text-sm mt-2">Keep or save any current writing first. Older completion marks are not copied.</p></>}</div>}
-          <div className="notebook-transfer">
-            <h4 className="font-bold">Keep this writing in your notebook</h4>
-            <p className="mt-2">Save this attempt, then add correction notes later in My Learning. Saving does not grade or complete the activity.</p>
-            <label className="block mt-3">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)
-              <textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows={2} maxLength={5000} value={notebookMeaning} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft,meaning:e.target.value});setNotebookMeaning(e.target.value);setNotebookStatus('');}}/>
-            </label>
-            <p className="mt-2">Destination: {language.name} · {review.scope==='loading'?'Checking account…':review.scope==='guest'?'Guest notebook':'Current account notebook'} · this device only.</p>
-            <div className="notebook-actions mt-3"><button className="quiet-btn" disabled={review.scope==='loading'||!draft.trim()} onClick={saveToNotebook}>Save to notebook</button>
-              {notebookSaved?.draft===draft&&notebookSaved?.meaning===notebookMeaning&&<button className="quiet-btn" onClick={()=>go('learning')}>Open notebook</button>}
-            </div><p className="mt-3" role="status">{notebookStatus}</p>
-          </div>
-          <div className="feedback">{say(pilot.checklist)}</div><label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label><div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" disabled={review.scope==='loading'} onClick={()=>saveActivity(false)}>Save draft</button><button className="primary-btn" disabled={review.scope==='loading'||!checked||!draft.trim()} onClick={()=>saveActivity(true)}>Complete activity</button></div><p role="status" className="text-sm mt-3">{saveStatus}</p></>}
-        </div><div className="flex justify-between gap-3 mt-6"><button className="quiet-btn" disabled={step===0} onClick={()=>move(step-1)}>← Previous step</button>{step<4&&<button className="primary-btn" onClick={()=>move(step+1)}>Next: {steps[step+1]} →</button>}</div>
+        <div className="activity-body" id={domId+'-body'} role="region" aria-labelledby={domId+'-step'}>
+          <h3 id={domId+'-step'} ref={stepRef} tabIndex={-1} className="text-xl font-bold mb-3">{String(step+1).padStart(2,'0')} / {step===4?'Use it yourself':steps[step]}</h3>
+          {step===0&&<>{say(pilot.situation)}<div className="pattern-box"><p className={`text-2xl ${language.font}`} lang={pilot.language}>{pilot.example}</p><div className="mt-4">{say(pilot.meaning)}</div></div></>}
+          {step===1&&<>{say(pilot.notice)}<details className="activity-detail"><summary>Compare with Marathi · optional</summary>{say(pilot.comparison)}</details>{pilot.deeper&&<details className="activity-detail"><summary lang={pilot.deeperTitle?settings.meaningLanguage:'en'}>{api.text(pilot.deeperTitle,settings.meaningLanguage)||'Different pattern: verb-past + ところで'}</summary>{say(pilot.deeper)}</details>}</>}
+          {step===2&&<>
+            {say(pilot.build.prompt)}
+            <p id={domId+'-build-help'} className="text-sm text-slate-500 mt-3">Choose chunks in order. Select a chosen chunk to remove it. With a keyboard, use Tab to move and Enter or Space to select.</p>
+            <div ref={answerRef} className="chunk-answer" role="group" aria-label="Your sentence" aria-describedby={domId+'-build-help'}>
+              {!order.length&&<span className="text-slate-400">Your sentence appears here</span>}
+              {order.map((id,i)=><button className={`chunk ${language.font}`} key={id} aria-label={`Remove chunk ${i+1}: ${pilot.build.chunks[id]}`} onClick={()=>changeChunk(id,i)}><span lang={pilot.language}>{pilot.build.chunks[id]}</span></button>)}
+            </div>
+            <div ref={bankRef} className="chunk-bank" role="group" aria-label="Available chunks" aria-describedby={domId+'-build-help'}>
+              {bank.map(id=><button key={id} data-chunk={id} className={`chunk ${language.font}`} aria-label={`Add chunk: ${pilot.build.chunks[id]}`} disabled={order.includes(id)} onClick={()=>changeChunk(id)}><span lang={pilot.language}>{pilot.build.chunks[id]}</span></button>)}
+            </div>
+            <p data-chunk-status role="status" aria-atomic="true" className="text-sm mt-3">{chunkStatus}</p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button ref={checkRef} className="primary-btn" disabled={order.length!==pilot.build.chunks.length} aria-controls={domId+'-build-feedback'} onClick={()=>{const correct=api.validOrder(pilot.build,order);if(track('build',0,correct,api.assemble(pilot.build,order)))setBuildFeedback(correct?'correct':'retry');}}>Check order</button>
+              <button className="quiet-btn" onClick={()=>{setOrder([]);setBuildFeedback(null);setChunkStatus('Sentence cleared. Choose chunks to start again.');}}>Clear</button>
+              <button className="quiet-btn" aria-expanded={hint} aria-controls={domId+'-hint'} onClick={()=>{activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setHint(!hint);}}>Hint</button>
+              <button className="quiet-btn" aria-controls={domId+'-build-feedback'} onClick={()=>{if(track('build',0,null,null,true)){activityAssisted.current.add(activityTask(pilot,'build',0,settings.meaningLanguage).id);setOrder([...pilot.build.orders[0]]);setChunkStatus('');setBuildFeedback('revealed');}}}>Reveal one answer</button>
+            </div>
+            <div id={domId+'-hint'} role="status" aria-atomic="true" className={hint?'feedback':undefined}>{hint&&say(pilot.build.hint)}</div>
+            <div id={domId+'-build-feedback'} data-build-feedback role="status" aria-atomic="true" className={buildFeedback?'feedback':undefined}>{buildFeedback&&<>
+              <strong>{buildFeedback==='correct'?'✓ Accepted order':buildFeedback==='revealed'?'One accepted answer · revealed':'Try another order for this pattern'}</strong>
+              {['correct','revealed'].includes(buildFeedback)&&<p className={language.font} lang={pilot.language}>{api.assemble(pilot.build,order)}</p>}{say(pilot.build.explanation)}
+            </>}</div>
+          </>}
+          {step===3&&<>{pilot.choices.map((q,i)=><div className="activity-choice" key={i} role="group" aria-labelledby={domId+'-question-'+i}>
+            <div id={domId+'-question-'+i}>{say(q.prompt)}</div>
+            <div className="grid gap-2 mt-3">{q.options.map((option,j)=><button lang={pilot.language} className={`answer-btn ${answers[i]===j?(api.choiceCorrect(q,j)?'correct':'incorrect'):''}`} key={j} aria-pressed={answers[i]===j} aria-controls={domId+'-choice-feedback-'+i} onClick={()=>{if(track('choice',i,api.choiceCorrect(q,j),option)){setAnswers({...answers,[i]:j});setRevealed({...revealed,[i]:false});}}}>{option}</button>)}</div>
+            <button className="quiet-btn mt-3" aria-controls={domId+'-choice-feedback-'+i} aria-expanded={answers[i]===undefined?!!revealed[i]:undefined} onClick={()=>{if(!revealed[i]){activityAssisted.current.add(activityTask(pilot,'choice',i,settings.meaningLanguage).id);if(!track('choice',i,null,null,true))return;}setRevealed({...revealed,[i]:!revealed[i]});}}>{revealed[i]?'Hide revealed answer':'Reveal answer and explanation'}</button>
+            <div id={domId+'-choice-feedback-'+i} role="status" aria-atomic="true" className={answers[i]!==undefined||revealed[i]?'feedback':undefined}>{(answers[i]!==undefined||revealed[i])&&<>
+              <strong>{revealed[i]?<>Accepted answer: <span lang={pilot.language}>{q.accepted.map(a=>q.options[a]).join(' / ')}</span></>:api.choiceCorrect(q,answers[i])?'✓ Fits this intention':'Try again · consider the stated intention'}</strong>{say(q.explanation)}
+            </>}</div>
+          </div>)}</>}
+          {step===4&&<>
+            {say(pilot.use)}
+            <label className="block mt-4 font-bold" htmlFor={`draft-${pilot.id}`}>Your {language.name} sentences</label>
+            <textarea id={`draft-${pilot.id}`} ref={draftRef} lang={pilot.language} aria-describedby={domId+'-draft-help'} className={`activity-draft ${language.font}`} rows={5} value={draft} maxLength={4000} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft:e.target.value,meaning:notebookMeaning});setDraft(e.target.value);setChecked(false);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/>
+            <div id={domId+'-draft-help'} className="text-sm text-slate-500">{draft.length}/4000 · Saved locally only. No automatic grammar grading.</div>
+            {writing.panel}
+            {typeof settings.activities?.[recordKey]?.draft==='string'&&settings.activities[recordKey].draft.trim()&&<div className="draft-recovery"><p>Older device writing has no recorded account. Review it and copy only your own writing.</p><button className="quiet-btn" aria-expanded={legacyPreview!==null} aria-controls={domId+'-legacy'} onClick={reviewLegacy}>Review older writing</button><div id={domId+'-legacy'}>{legacyPreview!==null&&<><p className="whitespace-pre-wrap mt-3" lang={pilot.language}>{legacyPreview}</p><button className="quiet-btn" disabled={!!draft||!!notebookMeaning||review.scope==='loading'} onClick={copyLegacy}>Copy this writing into my draft</button><p className="text-sm mt-2">Keep or save any current writing first. Older completion marks are not copied.</p></>}</div></div>}
+            <div className="notebook-transfer">
+              <h4 className="font-bold">Keep this writing in your notebook</h4>
+              <p className="mt-2">Save this attempt, then add correction notes later in My Learning. Saving does not grade or complete the activity.</p>
+              <label className="block mt-3">What I meant ({LANG[settings.meaningLanguage]?.name||settings.meaningLanguage}, optional)
+                <textarea className="search-input block w-full mt-2" lang={settings.meaningLanguage} rows={2} maxLength={5000} value={notebookMeaning} disabled={review.scope==='loading'} onChange={e=>{writing.write({draft,meaning:e.target.value});setNotebookMeaning(e.target.value);setNotebookStatus('');setSaveStatus('Unsaved changes');}}/>
+              </label>
+              <p className="mt-2">Destination: {language.name} · {review.scope==='loading'?'Checking account…':review.scope==='guest'?'Guest notebook':'Current account notebook'} · this device only.</p>
+              <div className="notebook-actions mt-3"><button className="quiet-btn" disabled={review.scope==='loading'||!draft.trim()} onClick={saveToNotebook}>Save to notebook</button>
+                {notebookSaved?.draft===draft&&notebookSaved?.meaning===notebookMeaning&&<button className="quiet-btn" onClick={()=>go('learning')}>Open notebook</button>}
+              </div><p className="mt-3" role="status" aria-atomic="true">{notebookStatus}</p>
+            </div>
+            <div className="feedback">{say(pilot.checklist)}</div>
+            <label className="flex gap-3 mt-4 items-start"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>I reviewed my sentence using the checklist.</span></label>
+            <div className="flex gap-3 flex-wrap mt-4"><button className="quiet-btn" disabled={review.scope==='loading'} onClick={()=>saveActivity(false)}>Save draft</button><button className="primary-btn" disabled={review.scope==='loading'||!checked||!draft.trim()} onClick={()=>saveActivity(true)}>Complete activity</button></div><p data-save-status role="status" aria-atomic="true" className="text-sm mt-3">{saveStatus}</p>
+          </>}
+        </div>
+        <div className="flex justify-between gap-3 mt-6"><button className="quiet-btn" disabled={step===0} aria-controls={domId+'-body'} onClick={()=>move(step-1)}>← Previous step</button>{step<4&&<button className="primary-btn" aria-controls={domId+'-body'} onClick={()=>move(step+1)}>Next: {steps[step+1]} →</button>}</div>
         <details className="activity-detail"><summary>Content sources and review status</summary>{pilot.content?<><p className="mt-3">{LANG[pilot.content.language].name} · {pilot.content.script} script · Draft; awaiting native-speaker review.</p><h4 className="font-bold mt-3">Usage and context</h4>{say(pilot.content.register)}{say(pilot.content.sense)}<h4 className="font-bold mt-3">Where this activity comes from</h4>{say(pilot.content.provenance)}</>:<p>Japanese guidance is informed by the linked reference. Burmese sentences come from the existing lesson pack. Activities, translations and added examples are drafts, not native-speaker-approved material.</p>}{pilot.sources.map(source=><a className="block underline mt-2" key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>)}</details>
       </section>;
     }
