@@ -140,11 +140,19 @@ selection and removal, stable status regions, question groups, recovery focus
 and visible focus outlines. Automated and synthetic desktop checks pass;
 physical iPad, actual zoom and VoiceOver acceptance remain open under Phase 6F.
 
-Next bounded content step: review and map the user's Japanese grammar formula
-notes, then select a small sourced pilot. Record attachment/conjugation rules,
-meaning, exceptions, examples and Marathi support before implementing exercises.
-This is planned work, not a claim that the notes' full formula system is already
-in the app. Later batches depend on source coverage and linguistic review.
+[Phase 6O](PHASE6O_JAPANESE_FORMULA_REVIEW.md) reads four selected private
+Japanese source documents and maps 16 formula families to existing lessons.
+The [structured map](japanese-formula-map.json) records attachment/conjugation,
+meaning, limits, example needs, Marathi support and unresolved corrections.
+This is a bounded source-review checkpoint, not a full-archive import or a new
+app lesson. Private originals and personal examples remain outside the repository.
+
+Next bounded content step, Phase 6P: one draft Japanese hearing activity
+contrasting 聞こえる with 聞ける, with contextual examples, Marathi/English
+explanations and precise form guidance. Review the existing `ability` summary
+as part of that pilot. Seeing follows separately; conditional and other complex
+tables need further source correction before implementation. See the Phase 6O
+implementation contract for scope, checks and remaining review gates.
 
 Continue source review and deduplication; keep provenance, actual language, script, register, sense and review status. Do not import placeholders or mislabeled template content into normal lessons. Extend reviewed coverage gradually. Download app dependencies and selected lesson/audio packs for offline reopening and practice; synchronize safely when online. Include account-scoped learned-word snapshots for the local pattern bank. Paid AI activation is not a prerequisite.
 
